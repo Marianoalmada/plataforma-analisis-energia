@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMI Avanzado - Simulación RCM Bomba Centrífuga</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* TEMA INDUSTRIAL SCADA / HMI (IE / Certex) */
+        :root {
+            --bg-body: #1e293b;      /* Fondo oscuro HMI */
+            --bg-panel: #0f172a;     /* Paneles más oscuros */
+            --primary: #cbd5e1;      /* Texto principal claro */
+            --accent: #4f46e5;       /* Índigo IE (Fluido/H) */
+            --success: #34d399;      /* Verde (BEP/Eficiencia) */
+            --warning: #fbbf24;      /* Amarillo (Alerta Radial) */
+            --danger: #f87171;       /* Rojo (Cavitación/Runout) */
+            --power: #c084fc;        /* Violeta (Potencia) */
+            --npsh: #f472b6;         /* Rosa (NPSHr) */
+            --text-light: #94a3b8;
+            --border-color: #334155;
+            --input-bg: #1e293b;
+        }
+
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--primary);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1400px;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 15px;
+        }
+
+        /* HEADER */
+        .header {
+            grid-column: 1 / -1;
+            background-color: var(--bg-panel);
+            padding: 15px 24px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--accent);
+        }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 600; color: #f8fafc; }
+        .header p { margin: 4px 0 0 0; color: var(--text-light); font-size: 13px; }
+        .ie-logo { font-weight: 900; font-size: 22px; color: var(--success); letter-spacing: 1px; }
+
+        /* PANELES GENERALES */
+        .panel {
+            background: var(--bg-panel);
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .panel-title {
+            font-weight: 600; font-size: 13px; color: var(--text-light); text-transform: uppercase;
+            margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* SIDEBAR (Controles y Configuración) */
+        .sidebar { display: flex; flex-direction: column; gap: 15px; }
+        
+        .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        .input-group label { font-size: 11px; font-weight: 600; color: var(--text-light); }
+        .input-group input {
+            padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 4px;
+            background-color: var(--input-bg); color: var(--accent); font-weight: 600; font-size: 13px; outline: none;
+        }
+        .input-group input:focus { border-color: var(--accent); }
+
+        .slider-wrapper { margin-bottom: 15px; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: var(--primary); font-weight: 600; }
+        input[type=range] {
+            width: 100%; -webkit-appearance: none; height: 6px; border-radius: 3px; background: var(--border-color); outline: none;
+        }
+        #flow-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+        #freq-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--power); cursor: pointer; }
+
+        /* MAIN ÁREA */
+        .main-area { display: flex; flex-direction: column; gap: 15px; }
+
+        /* BANNERS */
+        .banner-container { display: flex; gap: 15px; }
+        .status-banner {
+            padding: 12px 20px; border-radius: 6px; font-size: 14px; font-weight: 600;
+            display: flex; align-items: center; gap: 12px; transition: all 0.2s;
+            background-color: rgba(30, 41, 59, 0.8); border-left: 4px solid transparent; flex: 2;
+        }
+        .status-optimal { color: var(--success); border-left-color: var(--success); }
+        .status-warning { color: var(--warning); border-left-color: var(--warning); }
+        .status-critical { color: var(--danger); border-left-color: var(--danger); animation: pulse 2s infinite; }
+        
+        .safe-zone-banner {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+            background-color: rgba(52, 211, 153, 0.1); border: 1px solid var(--success); border-radius: 6px;
+            color: var(--success); font-weight: 700; font-size: 14px; padding: 12px;
+        }
+        
+        @keyframes pulse { 0% { background-color: rgba(220, 38, 38, 0.1); } 50% { background-color: rgba(220, 38, 38, 0.3); } 100% { background-color: rgba(220, 38, 38, 0.1); } }
+
+        /* KPIs SUPERIORES */
+        .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+        .kpi-card {
+            background: var(--bg-body); padding: 12px; border-radius: 4px; border: 1px solid var(--border-color); text-align: center;
+        }
+        .kpi-title { font-size: 10px; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; }
+        .kpi-value { font-size: 20px; font-weight: 700; color: #f8fafc; }
+        .kpi-card.econ { border-color: var(--danger); background: rgba(220, 38, 38, 0.1); }
+        .kpi-card.econ .kpi-value { color: var(--danger); }
+
+        /* GRÁFICO */
+        .chart-wrapper { height: 400px; position: relative; }
+
+        /* NOMENCLATURA TÉCNICA */
+        .nomenclatura-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 13px; line-height: 1.5; color: var(--primary);
+        }
+        .nomenclatura-item span { font-weight: 700; color: var(--accent); }
+        .nomenclatura-item .danger { color: var(--danger); }
+        .nomenclatura-item .success { color: var(--success); }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+
+<div class="dashboard-container">
+    
+    <!-- HEADER -->
+    <div class="header">
+        <div>
+            <h1><span style="color:#818cf8">Inteligencia Energética</span> - Gemelo Digital de Bombeo</h1>
+            <p>Análisis de Eficiencia, Costo Operativo y Diagnóstico RCM en Tiempo Real (IE / Certex Group)</p>
+        </div>
+        <div class="ie-logo"><i class="fa-solid fa-bolt"></i> IE</div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <!-- OPERACIÓN EN TIEMPO REAL -->
+        <div class="panel" style="border-color: var(--accent);">
+            <h2 class="panel-title" style="color: var(--accent);"><i class="fa-solid fa-gamepad"></i> Controladores de Proceso</h2>
+            
+            <div class="slider-wrapper">
+                <div class="slider-header"><span style="color:var(--power);"><i class="fa-solid fa-microchip"></i> Frecuencia VFD (Hz)</span> <span id="lbl-val-freq">50</span></div>
+                <input type="range" id="freq-slider" min="5" max="70" value="50" step="1">
+            </div>
+            
+            <div class="slider-wrapper" style="margin-bottom: 0;">
+                <div class="slider-header"><span style="color:var(--accent);"><i class="fa-solid fa-crosshairs"></i> Setpoint de Demanda (m³/h)</span> <span id="lbl-val-flow">350</span></div>
+                <input type="range" id="flow-slider" min="0" max="500" value="350" step="1">
+            </div>
+        </div>
+
+        <!-- ECONOMÍA Y FLUIDO -->
+        <div class="panel">
+            <h2 class="panel-title"><i class="fa-solid fa-flask"></i> Proceso y Costos</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="input-group">
+                    <label>Densidad Fluido (kg/m³)</label>
+                    <input type="number" id="cfg-rho" value="1000" step="10" title="1000 = Agua, 1200+ = Shampoo/Detergentes pesados">
+                </div>
+                <div class="input-group">
+                    <label>Tarifa Eléctrica ($/kWh)</label>
+                    <input type="number" id="cfg-tarifa" value="0.09" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <!-- DATOS DE PLACA -->
+        <div class="panel">
+            <h2 class="panel-title"><i class="fa-solid fa-clipboard-list"></i> Datos de Placa (Nominales)</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="input-group"><label>Frec. Nom. (Hz)</label><input type="number" id="cfg-freq-nom" value="50" step="10"></div>
+                <div class="input-group"><label>Q BEP (m³/h)</label><input type="number" id="cfg-q-bep" value="350" step="10"></div>
+                <div class="input-group"><label>Eficiencia Máx (%)</label><input type="number" id="cfg-eff-max" value="85" step="1" max="100"></div>
+                <div class="input-group"><label>Q Runout (m³/h)</label><input type="number" id="cfg-q-max" value="500" step="10"></div>
+                <div class="input-group"><label>H Shut-off (mca)</label><input type="number" id="cfg-h-max" value="100" step="5"></div>
+                <div class="input-group"><label>H Runout (mca)</label><input type="number" id="cfg-h-min" value="40" step="5"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="main-area">
+        
+        <!-- KPIs -->
+        <div class="kpi-row">
+            <div class="kpi-card" style="border-top: 3px solid var(--accent);">
+                <div class="kpi-title">Caudal (Q)</div>
+                <div class="kpi-value"><span id="kpi-q">350</span> <span style="font-size:12px;color:var(--text-light)">m³/h</span></div>
+            </div>
+            <div class="kpi-card" style="border-top: 3px solid var(--accent);">
+                <div class="kpi-title">Altura (H)</div>
+                <div class="kpi-value"><span id="kpi-h">70.6</span> <span style="font-size:12px;color:var(--text-light)">m</span></div>
+            </div>
+            <div class="kpi-card" style="border-top: 3px solid var(--success);">
+                <div class="kpi-title">Eficiencia (η)</div>
+                <div class="kpi-value"><span id="kpi-e">85.0</span> <span style="font-size:12px;color:var(--text-light)">%</span></div>
+            </div>
+            <div class="kpi-card" style="border-top: 3px solid var(--power);">
+                <div class="kpi-title">Potencia (P)</div>
+                <div class="kpi-value"><span id="kpi-p">79.2</span> <span style="font-size:12px;color:var(--text-light)">kW</span></div>
+            </div>
+            <div class="kpi-card" style="border-top: 3px solid var(--npsh);">
+                <div class="kpi-title">NPSHr</div>
+                <div class="kpi-value"><span id="kpi-npsh">4.5</span> <span style="font-size:12px;color:var(--text-light)">m</span></div>
+            </div>
+            <div class="kpi-card econ">
+                <div class="kpi-title" style="color:var(--danger)">Costo Ineficiencia</div>
+                <div class="kpi-value" title="Dinero perdido por hora por operar fuera del BEP">-$<span id="kpi-costo">0.00</span><span style="font-size:12px">/h</span></div>
+            </div>
+        </div>
+
+        <!-- BANNERS DE DIAGNÓSTICO -->
+        <div class="banner-container">
+            <div id="diagnostico-banner" class="status-banner status-optimal">
+                <i id="diagnostico-icon" class="fa-solid fa-check-circle fa-lg"></i>
+                <span id="diagnostico-text">Iniciando análisis RCM...</span>
+            </div>
+            <div class="safe-zone-banner">
+                <i class="fa-solid fa-shield-halved"></i>
+                Zona Segura: <span id="lbl-zona-segura">280 - 385</span> m³/h
+            </div>
+        </div>
+
+        <!-- GRÁFICO -->
+        <div class="panel chart-wrapper" style="padding: 10px;">
+            <canvas id="mainChart"></canvas>
+        </div>
+
+        <!-- SECCIÓN DE NOMENCLATURA TÉCNICA -->
+        <div class="panel">
+            <h2 class="panel-title"><i class="fa-solid fa-book"></i> Nomenclatura y Referencias del Gemelo Digital</h2>
+            <div class="nomenclatura-grid">
+                <div class="nomenclatura-item">
+                    <span>Q BEP (Caudal Nominal):</span> El Punto de Mejor Eficiencia (Best Efficiency Point). Es el caudal para el cual la voluta y el impulsor fueron geométricamente diseñados. Operar aquí garantiza vibración mínima y máxima vida útil.
+                </div>
+                <div class="nomenclatura-item">
+                    <span class="success">Zona Segura (POR):</span> Rango operativo preferido. Varía entre el 80% y el 110% del caudal BEP actual. En este rango, el balance de presiones anula el empuje radial sobre el eje, protegiendo rodamientos y sellos mecánicos.
+                </div>
+                <div class="nomenclatura-item">
+                    <span>H Shut-off (Altura a válvula cerrada):</span> La máxima presión teórica que la bomba puede entregar cuando el caudal es cero. Mantener la bomba en este estado evapora el fluido y destruye la empaquetadura (Bajo Caudal Crítico).
+                </div>
+                <div class="nomenclatura-item">
+                    <span class="danger">Q Runout (Caudal de Falla):</span> El límite físico operativo de la bomba por diseño. Sobrepasar este punto desploma la eficiencia volumétrica e introduce daños severos estructurales por cavitación y separación. En el gráfico se ilustra con <b>Líneas de Puntos (Extrapolación teórica)</b>.
+                </div>
+                <div class="nomenclatura-item">
+                    <span>NPSHr (Energía de Succión):</span> <i>Net Positive Suction Head Required.</i> Presión estática mínima requerida en el ojo del impulsor para evitar que el líquido hierva (cavitación). Sube radicalmente al acercarse al Runout.
+                </div>
+                <div class="nomenclatura-item">
+                    <span>VFD / Leyes de Afinidad:</span> El Variador de Frecuencia escala el desempeño de la máquina: el caudal varía linealmente, la altura al cuadrado y el consumo eléctrico al cubo (reduciendo el VFD, los ahorros son masivos).
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    /* =========================================
+       1. ESTADO DEL GEMELO DIGITAL
+       ========================================= */
+    let BOMBA = {
+        FREQ_NOM: 50, 
+        Q_MAX: 500,
+        Q_BEP: 350,
+        H_MAX: 100, 
+        H_MIN: 40,  
+        EFF_MAX: 85,
+        RHO: 1000,    
+        TARIFA: 0.09  
+    };
+
+    let coef_H = 0;
+    let coef_E = 0;
+    
+    let currentQ = 350; 
+    let currentFreq = 50;
+    let n_speed = 1.0; 
+    
+    const datasetHead = [];
+    const datasetEff = [];
+    const datasetPow = []; 
+    const datasetNpsh = []; 
+
+    /* =========================================
+       2. FUNCIONES FÍSICAS (MODELOS ANALÍTICOS)
+       ========================================= */
+    function recalcularCoeficientes() {
+        coef_H = (BOMBA.H_MAX - BOMBA.H_MIN) / Math.pow(BOMBA.Q_MAX, 2);
+        coef_E = BOMBA.EFF_MAX / Math.pow(BOMBA.Q_BEP, 2);
+    }
+
+    function calcularAltura(q, n) {
+        let q_nom = q / n; 
+        let h_nom = BOMBA.H_MAX - (coef_H * Math.pow(q_nom, 2));
+        let result = h_nom * Math.pow(n, 2);
+        return result > 0 ? result : 0;
+    }
+
+    function calcularEficiencia(q, n) {
+        let q_nom = q / n;
+        let eff_nom = -coef_E * Math.pow(q_nom - BOMBA.Q_BEP, 2) + BOMBA.EFF_MAX;
+        return eff_nom > 0.1 ? eff_nom : 0.1;
+    }
+
+    function calcularPotencia(q, h, eff, n) {
+        if (q === 0) {
+            let h_bep_nom = BOMBA.H_MAX - (coef_H * Math.pow(BOMBA.Q_BEP, 2));
+            let p_bep_nom = (BOMBA.Q_BEP * h_bep_nom * BOMBA.RHO * 9.81) / (3600000 * (BOMBA.EFF_MAX / 100));
+            return (p_bep_nom * 0.45) * Math.pow(n, 3);
+        }
+        if (eff <= 5) eff = 5; 
+        return (q * h * BOMBA.RHO * 9.81) / (3600000 * (eff / 100));
+    }
+
+    function calcularNPSHr(q, n) {
+        let q_nom = q / n;
+        let npsh_nom = 2 + Math.pow((q_nom / (BOMBA.Q_BEP * 0.8)), 2.5); 
+        return npsh_nom * Math.pow(n, 2); 
+    }
+
+    function regenerarCurvas() {
+        datasetHead.length = 0; datasetEff.length = 0; datasetPow.length = 0; datasetNpsh.length = 0;
+        
+        let maxQ_actual = BOMBA.Q_MAX * n_speed;
+        let maxQ_extrapolado = maxQ_actual * 1.25; 
+        let iterStep = maxQ_extrapolado / 100; 
+        
+        for (let i = 0; i <= maxQ_extrapolado; i += iterStep) {
+            let h = calcularAltura(i, n_speed);
+            let e = calcularEficiencia(i, n_speed);
+            datasetHead.push({ x: i, y: h });
+            datasetEff.push({ x: i, y: e });
+            datasetPow.push({ x: i, y: calcularPotencia(i, h, e, n_speed) });
+            datasetNpsh.push({ x: i, y: calcularNPSHr(i, n_speed) });
+        }
+    }
+
+    /* =========================================
+       3. AUTO-ESCALADO DINÁMICO
+       ========================================= */
+    function autoEscalarGrafico() {
+        let maxQ_actual = BOMBA.Q_MAX * n_speed;
+        let maxQ_extrapolado = maxQ_actual * 1.25; 
+
+        // Escala X adaptativa
+        hmiChart.options.scales.x.max = Math.ceil(maxQ_extrapolado);
+
+        // Escala Y adaptativa (Buscamos el pico real en los datos de Altura y NPSHr)
+        let maxH_Npsh = 0;
+        for (let pt of datasetHead) if (pt.y > maxH_Npsh) maxH_Npsh = pt.y;
+        for (let pt of datasetNpsh) if (pt.y > maxH_Npsh) maxH_Npsh = pt.y;
+        hmiChart.options.scales.y.max = Math.ceil(Math.max(maxH_Npsh, 10) * 1.15); // 15% de holgura superior
+        
+        // Escala Y2 adaptativa (Buscamos el pico real absoluto en la curva de Potencia)
+        let maxP = 0;
+        for (let pt of datasetPow) if (pt.y > maxP) maxP = pt.y;
+        hmiChart.options.scales.y2.max = Math.ceil(Math.max(maxP, 5) * 1.20); // 20% de holgura superior
+        
+        hmiChart.update('none');
+    }
+
+    /* =========================================
+       4. PLUGINS DE CHART.JS (HMI RENDERER)
+       ========================================= */
+    const cursorPlugin = {
+        id: 'cursorPlugin',
+        afterDraw: (chart) => { 
+            const ctx = chart.ctx;
+            const xAxis = chart.scales.x;
+            if(currentQ > xAxis.max) return; 
+            const xPixel = xAxis.getPixelForValue(currentQ);
+            
+            ctx.save();
+            ctx.beginPath(); ctx.moveTo(xPixel, chart.chartArea.top); ctx.lineTo(xPixel, chart.chartArea.bottom);
+            ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(203, 213, 225, 0.5)'; ctx.stroke();
+            ctx.restore();
+        }
+    };
+
+    const bepPlugin = {
+        id: 'bepPlugin',
+        beforeDraw: (chart) => {
+            const ctx = chart.ctx;
+            const xAxis = chart.scales.x;
+            const currentBEP = BOMBA.Q_BEP * n_speed;
+            if(currentBEP > xAxis.max) return; 
+            const xPixel = xAxis.getPixelForValue(currentBEP);
+            
+            ctx.save();
+            const xMinSafe = xAxis.getPixelForValue(currentBEP * 0.8);
+            const xMaxSafe = xAxis.getPixelForValue(currentBEP * 1.1);
+            ctx.fillStyle = 'rgba(52, 211, 153, 0.05)';
+            ctx.fillRect(xMinSafe, chart.chartArea.top, xMaxSafe - xMinSafe, chart.chartArea.bottom - chart.chartArea.top);
+
+            ctx.beginPath(); ctx.moveTo(xPixel, chart.chartArea.top); ctx.lineTo(xPixel, chart.chartArea.bottom);
+            ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(52, 211, 153, 0.6)'; ctx.setLineDash([4, 4]); ctx.stroke();
+            ctx.restore();
+        }
+    };
+
+    /* =========================================
+       5. INICIALIZACIÓN DE CHART.JS
+       ========================================= */
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    recalcularCoeficientes();
+    regenerarCurvas();
+
+    const runoutLineSegment = {
+        borderDash: ctx => ctx.p0.parsed.x >= (BOMBA.Q_MAX * n_speed) ? [5, 5] : undefined,
+    };
+
+    let hmiChart = new Chart(ctx, {
+        type: 'scatter', 
+        plugins: [bepPlugin, cursorPlugin], 
+        data: {
+            datasets: [
+                { label: 'Altura (m)', data: datasetHead, borderColor: '#4f46e5', borderWidth: 2, showLine: true, pointRadius: 0, yAxisID: 'y', segment: runoutLineSegment },
+                { label: 'Eficiencia (%)', data: datasetEff, borderColor: '#34d399', borderWidth: 2, showLine: true, pointRadius: 0, yAxisID: 'y1', segment: runoutLineSegment },
+                { label: 'Potencia (kW)', data: datasetPow, borderColor: '#c084fc', borderWidth: 2, showLine: true, pointRadius: 0, yAxisID: 'y2', segment: runoutLineSegment },
+                { label: 'NPSHr (m)', data: datasetNpsh, borderColor: '#f472b6', borderWidth: 2, showLine: true, pointRadius: 0, yAxisID: 'y', segment: runoutLineSegment },
+                
+                { label: 'OP H', data: [{ x: currentQ, y: 0 }], backgroundColor: '#1e293b', borderColor: '#4f46e5', borderWidth: 2, pointRadius: 6, yAxisID: 'y' },
+                { label: 'OP η', data: [{ x: currentQ, y: 0 }], backgroundColor: '#1e293b', borderColor: '#34d399', borderWidth: 2, pointRadius: 6, yAxisID: 'y1' },
+                { label: 'OP kW', data: [{ x: currentQ, y: 0 }], backgroundColor: '#1e293b', borderColor: '#c084fc', borderWidth: 2, pointRadius: 6, yAxisID: 'y2' }
+            ]
+        },
+        options: {
+            animation: false, responsive: true, maintainAspectRatio: false, interaction: { mode: null }, 
+            plugins: { tooltip: { enabled: false }, legend: { position: 'top', labels: { boxWidth: 12, font: {size: 11}, filter: (item) => !item.text.startsWith('OP ') } } },
+            scales: {
+                x: { type: 'linear', min: 0, max: BOMBA.Q_MAX * 1.25, title: { display: true, text: 'CAUDAL (m³/h)' }, grid: { color: '#334155' } },
+                y: { type: 'linear', position: 'left', min: 0, max: 120, title: { display: true, text: 'ALTURA / NPSHr (m)', color: '#4f46e5' }, grid: { color: '#334155' } },
+                y1: { type: 'linear', position: 'right', min: 0, max: 100, title: { display: true, text: 'EFICIENCIA (%)', color: '#34d399' }, grid: { drawOnChartArea: false } },
+                y2: { type: 'linear', position: 'right', min: 0, max: 150, title: { display: true, text: 'POTENCIA (kW)', color: '#c084fc' }, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+
+    /* =========================================
+       6. LÓGICA DE ACTUALIZACIÓN DEL DASHBOARD
+       ========================================= */
+    const DOM = {
+        flowSlider: document.getElementById('flow-slider'), freqSlider: document.getElementById('freq-slider'),
+        valFreq: document.getElementById('lbl-val-freq'), valFlow: document.getElementById('lbl-val-flow'),
+        kpiQ: document.getElementById('kpi-q'), kpiH: document.getElementById('kpi-h'), kpiE: document.getElementById('kpi-e'),
+        kpiP: document.getElementById('kpi-p'), kpiNpsh: document.getElementById('kpi-npsh'), kpiCosto: document.getElementById('kpi-costo'),
+        banner: document.getElementById('diagnostico-banner'), bannerIcon: document.getElementById('diagnostico-icon'), bannerText: document.getElementById('diagnostico-text'),
+        lblZonaSegura: document.getElementById('lbl-zona-segura')
+    };
+
+    function actualizarHMI() {
+        currentFreq = parseFloat(DOM.freqSlider.value);
+        currentQ = parseFloat(DOM.flowSlider.value);
+        n_speed = currentFreq / BOMBA.FREQ_NOM;
+
+        DOM.valFreq.innerText = currentFreq;
+        DOM.valFlow.innerText = currentQ;
+
+        let currentBEP = BOMBA.Q_BEP * n_speed;
+        DOM.lblZonaSegura.innerText = `${(currentBEP * 0.8).toFixed(0)} - ${(currentBEP * 1.1).toFixed(0)}`;
+
+        const currentH = calcularAltura(currentQ, n_speed);
+        const currentE = calcularEficiencia(currentQ, n_speed);
+        const currentP = calcularPotencia(currentQ, currentH, currentE, n_speed);
+        const currentNpsh = calcularNPSHr(currentQ, n_speed);
+
+        let e_bep_actual = calcularEficiencia(currentBEP, n_speed);
+        const idealP = (currentQ * currentH * BOMBA.RHO * 9.81) / (3600000 * (e_bep_actual / 100));
+        
+        let lostKw = currentP - idealP;
+        if(lostKw < 0) lostKw = 0; 
+        const costPerHour = lostKw * BOMBA.TARIFA;
+
+        DOM.kpiQ.innerText = currentQ.toFixed(0);
+        DOM.kpiH.innerText = currentH ? currentH.toFixed(1) : "0.0";
+        DOM.kpiE.innerText = currentE.toFixed(1);
+        DOM.kpiP.innerText = currentP.toFixed(1);
+        DOM.kpiNpsh.innerText = currentNpsh.toFixed(1);
+        DOM.kpiCosto.innerText = costPerHour.toFixed(2);
+
+        hmiChart.data.datasets[4].data[0] = { x: currentQ, y: currentH };
+        hmiChart.data.datasets[5].data[0] = { x: currentQ, y: currentE };
+        hmiChart.data.datasets[6].data[0] = { x: currentQ, y: currentP };
+        hmiChart.update('none'); 
+
+        const bepPercent = currentBEP > 0 ? (currentQ / currentBEP) * 100 : 0;
+        
+        DOM.banner.className = 'status-banner'; DOM.bannerIcon.className = 'fa-solid fa-lg ';
+
+        if (bepPercent < 30) {
+            DOM.banner.classList.add('status-critical'); DOM.bannerIcon.classList.add('fa-fire');
+            DOM.bannerText.innerHTML = "ALERTA RCM: Caudal Mínimo. Vaporización y fallo inminente de sello mecánico.";
+        } else if (bepPercent >= 30 && bepPercent < 80) {
+            DOM.banner.classList.add('status-warning'); DOM.bannerIcon.classList.add('fa-triangle-exclamation');
+            DOM.bannerText.innerHTML = "ADVERTENCIA: Empuje radial asimétrico (Eje Y). Fatiga en rodamientos.";
+        } else if (bepPercent >= 80 && bepPercent <= 110) {
+            DOM.banner.classList.add('status-optimal'); DOM.bannerIcon.classList.add('fa-check-double');
+            DOM.bannerText.innerHTML = "ZONA SEGURA (BEP): Máximo MTBF y eficiencia energética.";
+        } else if (bepPercent > 110 && bepPercent <= 125) {
+            DOM.banner.classList.add('status-warning'); DOM.bannerIcon.classList.add('fa-triangle-exclamation');
+            DOM.bannerText.innerHTML = "ADVERTENCIA: Alto flujo. Incremento de vibración por separación en álabes.";
+        } else {
+            DOM.banner.classList.add('status-critical'); DOM.bannerIcon.classList.add('fa-explosion');
+            DOM.bannerText.innerHTML = `ALERTA RCM: Runout Crítico. NPSHr = ${currentNpsh.toFixed(1)}m. Peligro de Cavitación y Sobreconsumo.`;
+        }
+    }
+
+    DOM.freqSlider.addEventListener('input', () => {
+        currentFreq = parseFloat(DOM.freqSlider.value);
+        n_speed = currentFreq / BOMBA.FREQ_NOM;
+        
+        let currentMaxFlow = BOMBA.Q_MAX * n_speed;
+        DOM.flowSlider.max = currentMaxFlow; 
+        
+        if (parseFloat(DOM.flowSlider.value) > currentMaxFlow) {
+            DOM.flowSlider.value = currentMaxFlow;
+        }
+
+        regenerarCurvas();
+        autoEscalarGrafico();
+        actualizarHMI();         
+    });
+
+    DOM.flowSlider.addEventListener('input', actualizarHMI);
+
+    window.aplicarDatosPlaca = function() {
+        BOMBA.FREQ_NOM = parseFloat(document.getElementById('cfg-freq-nom').value) || 50; 
+        BOMBA.Q_BEP = parseFloat(document.getElementById('cfg-q-bep').value) || 1; 
+        BOMBA.EFF_MAX = parseFloat(document.getElementById('cfg-eff-max').value) || 100;
+        BOMBA.Q_MAX = parseFloat(document.getElementById('cfg-q-max').value) || 10;
+        BOMBA.H_MAX = parseFloat(document.getElementById('cfg-h-max').value) || 100;
+        BOMBA.RHO = parseFloat(document.getElementById('cfg-rho').value) || 1000;
+        BOMBA.TARIFA = parseFloat(document.getElementById('cfg-tarifa').value) || 0.09;
+
+        if(BOMBA.Q_BEP >= BOMBA.Q_MAX) BOMBA.Q_MAX = BOMBA.Q_BEP * 1.5; 
+
+        DOM.freqSlider.max = 70;
+        currentFreq = parseFloat(DOM.freqSlider.value);
+        n_speed = currentFreq / BOMBA.FREQ_NOM;
+
+        recalcularCoeficientes();
+        regenerarCurvas();
+
+        let currentMaxFlow = BOMBA.Q_MAX * n_speed;
+        DOM.flowSlider.max = currentMaxFlow;
+        if(parseFloat(DOM.flowSlider.value) > currentMaxFlow) DOM.flowSlider.value = currentMaxFlow;
+
+        // Utilizamos el escáner absoluto en lugar de estimaciones puntuales
+        autoEscalarGrafico();
+        actualizarHMI();
+    };
+    
+    document.querySelectorAll('.panel input').forEach(input => {
+        input.addEventListener('input', aplicarDatosPlaca);
+    });
+    
+    aplicarDatosPlaca();
+
+</script>
+
+<script src="auth.js"></script>
+</body>
+</html>

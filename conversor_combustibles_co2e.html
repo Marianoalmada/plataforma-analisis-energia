@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor Avanzado de Equivalencia Energética y Huella de Carbono</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        /* Style for highlighted options in dropdowns */
+        .neutral-fuel-option {
+            color: #059669; /* emerald-600 */
+            font-weight: 600;
+        }
+        details > summary {
+            list-style: none; /* Remove default marker */
+        }
+        details > summary::-webkit-details-marker {
+            display: none; /* Remove default marker for Safari */
+        }
+        details[open] summary svg {
+            transform: rotate(180deg);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-center py-2 text-sm font-bold tracking-wider">Inteligencia Energética — Herramientas de Ingeniería</div>
+
+    <div class="flex items-center justify-center flex-grow p-4">
+    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        <!-- Encabezado y Selector de Unidad PCI -->
+        <div class="text-center">
+            <div class="flex items-center justify-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-emerald-500 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 01-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                <h1 class="text-3xl font-bold text-blue-600">Análisis Energético, Económico y Ambiental</h1>
+            </div>
+            <p class="text-slate-500 mb-4">Compara combustibles por energía, costo y emisiones de CO₂e.</p>
+            <div class="flex justify-center items-center gap-2">
+                <label for="pci-unit-selector" class="text-sm font-medium text-slate-600">Mostrar Poder Calorífico en:</label>
+                <select id="pci-unit-selector" class="py-1 px-2 border border-slate-300 bg-white rounded-md shadow-sm text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"></select>
+            </div>
+        </div>
+
+        <!-- Contenedor Principal de Calculadora -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
+            <!-- Columna Izquierda: Combustible de Origen -->
+            <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 h-full flex flex-col">
+                <h2 class="text-xl font-semibold text-slate-700 mb-4">Combustible de Origen</h2>
+                <div class="space-y-4 flex-grow">
+                    <div>
+                        <label for="source-fuel" class="block text-sm font-medium text-slate-600">Seleccionar combustible:</label>
+                        <select id="source-fuel" class="mt-1 block w-full py-2 px-3 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
+                    </div>
+                    <div>
+                        <label for="source-quantity" class="block text-sm font-medium text-slate-600">Cantidad:</label>
+                        <div class="mt-1 flex gap-2">
+                            <input type="number" id="source-quantity" value="1" min="0" class="block w-2/3 py-2 px-3 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Ej: 100">
+                            <select id="source-quantity-unit" class="block w-1/3 py-2 px-3 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
+                        </div>
+                    </div>
+                    <div id="source-fuel-info" class="text-sm text-slate-500 bg-white p-3 rounded-md border border-slate-200"></div>
+                </div>
+                <div class="pt-4 mt-4 border-t border-slate-200 space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600">Energía total contenida:</label>
+                        <p id="total-energy-display" class="text-xl font-bold text-slate-700"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600">Huella de Carbono:</label>
+                        <p id="source-carbon-footprint" class="text-xl font-bold text-slate-700"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Combustible de Reemplazo y Resultado -->
+            <div class="bg-emerald-50 p-6 rounded-lg border border-emerald-200 h-full flex flex-col">
+                 <h2 class="text-xl font-semibold text-slate-700 mb-4">Combustible de Reemplazo</h2>
+                <div class="space-y-4 flex-grow">
+                    <div>
+                        <label for="target-fuel" class="block text-sm font-medium text-slate-600">Seleccionar combustible:</label>
+                        <select id="target-fuel" class="mt-1 block w-full py-2 px-3 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></select>
+                    </div>
+                    <div id="target-fuel-info" class="text-sm text-slate-500 bg-white p-3 rounded-md border border-slate-200"></div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600">Cantidad equivalente necesaria en:</label>
+                         <div class="mt-1 flex items-end gap-2">
+                            <p id="result" class="text-4xl font-bold text-emerald-600 leading-none"></p>
+                            <select id="target-quantity-unit" class="block w-1/3 py-2 px-3 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm self-center"></select>
+                        </div>
+                    </div>
+                </div>
+                 <div class="pt-4 mt-4 border-t border-emerald-200">
+                    <label class="block text-sm font-medium text-slate-600">Huella de Carbono Equivalente:</label>
+                    <p id="target-carbon-footprint" class="text-xl font-bold text-emerald-700"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Costos -->
+        <div id="cost-summary" class="bg-slate-100 p-6 rounded-lg border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                 <h3 class="text-xl font-semibold text-slate-800">Análisis de Costos</h3>
+                 <div class="flex items-center gap-2">
+                    <label for="currency-selector" class="text-sm font-medium text-slate-600">Moneda:</label>
+                    <select id="currency-selector" class="py-1 px-2 border border-slate-300 bg-white rounded-md shadow-sm text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="usd">U$S</option>
+                        <option value="eur">€</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                    <label id="source-cost-label" class="block text-sm font-medium text-slate-600">Costo Comb. Origen</label>
+                    <input type="number" id="source-cost-input" class="mt-1 text-center w-full py-1 px-2 border border-slate-300 rounded-md">
+                    <p id="source-total-cost" class="text-xl font-bold text-slate-700 mt-2"></p>
+                </div>
+                <div>
+                    <label id="target-cost-label" class="block text-sm font-medium text-slate-600">Costo Comb. Reemplazo</label>
+                    <input type="number" id="target-cost-input" class="mt-1 text-center w-full py-1 px-2 border border-slate-300 rounded-md">
+                     <p id="target-total-cost" class="text-xl font-bold text-emerald-700 mt-2"></p>
+                </div>
+                <div class="bg-white p-3 rounded-md">
+                     <label class="block text-sm font-medium text-slate-600">Ahorro/Sobrecosto</label>
+                     <p id="cost-savings" class="text-2xl font-bold mt-2"></p>
+                     <p id="cost-savings-subtitle" class="text-xs text-slate-500"></p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Resumen de Huella de Carbono -->
+        <div id="carbon-summary" class="bg-slate-100 p-6 rounded-lg border border-slate-200">
+            <div class="flex justify-center items-center gap-4 mb-2">
+                <h3 class="text-xl font-semibold text-slate-800">Análisis de Emisiones</h3>
+                <div class="flex items-center gap-2">
+                    <label for="carbon-unit-selector" class="text-sm font-medium text-slate-600">Mostrar en:</label>
+                    <select id="carbon-unit-selector" class="py-1 px-2 border border-slate-300 bg-white rounded-md shadow-sm text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"></select>
+                </div>
+            </div>
+            <p id="carbon-savings" class="text-3xl font-bold mt-2 text-center"></p>
+            <p id="carbon-savings-subtitle" class="text-sm text-slate-500 text-center"></p>
+        </div>
+
+        <!-- Fuentes de Datos -->
+        <div class="pt-2">
+            <details class="bg-slate-50 rounded-lg border border-slate-200 transition-all duration-300">
+                <summary class="p-4 cursor-pointer font-semibold text-slate-700 flex justify-between items-center">
+                    <span>Fuentes de Datos y Tablas de Referencia</span>
+                    <svg class="w-5 h-5 transition-transform duration-300 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </summary>
+                <div class="p-6 border-t border-slate-200 space-y-8">
+                    <p class="text-sm text-slate-600">
+                        Los valores de poder calorífico, costos y factores de emisión son promedios de referencia basados en fuentes internacionales estándar. Pueden variar según la composición específica del combustible, la tecnología, las condiciones locales y la volatilidad del mercado.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div>
+                            <h4 class="font-semibold text-slate-800 mb-2">Poder Calorífico Inferior (PCI)</h4>
+                            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="w-full text-sm text-left text-slate-500">
+                                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-2">Combustible</th>
+                                            <th scope="col" class="px-4 py-2 text-right">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pci-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-slate-800 mb-2">Factor de Emisión (CO₂e)</h4>
+                            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="w-full text-sm text-left text-slate-500">
+                                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-2">Combustible</th>
+                                            <th scope="col" class="px-4 py-2 text-right">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="carbon-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-slate-800 mb-2">Costos Típicos de Referencia</h4>
+                            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="w-full text-sm text-left text-slate-500">
+                                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-2">Combustible</th>
+                                            <th scope="col" class="px-4 py-2 text-right">Costo (U$S)</th>
+                                            <th scope="col" class="px-4 py-2 text-right">Costo (€)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cost-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-6 text-center">
+                        Fuentes principales: IPCC, IEA, y promedios de mercados energéticos internacionales.
+                    </p>
+                </div>
+            </details>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Base de datos de combustibles
+            const fuels = {
+                'Gas Natural': { type: 'gas', pci: 36.0, pciUnit: { quantity: 'm³' }, carbonFactor: 2.02, cost: { usd: 0.168, eur: 0.153 } }, // 168 USD/dam³ = 0.168 USD/m³
+                'Biogás': { type: 'gas', pci: 22.0, pciUnit: { quantity: 'm³' }, carbonFactor: 0.1, cost: { usd: 0.40, eur: 0.36 } },
+                'GLP (Propano)': { type: 'solid', pci: 46.4, pciUnit: { quantity: 'kg' }, carbonFactor: 2.95, cost: { usd: 1.10, eur: 1.00 } }, // 1100 USD/Tn = 1.10 USD/kg
+                'Gasoil (Diesel)': { type: 'liquid', pci: 35.8, pciUnit: { quantity: 'litro' }, carbonFactor: 2.68, cost: { usd: 1.30, eur: 1.18 } }, // 1.30 USD/litro
+                'Biodiesel': { type: 'liquid', pci: 33.0, pciUnit: { quantity: 'litro' }, carbonFactor: 0.15, cost: { usd: 1.30, eur: 1.18 } },
+                'Fuel Oil': { type: 'liquid', pci: 39.0, pciUnit: { quantity: 'litro' }, carbonFactor: 3.02, cost: { usd: 0.90, eur: 0.82 } },
+                'Nafta (Gasolina)': { type: 'liquid', pci: 33.5, pciUnit: { quantity: 'litro' }, carbonFactor: 2.32, cost: { usd: 1.20, eur: 1.09 } },
+                'Leña Seca': { type: 'solid', pci: 16.5, pciUnit: { quantity: 'kg' }, carbonFactor: 0.12, cost: { usd: 0.20, eur: 0.18 } }, // Factor neto de GEI no-CO2 y ciclo de vida biogénico
+                'Pellets de Madera': { type: 'solid', pci: 17.7, pciUnit: { quantity: 'kg' }, carbonFactor: 0.08, cost: { usd: 0.125, eur: 0.114 } }, // 125 USD/Tn = 0.125 USD/kg
+                'Madera en Chip': { type: 'solid', pci: 13.0, pciUnit: { quantity: 'kg' }, carbonFactor: 0.06, cost: { usd: 0.05, eur: 0.045 } }, // 50 USD/Tn = 0.05 USD/kg
+                'Carbón Mineral': { type: 'solid', pci: 25.0, pciUnit: { quantity: 'kg' }, carbonFactor: 2.37, cost: { usd: 0.15, eur: 0.14 } },
+                'Carbón Vegetal': { type: 'solid', pci: 29.5, pciUnit: { quantity: 'kg' }, carbonFactor: 0.18, cost: { usd: 0.80, eur: 0.73 } }, // Ajuste a pirólisis biogénica moderna eficiente
+                'Hidrógeno Verde': { type: 'solid', pci: 120.0, pciUnit: { quantity: 'kg' }, carbonFactor: 0.01, cost: { usd: 5.00, eur: 4.55 } },
+                'Elec. (Mix Energético)': { type: 'electricity', pci: 3.6, pciUnit: { quantity: 'kWh' }, carbonFactor: 0.35, cost: { usd: 0.085, eur: 0.077 } }, // 85 USD/MWh = 0.085 USD/kWh
+                'Elec. (Térmica Gas)': { type: 'electricity', pci: 3.6, pciUnit: { quantity: 'kWh' }, carbonFactor: 0.45, cost: { usd: 0.080, eur: 0.073 } },
+                'Elec. (Térmica Fuel Oil)': { type: 'electricity', pci: 3.6, pciUnit: { quantity: 'kWh' }, carbonFactor: 0.82, cost: { usd: 0.110, eur: 0.100 } },
+                'Elec. (Hidráulica)': { type: 'electricity', pci: 3.6, pciUnit: { quantity: 'kWh' }, carbonFactor: 0.02, cost: { usd: 0.040, eur: 0.036 } },
+                'Elec. (Eólica)': { type: 'electricity', pci: 3.6, pciUnit: { quantity: 'kWh' }, carbonFactor: 0.015, cost: { usd: 0.045, eur: 0.041 } },
+                'Elec. (Solar FV)': { type: 'electricity', pci: 3.6, pciUnit: { quantity: 'kWh' }, carbonFactor: 0.045, cost: { usd: 0.035, eur: 0.032 } },
+                'Elec. (Nuclear)': { type: 'electricity', pci: 3.6, pciUnit: { quantity: 'kWh' }, carbonFactor: 0.012, cost: { usd: 0.050, eur: 0.045 } }
+            };
+
+            const unitData = {
+                types: {
+                    'gas': [{ name: 'm³', factor: 1 }, { name: 'dam³', factor: 0.001 }, { name: 'ft³', factor: 35.3147 }],
+                    'solid': [{ name: 'kg', factor: 1 }, { name: 'Tn', factor: 0.001 }, { name: 'lb', factor: 2.20462 }],
+                    'liquid': [{ name: 'litro', factor: 1 }, { name: 'm³', factor: 0.001 }, { name: 'gal (US)', factor: 0.264172 }],
+                    'electricity': [{ name: 'kWh', factor: 1 }, { name: 'MWh', factor: 0.001 }]
+                },
+                energy: [{ name: 'MJ', factor: 1 }, { name: 'kWh', factor: 0.277778 }, { name: 'MWh', factor: 0.000277778 }, { name: 'BTU', factor: 947.817 }, { name: 'MMBTU', factor: 0.000947817 }, { name: 'Kcal', factor: 239.006 }],
+                mass: [{ name: 'kg', factor: 1 }, { name: 'Tn', factor: 0.001 }, { name: 'lb', factor: 2.20462 }]
+            };
+
+            // Referencias al DOM
+            const sourceFuelSelect = document.getElementById('source-fuel'),
+                  sourceQuantityInput = document.getElementById('source-quantity'),
+                  sourceQuantityUnitSelect = document.getElementById('source-quantity-unit'),
+                  sourceFuelInfo = document.getElementById('source-fuel-info'),
+                  totalEnergyDisplay = document.getElementById('total-energy-display'),
+                  sourceCarbonFootprintDisplay = document.getElementById('source-carbon-footprint'),
+                  targetFuelSelect = document.getElementById('target-fuel'),
+                  targetQuantityUnitSelect = document.getElementById('target-quantity-unit'),
+                  targetFuelInfo = document.getElementById('target-fuel-info'),
+                  resultDisplay = document.getElementById('result'),
+                  targetCarbonFootprintDisplay = document.getElementById('target-carbon-footprint'),
+                  pciUnitSelector = document.getElementById('pci-unit-selector'),
+                  carbonUnitSelector = document.getElementById('carbon-unit-selector'),
+                  carbonSavingsDisplay = document.getElementById('carbon-savings'),
+                  carbonSavingsSubtitle = document.getElementById('carbon-savings-subtitle'),
+                  currencySelector = document.getElementById('currency-selector'),
+                  sourceCostLabel = document.getElementById('source-cost-label'),
+                  targetCostLabel = document.getElementById('target-cost-label'),
+                  sourceCostInput = document.getElementById('source-cost-input'),
+                  targetCostInput = document.getElementById('target-cost-input'),
+                  sourceTotalCostDisplay = document.getElementById('source-total-cost'),
+                  targetTotalCostDisplay = document.getElementById('target-total-cost'),
+                  costSavingsDisplay = document.getElementById('cost-savings'),
+                  costSavingsSubtitle = document.getElementById('cost-savings-subtitle');
+
+            // --- Funciones de Utilidad ---
+            function populateUnitSelect(select, units) { select.innerHTML = ''; units.forEach(u => select.add(new Option(u.name, u.name))); }
+            function getUnitFactor(type, name) { const u = (unitData.types[type] || unitData[type]).find(un => un.name === name); return u ? u.factor : 1; }
+            function updateQuantityUnitOptions(fuelSel, quantUnitSel) { const fuel = fuels[fuelSel.value]; if (fuel?.type) populateUnitSelect(quantUnitSel, unitData.types[fuel.type]); }
+            function updateAllQuantityUnitOptions() { updateQuantityUnitOptions(sourceFuelSelect, sourceQuantityUnitSelect); updateQuantityUnitOptions(targetFuelSelect, targetQuantityUnitSelect); }
+
+            // --- Funciones Principales ---
+            function updateFuelInfo() {
+                const pciUnit = pciUnitSelector.value;
+                const pciFactor = getUnitFactor('energy', pciUnit);
+                const sourceFuel = fuels[sourceFuelSelect.value];
+                sourceFuelInfo.innerHTML = `PCI: <strong>${(sourceFuel.pci * pciFactor).toFixed(2)} ${pciUnit}/${sourceFuel.pciUnit.quantity}</strong>`;
+                const targetFuel = fuels[targetFuelSelect.value];
+                targetFuelInfo.innerHTML = `PCI: <strong>${(targetFuel.pci * pciFactor).toFixed(2)} ${pciUnit}/${targetFuel.pciUnit.quantity}</strong>`;
+            }
+
+            function updateCostLabels() {
+                const sourceUnit = sourceQuantityUnitSelect.value;
+                const targetUnit = targetQuantityUnitSelect.value;
+                sourceCostLabel.innerHTML = `Costo Comb. Origen <span class="text-xs font-normal text-slate-500">(/${sourceUnit})</span>`;
+                targetCostLabel.innerHTML = `Costo Comb. Reemplazo <span class="text-xs font-normal text-slate-500">(/${targetUnit})</span>`;
+            }
+
+            function updateCostInputs() {
+                const currency = currencySelector.value;
+                const sourceFuel = fuels[sourceFuelSelect.value];
+                const targetFuel = fuels[targetFuelSelect.value];
+
+                const sourceSelectedUnit = sourceQuantityUnitSelect.value;
+                const sourceUnitFactor = getUnitFactor(sourceFuel.type, sourceSelectedUnit);
+                sourceCostInput.value = (sourceFuel.cost[currency] / sourceUnitFactor).toFixed(3);
+
+                const targetSelectedUnit = targetQuantityUnitSelect.value;
+                const targetUnitFactor = getUnitFactor(targetFuel.type, targetSelectedUnit);
+                targetCostInput.value = (targetFuel.cost[currency] / targetUnitFactor).toFixed(3);
+            }
+
+            function calculateEquivalence() {
+                const sourceFuel = fuels[sourceFuelSelect.value],
+                      targetFuel = fuels[targetFuelSelect.value],
+                      sourceQuantity = parseFloat(sourceQuantityInput.value) || 0;
+
+                const sourceUnitFactor = getUnitFactor(sourceFuel.type, sourceQuantityUnitSelect.value);
+                const sourceQuantityBase = sourceQuantity / sourceUnitFactor;
+                const totalEnergyMJ = sourceQuantityBase * sourceFuel.pci;
+
+                const targetQuantityBase = totalEnergyMJ / targetFuel.pci;
+
+                // --- Cálculos de Energía ---
+                const pciUnit = pciUnitSelector.value;
+                const pciFactor = getUnitFactor('energy', pciUnit);
+                totalEnergyDisplay.textContent = `${(totalEnergyMJ * pciFactor).toFixed(3)} ${pciUnit}`;
+
+                const targetUnitFactor = getUnitFactor(targetFuel.type, targetQuantityUnitSelect.value);
+                resultDisplay.textContent = (targetQuantityBase * targetUnitFactor).toFixed(2);
+
+                // --- Cálculos de Carbono ---
+                const carbonUnit = carbonUnitSelector.value;
+                const carbonFactor = getUnitFactor('mass', carbonUnit);
+                const sourceTotalCarbon = sourceQuantityBase * sourceFuel.carbonFactor;
+                const targetTotalCarbon = targetQuantityBase * targetFuel.carbonFactor;
+                sourceCarbonFootprintDisplay.textContent = `${(sourceTotalCarbon * carbonFactor).toFixed(3)} ${carbonUnit} CO₂e`;
+                targetCarbonFootprintDisplay.textContent = `${(targetTotalCarbon * carbonFactor).toFixed(3)} ${carbonUnit} CO₂e`;
+
+                // --- Cálculos de Costos ---
+                const currency = currencySelector.value;
+                const currencySymbol = currency === 'usd' ? 'U$S' : '€';
+
+                const sourceCostPerSelectedUnit = parseFloat(sourceCostInput.value) || 0;
+                const sourceCostPerBaseUnit = sourceCostPerSelectedUnit * getUnitFactor(sourceFuel.type, sourceQuantityUnitSelect.value);
+                const sourceTotalCost = sourceQuantityBase * sourceCostPerBaseUnit;
+
+                const targetCostPerSelectedUnit = parseFloat(targetCostInput.value) || 0;
+                const targetCostPerBaseUnit = targetCostPerSelectedUnit * getUnitFactor(targetFuel.type, targetQuantityUnitSelect.value);
+                const targetTotalCost = targetQuantityBase * targetCostPerBaseUnit;
+
+                sourceTotalCostDisplay.textContent = `${currencySymbol} ${sourceTotalCost.toFixed(2)}`;
+                targetTotalCostDisplay.textContent = `${currencySymbol} ${targetTotalCost.toFixed(2)}`;
+
+                updateFuelInfo();
+                updateCarbonSummary(sourceTotalCarbon, targetTotalCarbon);
+                updateCostSummary(sourceTotalCost, targetTotalCost, currencySymbol);
+                updateCostLabels();
+            }
+
+            function updateCostSummary(sourceCost, targetCost, symbol) {
+                const savings = sourceCost - targetCost;
+                const savingsPercentage = sourceCost > 0 ? (savings / sourceCost) * 100 : 0;
+                costSavingsDisplay.classList.remove('text-emerald-600', 'text-red-600', 'text-slate-700');
+                if (Math.abs(savings) < 0.01) {
+                    costSavingsDisplay.textContent = `${symbol} 0.00`;
+                    costSavingsSubtitle.textContent = "Sin cambio de costo significativo";
+                    costSavingsDisplay.classList.add('text-slate-700');
+                } else if (savings > 0) {
+                    costSavingsDisplay.textContent = `↓ ${symbol} ${savings.toFixed(2)}`;
+                    costSavingsSubtitle.textContent = `Ahorro del ${savingsPercentage.toFixed(1)}%`;
+                    costSavingsDisplay.classList.add('text-emerald-600');
+                } else {
+                    costSavingsDisplay.textContent = `↑ ${symbol} ${Math.abs(savings).toFixed(2)}`;
+                    costSavingsSubtitle.textContent = `Sobrecosto del ${Math.abs(savingsPercentage).toFixed(1)}%`;
+                    costSavingsDisplay.classList.add('text-red-600');
+                }
+            }
+
+            function updateCarbonSummary(sourceCarbon, targetCarbon) {
+                const carbonUnit = carbonUnitSelector.value;
+                const carbonFactor = getUnitFactor('mass', carbonUnit);
+                const savings = (sourceCarbon - targetCarbon) * carbonFactor;
+                const savingsPercentage = sourceCarbon > 0 ? ((sourceCarbon - targetCarbon) / sourceCarbon) * 100 : 0;
+                carbonSavingsDisplay.classList.remove('text-emerald-600', 'text-red-600', 'text-slate-700');
+                if (Math.abs(savings) < 0.01) {
+                    carbonSavingsDisplay.textContent = `0.00 ${carbonUnit} CO₂e`;
+                    carbonSavingsSubtitle.textContent = "El cambio no altera significativamente las emisiones.";
+                    carbonSavingsDisplay.classList.add('text-slate-700');
+                } else if (savings > 0) {
+                    carbonSavingsDisplay.textContent = `↓ ${savings.toFixed(2)} ${carbonUnit} CO₂e`;
+                    carbonSavingsSubtitle.textContent = `Reducción de emisiones del ${savingsPercentage.toFixed(1)}%.`;
+                    carbonSavingsDisplay.classList.add('text-emerald-600');
+                } else {
+                    carbonSavingsDisplay.textContent = `↑ ${Math.abs(savings).toFixed(2)} ${carbonUnit} CO₂e`;
+                    carbonSavingsSubtitle.textContent = `Aumento de emisiones del ${Math.abs(savingsPercentage).toFixed(1)}%.`;
+                    carbonSavingsDisplay.classList.add('text-red-600');
+                }
+            }
+
+            function updatePciReferenceTable() {
+                const pciTableBody = document.getElementById('pci-table-body');
+                const pciUnit = pciUnitSelector.value || 'MJ';
+                const pciFactor = getUnitFactor('energy', pciUnit);
+                pciTableBody.innerHTML = '';
+                Object.keys(fuels).sort().forEach(name => {
+                    const fuel = fuels[name];
+                    const pciConverted = fuel.pci * pciFactor;
+                    pciTableBody.innerHTML += `<tr class="bg-white border-b border-slate-200"><td class="px-4 py-2 font-medium text-slate-900">${name}</td><td class="px-4 py-2 text-right">${pciConverted.toFixed(3)} ${pciUnit}/${fuel.pciUnit.quantity}</td></tr>`;
+                });
+            }
+
+            function fullRecalculation() {
+                updateAllQuantityUnitOptions();
+                updateCostInputs();
+                calculateEquivalence();
+            }
+
+            // --- Inicialización y Event Listeners ---
+            function initialize() {
+                const fuelNames = Object.keys(fuels).sort();
+
+                fuelNames.forEach(name => {
+                    const fuel = fuels[name], isNeutral = fuel.carbonFactor < 0.2;
+                    const optionSource = new Option(name, name), optionTarget = new Option(name, name);
+                    if (isNeutral) { optionSource.classList.add('neutral-fuel-option'); optionTarget.classList.add('neutral-fuel-option'); }
+                    sourceFuelSelect.add(optionSource);
+                    targetFuelSelect.add(optionTarget);
+                });
+
+                targetFuelSelect.value = fuelNames.length > 1 ? fuelNames[1] : fuelNames[0];
+
+                populateUnitSelect(pciUnitSelector, unitData.energy);
+                populateUnitSelect(carbonUnitSelector, unitData.mass);
+
+                const carbonTableBody = document.getElementById('carbon-table-body');
+                const costTableBody = document.getElementById('cost-table-body');
+                fuelNames.forEach(name => {
+                    const fuel = fuels[name];
+                    const unit = fuel.pciUnit.quantity;
+                    const isNeutral = fuel.carbonFactor < 0.2, highlightClass = isNeutral ? 'bg-emerald-50' : 'bg-white';
+                    carbonTableBody.innerHTML += `<tr class="${highlightClass} border-b border-slate-200"><td class="px-4 py-2 font-medium text-slate-900">${name}</td><td class="px-4 py-2 text-right">${fuel.carbonFactor} kg CO₂e/${unit}</td></tr>`;
+                    costTableBody.innerHTML += `<tr class="bg-white border-b border-slate-200"><td class="px-4 py-2 font-medium text-slate-900">${name}</td><td class="px-4 py-2 text-right">${fuel.cost.usd.toFixed(2)} / ${unit}</td><td class="px-4 py-2 text-right">${fuel.cost.eur.toFixed(2)} / ${unit}</td></tr>`;
+                });
+
+                function handleCostReferenceChange() {
+                    updateCostInputs();
+                    calculateEquivalence();
+                }
+
+                sourceQuantityInput.addEventListener('input', calculateEquivalence);
+                sourceCostInput.addEventListener('input', calculateEquivalence);
+                targetCostInput.addEventListener('input', calculateEquivalence);
+                carbonUnitSelector.addEventListener('change', calculateEquivalence);
+
+                sourceFuelSelect.addEventListener('change', fullRecalculation);
+                targetFuelSelect.addEventListener('change', fullRecalculation);
+
+                currencySelector.addEventListener('change', handleCostReferenceChange);
+                sourceQuantityUnitSelect.addEventListener('change', handleCostReferenceChange);
+                targetQuantityUnitSelect.addEventListener('change', handleCostReferenceChange);
+
+                pciUnitSelector.addEventListener('change', () => {
+                    updatePciReferenceTable();
+                    calculateEquivalence();
+                });
+
+                updatePciReferenceTable();
+                fullRecalculation();
+            }
+            initialize();
+        });
+    </script>
+    <!-- Control de acceso compartido: auth.js inyecta la pantalla de login -->
+    <script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Pérdidas en Vanos</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de la fuente Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .form-label {
+            @apply block text-sm font-medium text-gray-700 mb-1;
+        }
+        .form-input {
+            @apply w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm p-2 text-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50;
+        }
+        .form-select {
+            @apply w-full bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm p-2 text-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50;
+        }
+        .form-input-sm {
+            @apply w-24 bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm p-2 text-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50;
+        }
+        .card {
+            @apply bg-white shadow-lg rounded-lg p-6;
+        }
+        .result-value {
+            @apply text-2xl font-bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen">
+    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-center py-2 text-sm font-bold tracking-wider">Inteligencia Energética — Herramientas de Ingeniería</div>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-blue-600 text-center">Calculadora Avanzada de Pérdidas Energéticas en Vanos</h1>
+            <p class="text-center text-indigo-600 text-sm">Herramienta para expertos basada en manuales técnicos de cortinas de aire.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Columna de Entradas -->
+            <div class="md:col-span-1 space-y-6">
+                
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 border-b border-gray-200 pb-2">Parámetros del Vano</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="width" class="form-label">Ancho (W) (m)</label>
+                            <input type="number" id="width" class="form-input" value="3">
+                        </div>
+                        <div>
+                            <label for="height" class="form-label">Alto (H) (m)</label>
+                            <input type="number" id="height" class="form-input" value="4">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 border-b border-gray-200 pb-2">Condiciones Ambientales</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="temp_in" class="form-label">Temp. Interior (°C)</label>
+                            <input type="number" id="temp_in" class="form-input" value="21">
+                        </div>
+                        <div>
+                            <label for="temp_out" class="form-label">Temp. Exterior (°C)</label>
+                            <input type="number" id="temp_out" class="form-input" value="5">
+                        </div>
+                        <div>
+                            <label for="wind_speed" class="form-label">Vel. Viento (m/s)</label>
+                            <input type="number" id="wind_speed" class="form-input" value="4">
+                        </div>
+                        <div>
+                            <label for="delta_p" class="form-label">Δ Presión (Pa)</label>
+                            <input type="number" id="delta_p" class="form-input" value="3">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 border-b border-gray-200 pb-2">Parámetros Operativos y Costos</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="hours_open" class="form-label">Horas Abierto / Día</label>
+                            <input type="number" id="hours_open" class="form-input" value="8">
+                        </div>
+                        <div>
+                            <label for="days_open" class="form-label">Días Abierto / Año</label>
+                            <input type="number" id="days_open" class="form-input" value="250">
+                        </div>
+                        <div>
+                            <label for="cost_kwh" class="form-label">Costo Eléctrico (USD/kWh)</label>
+                            <input type="number" id="cost_kwh" class="form-input" value="0.12" step="0.01">
+                        </div>
+                         <div>
+                            <label for="cost_gas_m3" class="form-label">Costo Gas (USD/m³)</label>
+                            <input type="number" id="cost_gas_m3" class="form-input" value="0.08" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 border-b border-gray-200 pb-2">Sistema HVAC Principal</h2>
+                    <div>
+                        <label for="hvac_system_type" class="form-label">Tecnología de Climatización</label>
+                        <select id="hvac_system_type" class="form-select">
+                            <option value="resistencia">Resistencia Eléctrica</option>
+                            <option value="bomba_calor" selected>Bomba de Calor / Refrigeración</option>
+                            <option value="gas">Caldera a Gas (Solo Calefacción)</option>
+                        </select>
+                    </div>
+                    <div id="hvac_hp_params_div" class="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label for="cop_hvac" class="form-label">COP (Calefacción)</label>
+                            <input type="number" id="cop_hvac" class="form-input" value="3.5" step="0.1">
+                        </div>
+                        <div>
+                            <label for="eer_hvac" class="form-label">EER (Refrigeración)</label>
+                            <input type="number" id="eer_hvac" class="form-input" value="3.0" step="0.1">
+                        </div>
+                    </div>
+                    <div id="hvac_gas_params_div" class="grid grid-cols-2 gap-4 mt-4 hidden">
+                        <div>
+                            <label for="eta_gas" class="form-label">Eficiencia Caldera (%)</label>
+                            <input type="number" id="eta_gas" class="form-input" value="90" step="1">
+                        </div>
+                        <div>
+                            <label for="pci_gas_kwh_m3" class="form-label">PCI Gas (kWh/m³)</label>
+                            <input type="number" id="pci_gas_kwh_m3" class="form-input" value="10.3" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 border-b border-gray-200 pb-2">Parámetros de Soluciones</h2>
+                    
+                    <!-- Cortina de Aire -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-indigo-600">1. Cortina de Aire</h3>
+                        <div class="flex items-center justify-between">
+                            <label for="eta_ac" class="form-label mb-0">Eficiencia Barrera (%)</label>
+                            <input type="number" id="eta_ac" class="form-input-sm" value="80">
+                        </div>
+                        
+                        <!-- Recomendación de Velocidad -->
+                        <div id="rec_velocity_info" class="text-xs bg-indigo-50 p-3 rounded-md border border-indigo-300">
+                            <!-- Contenido dinámico por JS -->
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label for="floor_velocity_ac" class="form-label mb-0">Velocidad al Piso (m/s)</label>
+                            <input type="number" id="floor_velocity_ac" class="form-input-sm" value="3.5" step="0.1">
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label for="fan_power_ac" class="form-label mb-0">Pot. Ventilador (kW)</label>
+                            <input type="number" id="fan_power_ac" class="form-input-sm" value="0.5" step="0.1">
+                        </div>
+
+                        <div>
+                            <label for="curtain_heat_type" class="form-label">Tipo Calefacción (Cortina)</label>
+                            <select id="curtain_heat_type" class="form-select">
+                                <option value="none">Sin Calefacción</option>
+                                <option value="resistencia">Resistencia Eléctrica</option>
+                                <option value="bomba_calor">Bomba de Calor (integrada)</option>
+                            </select>
+                        </div>
+
+                        <div id="curtain_heater_div" class="hidden items-center justify-between">
+                            <label for="heater_power_ac" class="form-label mb-0">Pot. Térmica Calefactor (kW)</label>
+                            <input type="number" id="heater_power_ac" class="form-input-sm" value="5" step="0.5">
+                        </div>
+
+                        <div id="cop_curtain_div" class="hidden items-center justify-between">
+                            <label for="cop_curtain" class="form-label mb-0">COP (Cortina)</label>
+                            <input type="number" id="cop_curtain" class="form-input-sm" value="3.0" step="0.1">
+                        </div>
+
+                    </div>
+                    
+                    <!-- Puerta Giratoria -->
+                    <div class="space-y-4 mt-6 pt-4 border-t border-gray-200">
+                        <h3 class="text-lg font-medium text-indigo-600">2. Puerta Giratoria</h3>
+                        <div class="flex items-center justify-between">
+                            <label for="eta_rd" class="form-label mb-0">Eficiencia (%)</label>
+                            <input type="number" id="eta_rd" class="form-input-sm" value="90">
+                        </div>
+                    </div>
+
+                </div>
+
+                <button id="calculate_btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md text-lg transition duration-300">
+                    Calcular Ahorro
+                </button>
+            </div>
+
+            <!-- Columna de Resultados -->
+            <div class="md:col-span-2 space-y-6">
+                
+                <!-- NUEVO CARD: Detalle del Cálculo -->
+                <div class="card border border-gray-300">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 border-b border-gray-200 pb-2">Detalle del Cálculo Teórico (Instantáneo)</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                            <span class="block text-sm text-gray-600">ΔT (T_in - T_out)</span>
+                            <span id="calc_delta_t" class="result-value text-gray-800">0 <span class="text-lg">°C</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-gray-600">Q_T (Caudal por Temp.)</span>
+                            <span id="calc_q_t" class="result-value text-gray-800">0 <span class="text-lg">m³/s</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-gray-600">Q_V (Caudal por Viento)</span>
+                            <span id="calc_q_v" class="result-value text-gray-800">0 <span class="text-lg">m³/s</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-gray-600">Q_P (Caudal por ΔP)</span>
+                            <span id="calc_q_p" class="result-value text-gray-800">0 <span class="text-lg">m³/s</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-gray-600">Q_Total (Suma Caudales)</span>
+                            <span id="calc_q_total" class="result-value text-gray-800">0 <span class="text-lg">m³/s</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-gray-600">Pérdida (Potencia)</span>
+                            <span id="calc_p_loss" class="result-value text-red-700">0 <span class="text-lg">kW</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-red-50 border border-red-300">
+                    <h2 class="text-xl font-semibold mb-4 text-red-700">Pérdida Actual (Sin Protección)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <span class="block text-sm text-red-600">Pérdida Energética Anual</span>
+                            <span id="loss_kwh" class="result-value text-red-700">0 <span class="text-lg">kWh/año</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-red-600">Costo de la Pérdida</span>
+                            <span id="loss_usd" class="result-value text-red-800">USD 0 <span class="text-lg">/año</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card bg-green-50 border border-green-300">
+                    <h2 class="text-xl font-semibold mb-4 text-green-700">Solución 1: Cortina de Aire</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <span class="block text-sm text-green-600">Energía Térmica Ahorrada</span>
+                            <span id="saved_ac_kwh" class="result-value text-green-700">0 <span class="text-lg">kWh/año</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-green-600">Ahorro Bruto (Costo Evitado)</span>
+                            <span id="saved_ac_usd" class="result-value text-green-700">USD 0 <span class="text-lg">/año</span></span>
+                        </div>
+                    </div>
+                    <div class="border-t border-green-200 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <span class="block text-sm text-yellow-700">Costo Operativo (Ventilador + Calef.)</span>
+                            <span id="op_cost_ac_usd" class="result-value text-yellow-800">USD 0 <span class="text-lg">/año</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-green-600">AHORRO NETO ANUAL</span>
+                            <span id="net_saved_ac_usd" class="result-value text-green-800 text-3xl">USD 0 <span class="text-2xl">/año</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-blue-50 border border-blue-300">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-700">Solución 2: Puerta Giratoria</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <span class="block text-sm text-blue-600">Energía Térmica Ahorrada</span>
+                            <span id="saved_rd_kwh" class="result-value text-blue-700">0 <span class="text-lg">kWh/año</span></span>
+                        </div>
+                        <div>
+                            <span class="block text-sm text-blue-600">AHORRO NETO ANUAL</span>
+                            <span id="net_saved_rd_usd" class="result-value text-blue-800 text-3xl">USD 0 <span class="text-2xl">/año</span></span>
+                        </div>
+                    </div>
+                     <p class="text-xs text-gray-600 mt-4">(Se asume costo operativo despreciable para la puerta giratoria).</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // --- Constantes Físicas ---
+        // Movidas dentro de calculateSavings para evitar conflictos de scope.
+
+        // --- Elementos del DOM ---
+        const btn = document.getElementById('calculate_btn');
+        const heightInput = document.getElementById('height');
+        const recVelocityInfo = document.getElementById('rec_velocity_info');
+        
+        // --- UI HVAC Principal ---
+        const hvacSystemType = document.getElementById('hvac_system_type');
+        const hvacHpParamsDiv = document.getElementById('hvac_hp_params_div');
+        const hvacGasParamsDiv = document.getElementById('hvac_gas_params_div');
+
+        // --- UI Cortina de Aire ---
+        const curtainHeatType = document.getElementById('curtain_heat_type');
+        const curtainHeaterDiv = document.getElementById('curtain_heater_div');
+        const copCurtainDiv = document.getElementById('cop_curtain_div');
+
+        // --- Lógica de UI ---
+        
+        // Formatear números
+        const fN = (num, decimals = 0) => {
+            return num.toLocaleString('es-AR', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        };
+
+        // Formatear moneda
+        const fC = (num) => {
+            return `USD ${fN(num, 2)}`;
+        };
+
+        // Actualizar recomendación de velocidad
+        const updateRecVelocity = () => {
+            const h = parseFloat(heightInput.value) || 0;
+            let recVel = 0;
+            if (h < 2.5) {
+                recVel = 2.5;
+            } else if (h <= 4.2) {
+                recVel = 3.0;
+            } else {
+                recVel = 4.0;
+            }
+            recVelocityInfo.innerHTML = `<span class="font-bold text-indigo-700">Info (ISO 27327-1):</span> Para una altura de ${fN(h, 1)} m, se recomienda una velocidad al piso de <strong>${fN(recVel, 1)} m/s</strong> para una barrera efectiva.`;
+        };
+
+        // --- Control de visibilidad de inputs ---
+        
+        // HVAC Principal
+        hvacSystemType.addEventListener('change', () => {
+            const system = hvacSystemType.value;
+            hvacHpParamsDiv.classList.toggle('hidden', system !== 'bomba_calor');
+            hvacHpParamsDiv.classList.toggle('grid', system === 'bomba_calor');
+            hvacGasParamsDiv.classList.toggle('hidden', system !== 'gas');
+            hvacGasParamsDiv.classList.toggle('grid', system === 'gas');
+        });
+
+        // Calefacción de Cortina
+        curtainHeatType.addEventListener('change', () => {
+            const type = curtainHeatType.value;
+            curtainHeaterDiv.classList.toggle('hidden', type === 'none');
+            curtainHeaterDiv.classList.toggle('flex', type !== 'none');
+            
+            copCurtainDiv.classList.toggle('hidden', type !== 'bomba_calor');
+            copCurtainDiv.classList.toggle('flex', type === 'bomba_calor');
+        });
+        
+        // --- Lógica de Cálculo de Costo de Energía (Nueva Función) ---
+        /**
+         * Calcula el costo de una carga térmica (kWh) basado en la tecnología HVAC.
+         * @param {number} kwh_load - Carga térmica en kWh (Positiva para calefacción, Negativa para refrigeración).
+         * @param {string} system - Tipo de sistema ('resistencia', 'bomba_calor', 'gas').
+         * @param {object} params - Objeto con todos los costos y eficiencias.
+         * @returns {number} - Costo total en USD.
+         */
+        const getEnergyCost = (kwh_load, system, params) => {
+            if (kwh_load === 0) return 0;
+
+            // Carga de CALEFACCIÓN (kwh_load > 0)
+            if (kwh_load > 0) {
+                switch (system) {
+                    case 'resistencia':
+                        const electrical_kwh_res = kwh_load / 1.0; // COP = 1
+                        return electrical_kwh_res * params.cost_kwh;
+                    case 'bomba_calor':
+                        const electrical_kwh_hp = kwh_load / params.cop_hvac;
+                        return electrical_kwh_hp * params.cost_kwh;
+                    case 'gas':
+                        const kwh_per_m3_gas = params.pci_gas_kwh_m3 * (params.eta_gas / 100);
+                        const gas_m3_needed = kwh_load / kwh_per_m3_gas;
+                        return gas_m3_needed * params.cost_gas_m3;
+                    default:
+                        return 0;
+                }
+            }
+            // Carga de REFRIGERACIÓN (kwh_load < 0)
+            else {
+                const cooling_kwh_needed = Math.abs(kwh_load);
+                switch (system) {
+                    case 'bomba_calor': // Solo HP/AC puede refrigerar
+                        const electrical_kwh_eer = cooling_kwh_needed / params.eer_hvac;
+                        return electrical_kwh_eer * params.cost_kwh;
+                    case 'resistencia':
+                    case 'gas':
+                    default:
+                        return 0; // Ni resistencias ni calderas pueden refrigerar
+                }
+            }
+        };
+
+
+        // --- Lógica de Cálculo Principal ---
+        const calculateSavings = () => {
+            // --- Constantes Físicas ---
+            const G = 9.81; // m/s^2
+            const R_AIR = 287.05; // J/kg·K
+            const P_ATM = 101325; // Pa
+            const CP_AIR_KJ_KGK = 1.005; // kJ/kg·K
+            const RHO_CP_FACTOR = 1.206; // Factor (rho * Cp) aproximado para aire estándar (kJ/m³·K)
+            const C_DISCHARGE = 0.6; // Coeficiente de descarga (estándar)
+            const C_WIND = 0.25; // Coeficiente de viento (para viento diagonal)
+            
+            // 1. Obtener Entradas
+            // Vano
+            const W = parseFloat(document.getElementById('width').value);
+            const H = parseFloat(document.getElementById('height').value);
+            // Ambientales
+            const T_in = parseFloat(document.getElementById('temp_in').value);
+            const T_out = parseFloat(document.getElementById('temp_out').value);
+            const v_wind = parseFloat(document.getElementById('wind_speed').value);
+            const delta_P = parseFloat(document.getElementById('delta_p').value);
+            // Operativas y Costos
+            const hours_open = parseFloat(document.getElementById('hours_open').value);
+            const days_open = parseFloat(document.getElementById('days_open').value);
+            const cost_kwh = parseFloat(document.getElementById('cost_kwh').value);
+            const cost_gas_m3 = parseFloat(document.getElementById('cost_gas_m3').value);
+            // HVAC Principal
+            const hvac_system = document.getElementById('hvac_system_type').value;
+            const cop_hvac = parseFloat(document.getElementById('cop_hvac').value);
+            const eer_hvac = parseFloat(document.getElementById('eer_hvac').value);
+            const eta_gas = parseFloat(document.getElementById('eta_gas').value);
+            const pci_gas_kwh_m3 = parseFloat(document.getElementById('pci_gas_kwh_m3').value);
+            // Solución: Cortina
+            const eta_ac = parseFloat(document.getElementById('eta_ac').value);
+            const fan_power_ac = parseFloat(document.getElementById('fan_power_ac').value);
+            const curtain_heat = document.getElementById('curtain_heat_type').value;
+            const heater_power_ac = (curtain_heat !== 'none') ? parseFloat(document.getElementById('heater_power_ac').value) : 0;
+            const cop_curtain = (curtain_heat === 'bomba_calor') ? parseFloat(document.getElementById('cop_curtain').value) : 1.0;
+            // Solución: Puerta Giratoria
+            const eta_rd = parseFloat(document.getElementById('eta_rd').value);
+
+            // Validar entradas
+            const allInputs = [W, H, T_in, T_out, v_wind, delta_P, hours_open, days_open, cost_kwh, cost_gas_m3, cop_hvac, eer_hvac, eta_gas, pci_gas_kwh_m3, eta_ac, fan_power_ac, heater_power_ac, cop_curtain, eta_rd];
+            if (allInputs.some(isNaN)) {
+                alert("Por favor, complete todos los campos con valores numéricos válidos.");
+                return;
+            }
+            
+            // Crear objeto de parámetros para la función de costos
+            const costParams = { cost_kwh, cost_gas_m3, cop_hvac, eer_hvac, eta_gas, pci_gas_kwh_m3 };
+
+            const delta_T = T_in - T_out;
+
+            // Si no hay diferencia de T, no hay pérdida TÉRMICA.
+            if (delta_T === 0) {
+                document.getElementById('loss_kwh').innerHTML = `0 <span class="text-lg">kWh/año</span>`;
+                document.getElementById('loss_usd').innerHTML = `${fC(0)} <span class="text-lg">/año</span>`;
+                document.getElementById('saved_ac_kwh').innerHTML = `0 <span class="text-lg">kWh/año</span>`;
+                document.getElementById('saved_ac_usd').innerHTML = `${fC(0)} <span class="text-lg">/año</span>`;
+                document.getElementById('saved_rd_kwh').innerHTML = `0 <span class="text-lg">kWh/año</span>`;
+                document.getElementById('net_saved_rd_usd').innerHTML = `${fC(0)} <span class="text-2xl">/año</span>`;
+
+                // Poner a cero los campos de cálculo teórico
+                document.getElementById('calc_delta_t').innerHTML = `0 <span class="text-lg">°C</span>`;
+                document.getElementById('calc_q_t').innerHTML = `0 <span class="text-lg">m³/s</span>`;
+                document.getElementById('calc_q_v').innerHTML = `0 <span class="text-lg">m³/s</span>`;
+                document.getElementById('calc_q_p').innerHTML = `0 <span class="text-lg">m³/s</span>`;
+                document.getElementById('calc_q_total').innerHTML = `0 <span class="text-lg">m³/s</span>`;
+                document.getElementById('calc_p_loss').innerHTML = `0 <span class="text-lg">kW</span>`;
+
+                // Calcular solo costo operativo de CORTINA (ventilador, ya que no hay calefacción)
+                const P_curtain_op_kw = fan_power_ac; // Sin calefacción si DeltaT = 0
+                const Energy_op_ac_kwh = P_curtain_op_kw * hours_open * days_open;
+                const Cost_op_ac_usd = Energy_op_ac_kwh * cost_kwh;
+                
+                document.getElementById('op_cost_ac_usd').innerHTML = `${fC(Cost_op_ac_usd)} <span class="text-lg">/año</span>`;
+                document.getElementById('net_saved_ac_usd').innerHTML = `${fC(-Cost_op_ac_usd)} <span class="text-2xl">/año</span>`; // Ahorro neto es negativo
+                return;
+            }
+
+            // 2. Calcular Densidades
+            const T_in_K = T_in + 273.15;
+            const T_out_K = T_out + 273.15;
+            const rho_in = P_ATM / (R_AIR * T_in_K);
+            const rho_out = P_ATM / (R_AIR * T_out_K);
+            const delta_rho = Math.abs(rho_in - rho_out);
+            const rho_m = (rho_in + rho_out) / 2;
+
+            // 3. Calcular Caudales (Q) en m³/s
+            // Q por Temp (Stack Effect)
+            const Q_T = (W / 3) * Math.pow(H, 1.5) * C_DISCHARGE * Math.sqrt(G * delta_rho / rho_m);
+            // Q por Viento
+            const Q_V = W * H * C_WIND * v_wind;
+            // Q por Presión
+            const Q_P = W * H * Math.sqrt(Math.abs(delta_P) * 2 / rho_m) * C_DISCHARGE;
+            // Q Total
+            const Q_total = Q_T + Q_V + Q_P;
+
+            // 4. Calcular Pérdida Sin Protección
+            // P_loss_kw será > 0 para calefacción, < 0 para refrigeración
+            const P_loss_kw = Q_total * RHO_CP_FACTOR * delta_T; // (m³/s) * (kJ/m³·K) * (K) = kJ/s = kW
+            const P_loss_kwh_year = P_loss_kw * hours_open * days_open;
+            const Cost_loss_year = getEnergyCost(P_loss_kwh_year, hvac_system, costParams);
+
+            // 5. Calcular Ahorro Cortina de Aire
+            const Energy_saved_ac_kwh = P_loss_kwh_year * (eta_ac / 100);
+            const Cost_saved_ac_usd = getEnergyCost(Energy_saved_ac_kwh, hvac_system, costParams);
+            
+            // Costo operativo de la cortina
+            let P_heater_electrical_kw = 0;
+            if (curtain_heat === 'resistencia') {
+                P_heater_electrical_kw = heater_power_ac / 1.0; // COP = 1
+            } else if (curtain_heat === 'bomba_calor') {
+                P_heater_electrical_kw = heater_power_ac / cop_curtain;
+            }
+            // El costo de calefacción de la cortina solo aplica si estamos en temporada de calefacción (delta_T > 0)
+            const P_curtain_op_kw = fan_power_ac + (delta_T > 0 ? P_heater_electrical_kw : 0);
+            const Energy_op_ac_kwh = P_curtain_op_kw * hours_open * days_open;
+            const Cost_op_ac_usd = Energy_op_ac_kwh * cost_kwh; // Operación de cortina siempre es eléctrica
+            
+            const Net_savings_ac_usd = Cost_saved_ac_usd - Cost_op_ac_usd;
+
+            // 6. Calcular Ahorro Puerta Giratoria
+            const Energy_saved_rd_kwh = P_loss_kwh_year * (eta_rd / 100);
+            const Net_savings_rd_usd = getEnergyCost(Energy_saved_rd_kwh, hvac_system, costParams);
+
+            // 7. Mostrar Resultados
+            // 7a. Llenar Detalle de Cálculo Teórico
+            document.getElementById('calc_delta_t').innerHTML = `${fN(delta_T, 1)} <span class="text-lg">°C</span>`;
+            document.getElementById('calc_q_t').innerHTML = `${fN(Q_T, 2)} <span class="text-lg">m³/s</span>`;
+            document.getElementById('calc_q_v').innerHTML = `${fN(Q_V, 2)} <span class="text-lg">m³/s</span>`;
+            document.getElementById('calc_q_p').innerHTML = `${fN(Q_P, 2)} <span class="text-lg">m³/s</span>`;
+            document.getElementById('calc_q_total').innerHTML = `${fN(Q_total, 2)} <span class="text-lg">m³/s</span>`;
+            document.getElementById('calc_p_loss').innerHTML = `${fN(P_loss_kw, 2)} <span class="text-lg">kW</span>`;
+
+            // 7b. Llenar Resultados Principales
+            document.getElementById('loss_kwh').innerHTML = `${fN(Math.abs(P_loss_kwh_year))} <span class="text-lg">kWh/año</span>`;
+            document.getElementById('loss_usd').innerHTML = `${fC(Cost_loss_year)} <span class="text-lg">/año</span>`;
+
+            document.getElementById('saved_ac_kwh').innerHTML = `${fN(Math.abs(Energy_saved_ac_kwh))} <span class="text-lg">kWh/año</span>`;
+            document.getElementById('saved_ac_usd').innerHTML = `${fC(Cost_saved_ac_usd)} <span class="text-lg">/año</span>`;
+            document.getElementById('op_cost_ac_usd').innerHTML = `${fC(Cost_op_ac_usd)} <span class="text-lg">/año</span>`;
+            document.getElementById('net_saved_ac_usd').innerHTML = `${fC(Net_savings_ac_usd)} <span class="text-2xl">/año</span>`;
+
+            document.getElementById('saved_rd_kwh').innerHTML = `${fN(Math.abs(Energy_saved_rd_kwh))} <span class="text-lg">kWh/año</span>`;
+            document.getElementById('net_saved_rd_usd').innerHTML = `${fC(Net_savings_rd_usd)} <span class="text-2xl">/año</span>`;
+        };
+
+        // --- Event Listeners ---
+        btn.addEventListener('click', calculateSavings);
+        heightInput.addEventListener('input', updateRecVelocity);
+        
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateRecVelocity();
+            // Disparar UI listeners para setear la visibilidad correcta al inicio
+            hvacSystemType.dispatchEvent(new Event('change'));
+            curtainHeatType.dispatchEvent(new Event('change'));
+            // Calcular al cargar
+            calculateSavings();
+        });
+
+    </script>
+    <script src="auth.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluador Financiero de Proyectos | Inteligencia Energética</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para los gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- jsPDF y autoTable para exportación nativa a PDF (Texto real) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts Inter (Estética Portal IE) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5', // Indigo 600 - IE
+                        secondary: '#3730a3', // Indigo 700
+                        accent: '#6366f1', // Indigo 500
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .input-field { width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; transition: all 0.3s; }
+        .input-field:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); }
+        .card { background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; }
+    </style>
+
+    <!-- Integración Portal IE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body class="text-slate-800 relative">
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Encabezado Principal -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-600"><i class="fa-solid fa-chart-line mr-2"></i>Evaluador Financiero de Proyectos</h1>
+                <p class="text-slate-500 mt-1">Herramienta de Análisis CAPEX - VAN, TIR y Payback</p>
+            </div>
+            <!-- Botón de Exportación jsPDF -->
+            <button id="btnExport" onclick="exportToPDF()" class="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded shadow transition-colors flex items-center">
+                <i class="fa-solid fa-file-pdf mr-2"></i> Exportar a PDF (Reporte BI)
+            </button>
+        </div>
+
+        <!-- Contenedor del Formulario (Inputs) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Datos del Proyecto -->
+            <div class="card col-span-1 lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 border-l-4 border-primary">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Nombre del Proyecto</label>
+                    <input type="text" id="projName" class="input-field" value="Actualización Línea de Envasado" oninput="calculate()">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Empresa</label>
+                    <input type="text" id="projCompany" class="input-field" value="Inteligencia Energética (IE)" oninput="calculate()">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Período del Plan CAPEX</label>
+                    <input type="text" id="projPeriod" class="input-field" value="2026-2027" placeholder="Ej. 2026-2027" oninput="calculate()">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Elaborado por</label>
+                    <input type="text" id="projAuthor" class="input-field" value="Gerencia de Ingeniería" oninput="calculate()">
+                </div>
+            </div>
+
+            <!-- Parámetros Financieros Base -->
+            <div class="card col-span-1">
+                <h2 class="text-xl font-bold text-slate-700 mb-4 border-b pb-2"><i class="fa-solid fa-sliders mr-2"></i>Parámetros Base</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Inversión Inicial (kU$S)</label>
+                        <input type="number" id="initialInvestment" class="input-field" value="150" step="0.1" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Beneficio Anual Base (kU$S)</label>
+                        <input type="number" id="annualBenefit" class="input-field" value="45" step="0.1" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Tasa de Descuento (%)</label>
+                        <input type="number" id="discountRate" class="input-field" value="14.8" step="0.1" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Período de Evaluación (Años)</label>
+                        <input type="number" id="years" class="input-field" value="5" min="1" max="25" oninput="generateVariationTable(); calculate()">
+                        <p class="text-xs text-slate-500 mt-1">Máximo 25 años.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Variaciones Dinámica -->
+            <div class="card col-span-1 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 class="text-xl font-bold text-slate-700"><i class="fa-solid fa-table-list mr-2"></i>Variación por Período</h2>
+                    <span class="text-sm text-slate-500">Ajuste de flujos (%) o absoluto</span>
+                </div>
+                
+                <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Año</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variación (%)</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flujo Resultante (kU$S)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="variationBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Generado dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= INICIO DEL REPORTE (Vista Web) ================= -->
+        <div id="report-content" class="bg-white p-2 md:p-8 rounded-lg shadow-sm border border-slate-100">
+            
+            <div class="border-b-2 border-primary pb-4 mb-6">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800" id="repProjName">Nombre del Proyecto</h2>
+                        <p class="text-lg text-primary font-semibold mt-1" id="repProjCompany">Empresa</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-slate-500"><strong>Plan CAPEX:</strong> <span id="repProjPeriod"></span></p>
+                        <p class="text-sm text-slate-500"><strong>Elaborado:</strong> <span id="repProjAuthor"></span></p>
+                        <p class="text-sm text-slate-500"><strong>Fecha Análisis:</strong> <span id="repDate"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="card border-t-4 border-blue-500 bg-blue-50">
+                    <div class="text-blue-500 text-sm font-bold uppercase tracking-wider mb-1">Valor Actual Neto (VAN)</div>
+                    <div id="kpiVAN" class="text-3xl font-black text-slate-800">$0.00</div>
+                    <div id="vanBadge" class="mt-2 text-sm font-semibold"></div>
+                </div>
+                <div class="card border-t-4 border-green-500 bg-green-50">
+                    <div class="text-green-500 text-sm font-bold uppercase tracking-wider mb-1">Tasa Interna Retorno (TIR)</div>
+                    <div id="kpiTIR" class="text-3xl font-black text-slate-800">0.00%</div>
+                    <div id="tirBadge" class="mt-2 text-sm font-semibold"></div>
+                </div>
+                <div class="card border-t-4 border-purple-500 bg-purple-50">
+                    <div class="text-purple-500 text-sm font-bold uppercase tracking-wider mb-1">Retorno s/Inversión (ROI)</div>
+                    <div id="kpiROI" class="text-3xl font-black text-slate-800">0.00%</div>
+                    <div id="roiBadge" class="mt-2 text-sm font-semibold"></div>
+                </div>
+                <div class="card border-t-4 border-orange-500 bg-orange-50">
+                    <div class="text-orange-500 text-sm font-bold uppercase tracking-wider mb-1">Payback Period</div>
+                    <div id="kpiPayback" class="text-3xl font-black text-slate-800">0.00 Años</div>
+                    <div class="mt-2 text-sm font-semibold text-orange-600">Período de recuperación</div>
+                </div>
+            </div>
+
+            <!-- Paso a Paso y Tabla -->
+            <div class="card mb-8 border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center cursor-pointer mb-4 border-b pb-2" onclick="toggleSection('pasoApasoContent', 'pasoApasoIcon')">
+                    <h3 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-calculator mr-2"></i>Desarrollo del Cálculo y Tabla</h3>
+                    <i id="pasoApasoIcon" class="fa-solid fa-chevron-down text-slate-500 transition-transform duration-300" style="transform: rotate(180deg);"></i>
+                </div>
+                
+                <div id="pasoApasoContent" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Formulas -->
+                    <div class="space-y-4 text-sm">
+                        <p><strong>1. Fórmula del VAN:</strong><br>
+                        <span class="font-mono bg-slate-100 p-1 rounded block mt-1 text-center border">VAN = -I₀ + Σ [ FCₜ / (1 + r)ᵗ ]</span>
+                        <em class="text-xs text-slate-500">Donde I₀ es la Inversión Inicial, FCₜ es el Flujo de Caja en el año t, y r es la tasa de descuento.</em>
+                        </p>
+                        
+                        <div id="vanStepByStep" class="bg-slate-50 p-3 rounded border text-xs font-mono overflow-x-auto">
+                            <!-- Llenado dinámicamente -->
+                        </div>
+
+                        <p><strong>2. Cálculo del Payback (Interpolación):</strong><br>
+                        <span class="font-mono bg-slate-100 p-1 rounded block mt-1 text-center border">Payback = Año Anterior + |Acumulado Anterior| / Flujo del Año</span>
+                        </p>
+                        <div id="paybackStepByStep" class="bg-slate-50 p-3 rounded border text-xs font-mono">
+                            <!-- Llenado dinámicamente -->
+                        </div>
+
+                        <p><strong>3. Retorno sobre Inversión (ROI Nominal):</strong><br>
+                        <span class="font-mono bg-slate-100 p-1 rounded block mt-1 text-center border">ROI = (Beneficio Neto Total / Inversión Inicial) × 100</span>
+                        </p>
+                        <div id="roiStepByStep" class="bg-slate-50 p-3 rounded border text-xs font-mono">
+                            <!-- Llenado dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Tabla de resultados numéricos -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm" id="exportTable">
+                            <thead class="bg-slate-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-left font-semibold text-slate-700">Año (t)</th>
+                                    <th class="px-3 py-2 text-right font-semibold text-slate-700">Flujo Neto (kU$S)</th>
+                                    <th class="px-3 py-2 text-right font-semibold text-slate-700">Valor Actual (kU$S)</th>
+                                    <th class="px-3 py-2 text-right font-semibold text-slate-700">Flujo Acumulado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody" class="divide-y divide-gray-100">
+                                <!-- Llenado dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="space-y-6">
+                <!-- Gráfico Anual Colapsable -->
+                <div class="card border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center cursor-pointer" onclick="toggleSection('chartAnualContent', 'chartAnualIcon')">
+                        <h3 class="text-md font-bold text-slate-700">Flujo de Caja Anual Neto</h3>
+                        <i id="chartAnualIcon" class="fa-solid fa-chevron-down text-slate-500 transition-transform duration-300" style="transform: rotate(0deg);"></i>
+                    </div>
+                    <div id="chartAnualContent" class="hidden mt-4 border-t pt-4">
+                        <div class="relative h-64 bg-white" id="chartContainer1">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Grilla de Gráficos Principales -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card border border-slate-200 shadow-sm">
+                        <h3 class="text-md font-bold text-center mb-2">Flujo Acumulado (Break-even)</h3>
+                        <div class="relative h-64 bg-white" id="chartContainer2">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card border border-slate-200 shadow-sm">
+                        <h3 class="text-md font-bold text-center mb-2">Perfil del VAN (TIR vs VAN)</h3>
+                        <div class="relative h-64 bg-white" id="chartContainer3">
+                            <canvas id="npvProfileChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Variables globales para los gráficos
+        let barChartInst = null;
+        let lineChartInst = null;
+        let npvProfileChartInst = null;
+        
+        // Variables para guardar datos procesados y usarlos en jsPDF
+        let globalExportData = {
+            cashFlows: [],
+            presentValues: [],
+            cumulativeCF: [],
+            tableRows: [],
+            baseParams: {}
+        };
+
+        // Plugin de Chart.js para asegurar fondo blanco al exportar la imagen
+        const customCanvasBackgroundColor = {
+            id: 'customCanvasBackgroundColor',
+            beforeDraw: (chart, args, options) => {
+                const {ctx} = chart;
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = options.color || '#ffffff';
+                ctx.fillRect(0, 0, chart.width, chart.height);
+                ctx.restore();
+            }
+        };
+        Chart.register(customCanvasBackgroundColor);
+
+        // Función para colapsar/expandir tarjetas en la web
+        function toggleSection(contentId, iconId) {
+            const content = document.getElementById(contentId);
+            const icon = document.getElementById(iconId);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Formateador de moneda
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        // Inicializar tabla de variaciones al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateStr = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('repDate').textContent = dateStr;
+            generateVariationTable();
+            calculate();
+        });
+
+        // Generar filas de la tabla de variación
+        function generateVariationTable() {
+            let years = parseInt(document.getElementById('years').value);
+            if (years > 25) { years = 25; document.getElementById('years').value = 25; }
+            if (years < 1 || isNaN(years)) { years = 1; document.getElementById('years').value = 1; }
+            
+            const tbody = document.getElementById('variationBody');
+            const currentValues = [];
+            document.querySelectorAll('.var-input').forEach((input, index) => {
+                currentValues[index] = input.value;
+            });
+            tbody.innerHTML = '';
+            
+            for (let i = 1; i <= years; i++) {
+                const tr = document.createElement('tr');
+                const val = currentValues[i-1] !== undefined ? currentValues[i-1] : 0;
+                tr.innerHTML = `
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 font-semibold">Año ${i}</td>
+                    <td class="px-4 py-2 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <input type="number" class="var-input w-24 p-1 border rounded focus:outline-none focus:border-primary" value="${val}" step="0.1" oninput="calculate()">
+                            <span class="ml-1 text-gray-500">%</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm font-mono text-gray-700" id="cf-result-${i}">-</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        // Lógica de cálculo principal
+        function calculate() {
+            // Sincronizar Textos
+            document.getElementById('repProjName').textContent = document.getElementById('projName').value || 'Proyecto Sin Nombre';
+            document.getElementById('repProjCompany').textContent = document.getElementById('projCompany').value;
+            document.getElementById('repProjPeriod').textContent = document.getElementById('projPeriod').value;
+            document.getElementById('repProjAuthor').textContent = document.getElementById('projAuthor').value;
+
+            // Obtener Variables Base
+            const initialInv = parseFloat(document.getElementById('initialInvestment').value) || 0;
+            const annualBen = parseFloat(document.getElementById('annualBenefit').value) || 0;
+            const discountRate = (parseFloat(document.getElementById('discountRate').value) || 0) / 100;
+            const years = parseInt(document.getElementById('years').value) || 5;
+            
+            globalExportData.baseParams = {
+                inv: initialInv,
+                ben: annualBen,
+                rate: discountRate * 100,
+                years: years
+            };
+
+            const varInputs = document.querySelectorAll('.var-input');
+
+            // Arreglos para datos
+            const cashFlows = [-initialInv];
+            const presentValues = [-initialInv];
+            const cumulativeCF = [-initialInv];
+            let currentCumulative = -initialInv;
+            
+            let vanText = `VAN = -${initialInv.toFixed(2)}`;
+            const resultsTbody = document.getElementById('resultsTableBody');
+            
+            // Limpiar datos globales de tabla
+            globalExportData.tableRows = [];
+            globalExportData.tableRows.push(['0 (Inversión)', `-${initialInv.toFixed(2)}`, `-${initialInv.toFixed(2)}`, `-${initialInv.toFixed(2)}`]);
+
+            resultsTbody.innerHTML = `
+                <tr class="bg-slate-50">
+                    <td class="px-3 py-1 font-semibold border-b border-slate-200">0 (Inversión)</td>
+                    <td class="px-3 py-1 text-right text-red-600 font-mono border-b border-slate-200">-${initialInv.toFixed(2)}</td>
+                    <td class="px-3 py-1 text-right text-red-600 font-mono border-b border-slate-200">-${initialInv.toFixed(2)}</td>
+                    <td class="px-3 py-1 text-right text-red-600 font-mono border-b border-slate-200">-${initialInv.toFixed(2)}</td>
+                </tr>
+            `;
+
+            let paybackValue = 0;
+            let paybackFound = false;
+            let paybackText = `No recupera la inversión en el período evaluado.`;
+
+            let vanTotal = -initialInv;
+
+            // Calcular por cada año
+            for (let t = 1; t <= years; t++) {
+                const varPerc = parseFloat(varInputs[t-1].value) || 0;
+                const cf_t = annualBen * (1 + (varPerc / 100));
+                cashFlows.push(cf_t);
+
+                document.getElementById(`cf-result-${t}`).textContent = cf_t.toFixed(2);
+
+                const pv_t = cf_t / Math.pow(1 + discountRate, t);
+                presentValues.push(pv_t);
+                vanTotal += pv_t;
+
+                const prevCumulative = currentCumulative;
+                currentCumulative += cf_t;
+                cumulativeCF.push(currentCumulative);
+
+                vanText += ` + [${cf_t.toFixed(2)} / (1+${discountRate.toFixed(4)})^${t}]`;
+
+                // Guardar row para exportar
+                globalExportData.tableRows.push([
+                    t.toString(), 
+                    cf_t.toFixed(2), 
+                    pv_t.toFixed(2), 
+                    currentCumulative.toFixed(2)
+                ]);
+
+                // Agregar fila HTML
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-3 py-1 border-b border-slate-100">${t}</td>
+                    <td class="px-3 py-1 border-b border-slate-100 text-right font-mono">${cf_t.toFixed(2)}</td>
+                    <td class="px-3 py-1 border-b border-slate-100 text-right font-mono">${pv_t.toFixed(2)}</td>
+                    <td class="px-3 py-1 border-b border-slate-100 text-right font-mono ${currentCumulative >= 0 ? 'text-green-600' : 'text-red-600'}">${currentCumulative.toFixed(2)}</td>
+                `;
+                resultsTbody.appendChild(row);
+
+                if (!paybackFound && currentCumulative >= 0) {
+                    const fraction = Math.abs(prevCumulative) / cf_t;
+                    paybackValue = (t - 1) + fraction;
+                    paybackFound = true;
+                    paybackText = `Cruza a cero en Año ${t}.<br>Cálculo: (Año ${t-1}) + |${prevCumulative.toFixed(2)}| / ${cf_t.toFixed(2)}<br><strong>Payback = ${paybackValue.toFixed(2)} Años.</strong>`;
+                }
+            }
+
+            vanText += `<br><strong class="text-primary mt-2 block">VAN Total = ${formatter.format(vanTotal).replace('$', '')} kU$S</strong>`;
+            document.getElementById('vanStepByStep').innerHTML = vanText;
+            document.getElementById('paybackStepByStep').innerHTML = paybackText;
+
+            // Calcular ROI Nominal
+            let roiTotal = 0;
+            let roiText = 'No aplica (Inversión 0)';
+            if (initialInv > 0) {
+                // currentCumulative al final del bucle equivale al Beneficio Neto Total (Flujos positivos menos Inversión)
+                roiTotal = (currentCumulative / initialInv) * 100;
+                roiText = `Beneficio Neto (Acumulado Final) = ${currentCumulative.toFixed(2)} kU$S<br>
+                Cálculo: (${currentCumulative.toFixed(2)} / ${initialInv.toFixed(2)}) * 100<br>
+                <strong>ROI = ${roiTotal.toFixed(2)}%</strong>`;
+            }
+            document.getElementById('roiStepByStep').innerHTML = roiText;
+
+            // Calcular TIR
+            const tirTotal = calculateIRR(cashFlows);
+
+            // Actualizar KPIs Visuales
+            document.getElementById('kpiVAN').textContent = formatter.format(vanTotal).replace('$', '') + ' kU$S';
+            const vanBadge = document.getElementById('vanBadge');
+            if (vanTotal > 0) {
+                vanBadge.innerHTML = '<span class="text-green-600"><i class="fa-solid fa-check-circle"></i> Proyecto Rentable</span>';
+            } else {
+                vanBadge.innerHTML = '<span class="text-red-600"><i class="fa-solid fa-times-circle"></i> Destruye Valor</span>';
+            }
+
+            document.getElementById('kpiTIR').textContent = (tirTotal).toFixed(2) + '%';
+            const tirBadge = document.getElementById('tirBadge');
+            if (tirTotal > (discountRate * 100)) {
+                tirBadge.innerHTML = `<span class="text-green-600"><i class="fa-solid fa-arrow-trend-up"></i> Supera Tasa Corte (${(discountRate*100).toFixed(1)}%)</span>`;
+            } else {
+                tirBadge.innerHTML = `<span class="text-red-600"><i class="fa-solid fa-arrow-trend-down"></i> Inferior a Tasa Corte</span>`;
+            }
+
+            document.getElementById('kpiROI').textContent = roiTotal.toFixed(2) + '%';
+            const roiBadge = document.getElementById('roiBadge');
+            if (roiTotal > 0) {
+                roiBadge.innerHTML = `<span class="text-green-600"><i class="fa-solid fa-arrow-trend-up"></i> Retorno Positivo</span>`;
+            } else {
+                roiBadge.innerHTML = `<span class="text-red-600"><i class="fa-solid fa-arrow-trend-down"></i> Retorno Negativo</span>`;
+            }
+
+            if (paybackFound) {
+                document.getElementById('kpiPayback').textContent = paybackValue.toFixed(2) + ' Años';
+            } else {
+                document.getElementById('kpiPayback').textContent = '> ' + years + ' Años';
+            }
+
+            // Actualizar Gráficos
+            updateCharts(years, cashFlows, cumulativeCF, tirTotal, discountRate);
+        }
+
+        // Función matemática para calcular la TIR
+        function calculateIRR(cashFlows) {
+            if (cashFlows[0] >= 0) return 0;
+            let hasPositive = false;
+            for(let i=1; i<cashFlows.length; i++){ if(cashFlows[i]>0) hasPositive = true; }
+            if(!hasPositive) return 0;
+
+            let minRate = -0.99; 
+            let maxRate = 10.0; 
+            let guess = 0;
+            let iterations = 0;
+            
+            while (iterations < 1000) {
+                guess = (minRate + maxRate) / 2;
+                let npv = 0;
+                for (let t = 0; t < cashFlows.length; t++) {
+                    npv += cashFlows[t] / Math.pow(1 + guess, t);
+                }
+                if (Math.abs(npv) < 0.0001) break;
+                if (npv > 0) { minRate = guess; } else { maxRate = guess; }
+                iterations++;
+            }
+            return guess * 100;
+        }
+
+        // Función para actualizar Chart.js
+        function updateCharts(years, cashFlows, cumulativeCF, irr, discountRate) {
+            const labels = Array.from({length: years + 1}, (_, i) => `Año ${i}`);
+            const barColors = cashFlows.map(val => val >= 0 ? 'rgba(79, 70, 229, 0.7)' : 'rgba(239, 68, 68, 0.7)');
+            const barBorderColors = cashFlows.map(val => val >= 0 ? 'rgb(79, 70, 229)' : 'rgb(239, 68, 68)');
+
+            if (barChartInst) barChartInst.destroy();
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            barChartInst = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Flujo Neto (kU$S)',
+                        data: cashFlows,
+                        backgroundColor: barColors,
+                        borderColor: barBorderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        customCanvasBackgroundColor: { color: 'white' }
+                    },
+                    animation: { duration: 0 } 
+                }
+            });
+
+            if (lineChartInst) lineChartInst.destroy();
+            const ctxLine = document.getElementById('lineChart').getContext('2d');
+            lineChartInst = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Flujo Acumulado (kU$S)',
+                        data: cumulativeCF,
+                        borderColor: 'rgb(249, 115, 22)', 
+                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: cumulativeCF.map(v => v >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'),
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        customCanvasBackgroundColor: { color: 'white' }
+                    },
+                    scales: {
+                        y: { grid: { color: (context) => context.tick.value === 0 ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.05)' } }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+
+            // Gráfico 3: Perfil del VAN (TIR vs VAN) - Ahora con Eje X Lineal Real
+            const maxRate = Math.max(Math.ceil(irr / 5) * 5 + 10, 30); 
+            const tdd = discountRate * 100;
+            const rates = [];
+            const npvData = [];
+            
+            // Puntos clave a destacar en el gráfico
+            let specialRates = [irr, tdd].filter(r => r > 0 && r < maxRate);
+            
+            let initialRates = [];
+            // Usamos paso de 1% para trazar una curva matemáticamente perfecta
+            for (let r = 0; r <= maxRate; r += 1) { 
+                initialRates.push(r);
+            }
+            
+            // Insertar los puntos exactos de TIR y TDD
+            initialRates.push(...specialRates);
+            initialRates.sort((a, b) => a - b);
+            
+            // Remover duplicados con una tolerancia pequeña para evitar errores visuales
+            let uniqueRates = [];
+            for(let r of initialRates) {
+                if(uniqueRates.length === 0 || Math.abs(uniqueRates[uniqueRates.length-1] - r) > 0.001) {
+                    uniqueRates.push(r);
+                }
+            }
+            
+            for (let i = 0; i < uniqueRates.length; i++) {
+                let r = uniqueRates[i];
+                rates.push(r);
+                let npv = 0;
+                for (let t = 0; t < cashFlows.length; t++) {
+                    npv += cashFlows[t] / Math.pow(1 + (r/100), t);
+                }
+                // Guardamos como par ordenado {x, y} para usar el eje X lineal
+                npvData.push({x: r, y: npv});
+            }
+
+            if (npvProfileChartInst) npvProfileChartInst.destroy();
+            const ctxNpv = document.getElementById('npvProfileChart').getContext('2d');
+            
+            // Plugin personalizado para dibujar los textos "TIR" y "TDD" sin solaparse
+            const specialLabelsPlugin = {
+                id: 'specialLabelsPlugin',
+                afterDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const meta = chart.getDatasetMeta(0);
+                    
+                    // Buscar índice de la TIR
+                    const irrIndex = rates.findIndex(r => Math.abs(r - irr) < 0.001);
+                    let tirPoint = null;
+                    if (irrIndex !== -1 && meta.data[irrIndex]) {
+                        tirPoint = meta.data[irrIndex];
+                        ctx.save();
+                        ctx.font = 'bold 13px Arial';
+                        ctx.fillStyle = 'rgb(239, 68, 68)'; // Rojo
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(`TIR: ${irr.toFixed(2)}%`, tirPoint.x + 8, tirPoint.y - 8);
+                        ctx.restore();
+                    }
+
+                    // Buscar índice de la TDD
+                    const tddIndex = rates.findIndex(r => Math.abs(r - tdd) < 0.001);
+                    if (tddIndex !== -1 && meta.data[tddIndex]) {
+                        const tddPoint = meta.data[tddIndex];
+                        ctx.save();
+                        ctx.font = 'bold 13px Arial';
+                        // Color: Verde si TDD <= TIR (Bueno), Rojo si TDD > TIR (Malo)
+                        ctx.fillStyle = tdd > irr ? 'rgb(239, 68, 68)' : 'rgb(22, 163, 74)'; 
+                        
+                        let alignX = 'left';
+                        let alignY = 'bottom';
+                        let offsetX = 8;
+                        let offsetY = -8;
+
+                        // Lógica Anti-Solapamiento de textos
+                        if (tirPoint) {
+                            const dist = Math.sqrt(Math.pow(tddPoint.x - tirPoint.x, 2) + Math.pow(tddPoint.y - tirPoint.y, 2));
+                            if (dist < 45) { 
+                                if (tdd < irr) { alignX = 'right'; offsetX = -8; } 
+                                else { alignX = 'left'; alignY = 'top'; offsetY = 12; }
+                            } else {
+                                if (tdd < irr) { alignX = 'right'; offsetX = -8; } 
+                                else { alignX = 'left'; alignY = 'top'; offsetX = 8; offsetY = 12; }
+                            }
+                        }
+
+                        ctx.textAlign = alignX;
+                        ctx.textBaseline = alignY;
+                        ctx.fillText(`TDD: ${tdd.toFixed(2)}%`, tddPoint.x + offsetX, tddPoint.y + offsetY);
+                        ctx.restore();
+                    }
+                }
+            };
+
+            npvProfileChartInst = new Chart(ctxNpv, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'VAN (kU$S)',
+                        data: npvData,
+                        borderColor: 'rgb(79, 70, 229)',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 2,
+                        // Mostrar puntos grandes para TIR/TDD, normales para pares (2,4,6...), ocultar los intermedios
+                        pointRadius: rates.map(r => {
+                            if (Math.abs(r - irr) < 0.001 || Math.abs(r - tdd) < 0.001) return 6;
+                            if (r % 2 === 0) return 3;
+                            return 0;
+                        }),
+                        pointBackgroundColor: rates.map(r => {
+                            if (Math.abs(r - irr) < 0.001) return 'rgb(239, 68, 68)'; // TIR siempre rojo
+                            if (Math.abs(r - tdd) < 0.001) return tdd > irr ? 'rgb(239, 68, 68)' : 'rgb(22, 163, 74)'; // TDD dinámica
+                            return 'rgb(79, 70, 229)';
+                        }),
+                        pointBorderColor: rates.map(r => {
+                            if (Math.abs(r - irr) < 0.001) return 'rgb(239, 68, 68)';
+                            if (Math.abs(r - tdd) < 0.001) return tdd > irr ? 'rgb(239, 68, 68)' : 'rgb(22, 163, 74)';
+                            return 'rgb(79, 70, 229)';
+                        }),
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        customCanvasBackgroundColor: { color: 'white' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'VAN: ' + formatter.format(context.parsed.y).replace('$', '') + ' kU$S';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            type: 'linear', // ESTE ES EL SECRETO: Eje verdaderamente proporcional
+                            title: { display: true, text: 'TIR (%)', color: '#64748b' },
+                            ticks: {
+                                callback: function(value) { return value + '%'; },
+                                stepSize: 2 // Forzamos a que visualmente marque cada 2% para mantenerlo limpio
+                            }
+                        },
+                        y: { 
+                            title: { display: true, text: 'Valor Actual Neto (kU$S)', color: '#64748b' },
+                            grid: { color: (context) => context.tick.value === 0 ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.05)' }
+                        }
+                    },
+                    animation: { duration: 0 }
+                },
+                plugins: [customCanvasBackgroundColor, specialLabelsPlugin]
+            });
+        }
+
+        // ==========================================
+        // EXPORTACIÓN PROFESIONAL A PDF USANDO jsPDF
+        // ==========================================
+        async function exportToPDF() {
+            const btn = document.getElementById('btnExport');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generando Documento...';
+            btn.disabled = true;
+
+            // Asegurarnos de que los gráficos estén visibles momentáneamente para extraer su imagen
+            const chartAnual = document.getElementById('chartAnualContent');
+            const wasChartHidden = chartAnual.classList.contains('hidden');
+            if (wasChartHidden) {
+                chartAnual.classList.remove('hidden');
+                if (barChartInst) barChartInst.resize(); 
+            }
+
+            // Pequeña pausa para permitir que Chart.js redibuje si estaba oculto
+            await new Promise(r => setTimeout(r, 200));
+
+            try {
+                // Instanciar documento A4
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = doc.internal.pageSize.getWidth();
+                let cursorY = 15;
+
+                // --- CABECERA (Más compacta para Dashboard) ---
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(18);
+                doc.setTextColor(15, 118, 110); // Color Primary
+                doc.text("Análisis Financiero CAPEX", 14, cursorY);
+                
+                cursorY += 8;
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(10);
+                doc.setTextColor(71, 85, 105); // Slate 600
+                
+                // Resaltar Nombre del Proyecto en Negrita y Azul
+                doc.text("Proyecto: ", 14, cursorY);
+                let projLabelWidth = doc.getTextWidth("Proyecto: ");
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(29, 78, 216); // Azul corporativo (Tailwind blue-700)
+                doc.text(document.getElementById('projName').value, 14 + projLabelWidth, cursorY);
+                
+                // Restaurar fuente normal y color gris para el resto del encabezado
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(71, 85, 105); 
+                
+                doc.text(`Fecha: ${document.getElementById('repDate').textContent}`, pageWidth - 14, cursorY, { align: "right" });
+                cursorY += 5;
+                doc.text(`Empresa: ${document.getElementById('projCompany').value}`, 14, cursorY);
+                cursorY += 5;
+                doc.text(`Plan CAPEX: ${document.getElementById('projPeriod').value}`, 14, cursorY);
+                cursorY += 5;
+                doc.text(`Elaborado por: ${document.getElementById('projAuthor').value}`, 14, cursorY);
+                
+                cursorY += 6;
+                doc.setDrawColor(226, 232, 240); // Slate 200
+                doc.line(14, cursorY, pageWidth - 14, cursorY);
+                cursorY += 8;
+
+                // --- PARÁMETROS BASE ---
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(11);
+                doc.setTextColor(30, 41, 59); // Slate 800
+                doc.text("Parámetros Base", 14, cursorY);
+                
+                // Usando autoTable para parámetros
+                doc.autoTable({
+                    startY: cursorY + 3,
+                    body: [
+                        ['Inversión Inicial', `${globalExportData.baseParams.inv} kU$S`, 'Tasa de Descuento', `${globalExportData.baseParams.rate.toFixed(2)}%`],
+                        ['Beneficio Anual Base', `${globalExportData.baseParams.ben} kU$S`, 'Período Evaluado', `${globalExportData.baseParams.years} Años`]
+                    ],
+                    theme: 'plain',
+                    styles: { fontSize: 9, cellPadding: 1.5, textColor: [71, 85, 105] },
+                    columnStyles: { 0: { fontStyle: 'bold' }, 2: { fontStyle: 'bold' } }
+                });
+                
+                cursorY = doc.lastAutoTable.finalY + 8;
+
+                // --- KPIs ---
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(11);
+                doc.setTextColor(30, 41, 59);
+                doc.text("Indicadores Clave de Rendimiento (KPI)", 14, cursorY);
+                
+                doc.autoTable({
+                    startY: cursorY + 3,
+                    head: [['Indicador', 'Valor', 'Resultado']],
+                    body: [
+                        ['Valor Actual Neto (VAN)', document.getElementById('kpiVAN').textContent, parseFloat(document.getElementById('kpiVAN').textContent) > 0 ? 'Rentable' : 'Destruye Valor'],
+                        ['Tasa Interna de Retorno (TIR)', document.getElementById('kpiTIR').textContent, parseFloat(document.getElementById('kpiTIR').textContent) > globalExportData.baseParams.rate ? 'Supera Tasa Corte' : 'Inferior a Tasa'],
+                        ['Retorno s/Inversión (ROI)', document.getElementById('kpiROI').textContent, parseFloat(document.getElementById('kpiROI').textContent) > 0 ? 'Retorno Positivo' : 'Retorno Negativo'],
+                        ['Período de Recuperación (Payback)', document.getElementById('kpiPayback').textContent, '-']
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+                    styles: { fontSize: 9, cellPadding: 2 },
+                    columnStyles: { 0: { fontStyle: 'bold' } }
+                });
+
+                cursorY = doc.lastAutoTable.finalY + 10;
+
+                // --- GRÁFICOS (Layout Dashboard 1-Pager) ---
+                // Función auxiliar para agregar gráficos controlando su cuadrícula
+                function addChartToPdf(doc, canvasId, title, xPos, yPos, maxWidth, maxHeight) {
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(10);
+                    doc.setTextColor(30, 41, 59);
+                    doc.text(title, xPos, yPos);
+                    
+                    const canvas = document.getElementById(canvasId);
+                    const ratio = canvas.height / canvas.width; 
+                    
+                    let pdfWidth = maxWidth;
+                    let pdfHeight = pdfWidth * ratio;
+                    
+                    // Asegurar que el gráfico no supere la altura máxima asignada para no desbordar
+                    if (pdfHeight > maxHeight) {
+                        pdfHeight = maxHeight;
+                        pdfWidth = pdfHeight / ratio;
+                    }
+                    
+                    // Centrar horizontalmente dentro de su propia "celda"
+                    const finalX = xPos + (maxWidth - pdfWidth) / 2; 
+                    
+                    const imgData = canvas.toDataURL('image/png', 1.0); 
+                    doc.addImage(imgData, 'PNG', finalX, yPos + 3, pdfWidth, pdfHeight, undefined, 'FAST');
+                    
+                    return yPos + pdfHeight + 5; 
+                }
+
+                // Gráfico 1: Flujo Anual (Ancho completo)
+                cursorY = addChartToPdf(doc, 'barChart', "Flujo de Caja Anual Neto", 14, cursorY, 182, 45);
+                cursorY += 3; // Separación vertical
+
+                // Gráfico 2: Flujo Acumulado (Ancho completo, debajo del anterior)
+                cursorY = addChartToPdf(doc, 'lineChart', "Flujo Acumulado (Break-even)", 14, cursorY, 182, 45);
+                cursorY += 3; // Separación vertical
+
+                // Gráfico 3: Perfil del VAN (Ancho completo, en la parte inferior de la página 1)
+                cursorY = addChartToPdf(doc, 'npvProfileChart', "Perfil del VAN (TIR vs VAN)", 14, cursorY, 182, 45);
+
+                // --- SALTO DE PÁGINA SOLO PARA ANEXOS ---
+                doc.addPage();
+                cursorY = 15;
+
+                // --- TABLA DE FLUJOS (Vectores reales) ---
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(12);
+                doc.text("Tabla de Desarrollo Analítico (Anexo)", 14, cursorY);
+                
+                doc.autoTable({
+                    startY: cursorY + 5,
+                    head: [['Año (t)', 'Flujo Neto (kU$S)', 'Valor Actual (kU$S)', 'Flujo Acumulado']],
+                    body: globalExportData.tableRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [15, 118, 110], halign: 'center' },
+                    columnStyles: {
+                        0: { halign: 'center', fontStyle: 'bold' },
+                        1: { halign: 'right', font: 'courier' },
+                        2: { halign: 'right', font: 'courier' },
+                        3: { halign: 'right', font: 'courier', fontStyle: 'bold' }
+                    },
+                    didParseCell: function(data) {
+                        if (data.section === 'body' && data.column.index === 3) {
+                            if (data.cell.raw.includes('-')) {
+                                data.cell.styles.textColor = [220, 38, 38]; 
+                            } else {
+                                data.cell.styles.textColor = [22, 163, 74]; 
+                            }
+                        }
+                        if (data.section === 'body' && (data.column.index === 1 || data.column.index === 2)) {
+                            if (data.cell.raw.includes('-')) data.cell.styles.textColor = [220, 38, 38];
+                        }
+                    }
+                });
+
+                // Descargar PDF
+                const projNameFile = document.getElementById('projName').value.replace(/[^a-z0-9]/gi, '_');
+                doc.save(`Reporte_Financiero_IE_${projNameFile}.pdf`);
+
+            } catch (error) {
+                console.error("Error al generar PDF:", error);
+                alert("Ocurrió un error al construir el PDF.");
+            } finally {
+                // Restaurar vista UI
+                if (wasChartHidden) {
+                    chartAnual.classList.add('hidden');
+                }
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+    <!-- Autenticación Portal IE -->
+    <script src="auth.js"></script>
+</body>
+</html>

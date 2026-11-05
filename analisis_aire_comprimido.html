@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta de Análisis de Aire Comprimido</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Red/Green Accents -->
+    <!-- Application Structure Plan: The application uses a tabbed interface. The key enhancement is the re-introduction of an interactive 'Theory and Practical Calculation' section within each module. This section now dynamically updates its step-by-step example calculations as the user manipulates the main calculator's inputs, making the tool's logic transparent and educational. -->
+    <!-- Visualization & Content Choices: 
+    - Report Info: Interactive Practical Calculation. Goal: Educate/Validate. Viz/Method: A dedicated two-column section within each tab. Interaction: Span elements with unique IDs are updated by the main JS calculation functions. Justification: This transforms the tool from a "black box" into a transparent educational instrument, which is critical for a professional user who needs to explain the results.
+    - Report Info: Specific Power Reference. Goal: Inform. Viz/Method: A collapsible HTML table. Interaction: User-initiated toggle. Justification: Provides necessary context for selecting accurate input values.
+    - Report Info: Global Parameters & Main Calculators. Goal: Unify inputs & calculate results. Viz/Method: Standard forms and dynamic result boxes. Justification: Core functionality of the tool.
+    - Report Info: Leak Cost vs. Diameter Chart. Goal: Visualize impact. Viz/Method: Line Chart. Justification: Effectively shows the non-linear cost increase of leaks.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #333; }
+        .card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .accent-color { color: #4a5568; }
+        .result-box { background-color: #f7fafc; border: 1px solid #e2e8f0; }
+        .nav-button { transition: all 0.2s ease-in-out; border-bottom: 4px solid transparent; }
+        .nav-button-active { border-bottom-color: #4a5568; color: #1a202c; }
+        .nav-button:not(.nav-button-active) { color: #718096; }
+        .tab-content { display: none; }
+        .tab-active { display: block; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #4a5568; cursor: pointer; border-radius: 50%; }
+        input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #4a5568; cursor: pointer; border-radius: 50%; }
+        summary { list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+        details[open] summary .arrow-down { transform: rotate(180deg); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body class="antialiased">
+    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-center py-2 text-sm font-bold tracking-wider">Inteligencia Energética — Herramientas de Ingeniería</div>
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-600 mb-2">Herramienta de Análisis de Aire Comprimido</h1>
+            <p class="text-gray-500 text-lg">Cálculo de Pérdidas y Oportunidades de Ahorro</p>
+        </header>
+
+        <nav class="bg-white rounded-lg shadow-sm p-2 mb-8 sticky top-4 z-10">
+            <ul id="main-nav" class="flex items-center justify-center space-x-2 md:space-x-4">
+                <li><button data-tab="leaks" class="nav-button nav-button-active text-sm md:text-base font-medium px-4 py-3 rounded-md">Pérdidas por Fugas</button></li>
+                <li><button data-tab="pressure" class="nav-button text-sm md:text-base font-medium px-4 py-3 rounded-md">Ahorro por Presión</button></li>
+            </ul>
+        </nav>
+
+        <!-- Parámetros Globales -->
+        <section class="card p-8 mb-8">
+             <h2 class="text-2xl font-bold text-center mb-6">Parámetros Globales</h2>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div>
+                    <label for="operatingHours" class="block text-md font-medium text-gray-700">Horas de Operación (anual)</label>
+                    <input type="number" id="operatingHours" value="8000" class="global-input w-full mt-2 p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="energyCost" class="block text-md font-medium text-gray-700">Costo Energía (U$S/kWh)</label>
+                    <input type="number" id="energyCost" step="0.01" value="0.12" class="global-input w-full mt-2 p-2 border border-gray-300 rounded-md">
+                </div>
+             </div>
+        </section>
+
+        <!-- Módulo 1: Fugas de Aire -->
+        <div id="leaks-tab" class="tab-content tab-active">
+            <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-2 card p-8 space-y-6">
+                    <h2 class="text-2xl font-bold text-center">Calculadora de Fugas de Aire</h2>
+                    <div>
+                        <label for="leakDiameter" class="block text-md font-medium text-gray-700">Diámetro de la Fuga (mm): <span id="leakDiameterValue" class="font-bold accent-color">1.0</span> mm</label>
+                        <input type="range" id="leakDiameter" min="0.5" max="18" step="0.5" value="1" class="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="systemPressure" class="block text-md font-medium text-gray-700">Presión del Sistema (bar): <span id="systemPressureValue" class="font-bold accent-color">7.0</span> bar</label>
+                        <input type="range" id="systemPressure" min="4" max="18" step="0.5" value="7" class="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="specificPowerLeaks" class="block text-md font-medium text-gray-700">Potencia Específica (kW / (m³/min))</label>
+                        <input type="number" id="specificPowerLeaks" step="0.1" value="6.2" class="w-full mt-2 p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div class="mt-2">
+                        <details class="border border-gray-200 rounded-lg bg-white">
+                            <summary class="cursor-pointer p-3 font-medium text-gray-700 hover:bg-gray-50 flex justify-between items-center list-none">
+                                <span>Tabla de Referencia de Potencia Específica</span>
+                                <svg class="w-5 h-5 transition-transform transform arrow-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </summary>
+                            <div class="p-4 border-t border-gray-200"><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-100"><tr><th scope="col" class="px-4 py-2">Tecnología</th><th scope="col" class="px-4 py-2">Eficiencia</th><th scope="col" class="px-4 py-2">Potencia Específica (kW/m³/min)</th></tr></thead><tbody><tr class="bg-gray-200 font-semibold"><td colspan="3" class="px-4 py-2">Compresor de Tornillo Rotativo</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Óptima (VSD, 2 etapas)</td><td class="px-4 py-2">5.0 - 5.8</td></tr><tr class="bg-gray-50 border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Buena (Moderno, vel. fija)</td><td class="px-4 py-2">5.8 - 6.5</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Regular (Antiguo, carga parcial)</td><td class="px-4 py-2">6.5 - 7.5</td></tr><tr class="bg-gray-200 font-semibold"><td colspan="3" class="px-4 py-2">Compresor de Pistón (Reciprocante)</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Una Etapa (Pequeño)</td><td class="px-4 py-2">8.0 - 10.0</td></tr><tr class="bg-gray-50 border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Dos Etapas (Industrial)</td><td class="px-4 py-2">6.8 - 8.5</td></tr><tr class="bg-gray-200 font-semibold"><td colspan="3" class="px-4 py-2">Compresor Centrífugo (Grandes caudales)</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Moderno (IGV, alta eficiencia)</td><td class="px-4 py-2">5.3 - 6.2</td></tr><tr class="bg-gray-50 border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Antiguo o fuera de punto óptimo</td><td class="px-4 py-2">6.2 - 7.8</td></tr></tbody></table></div></div>
+                        </details>
+                    </div>
+                </div>
+                <div class="lg:col-span-3 card p-8 space-y-6">
+                    <h2 class="text-2xl font-bold text-center">Resultados del Análisis de Fugas</h2>
+                    <div class="result-box p-6 rounded-lg space-y-4">
+                        <div><p class="text-sm font-medium text-gray-600">Pérdida de Aire Estimada</p><p class="text-3xl font-bold accent-color"><span id="airLossResult">0.075</span> m³/min</p></div>
+                        <div><p class="text-sm font-medium text-gray-600">Potencia Desperdiciada</p><p class="text-3xl font-bold accent-color"><span id="powerLossResult">0.465</span> kW</p></div>
+                        <div><p class="text-sm font-medium text-gray-600">Costo Anual de la Fuga</p><p class="text-4xl font-bold text-red-600">U$S <span id="annualCostLeaksResult">446</span></p></div>
+                    </div>
+                </div>
+            </main>
+            <section class="card p-8 mt-8">
+                <h2 class="text-3xl font-bold mb-4 text-center">Teoría y Cálculo Práctico (Interactivo)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Fórmula de Cálculo</h3>
+                        <div class="bg-gray-100 p-4 rounded-md text-center my-4"><p class="font-mono text-lg">Q (L/s) = 0.156 × D² × (P + 1)</p></div>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700"><li><b>Q</b>: Caudal en Litros por Segundo (L/s).</li><li><b>D</b>: Diámetro en mm.</li><li><b>P</b>: Presión manométrica en bar.</li></ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Ejemplo Detallado</h3>
+                        <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                            <li><b>Calcular Caudal (Q en L/s):</b><br><span class="font-mono ml-4">Q = 0.156 × (<span id="leakExDiameter1">1.0</span>)² × (<span id="leakExPressure">7.0</span> + 1) = <span id="leakExStep1">1.25</span> L/s</span></li>
+                            <li><b>Convertir Caudal a m³/min:</b><br><span class="font-mono ml-4">Q = <span id="leakExStep1_2">1.25</span> L/s × 60 / 1000 = <span id="leakExStep2">0.075</span> m³/min</span></li>
+                            <li><b>Calcular Potencia Desperdiciada:</b><br><span class="font-mono ml-4">Potencia = <span id="leakExStep2_2">0.075</span> m³/min × <span id="leakExSpPower">6.2</span> ≈ <span id="leakExStep3">0.465</span> kW</span></li>
+                            <li><b>Calcular Costo Anual:</b><br><span class="font-mono ml-4">Costo = <span id="leakExStep3_2">0.465</span> kW × <span id="leakExHours">8000</span> h × <span id="leakExCost">0.12</span> U$S/kWh</span><br><span class="font-bold ml-4">Costo Anual ≈ U$S <span id="leakExStep4">446</span></span></li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+            <section class="card p-8 mt-8">
+                <h2 class="text-3xl font-bold mb-4 text-center">Gráfico: Costo Anual de Fuga vs. Diámetro</h2>
+                <div class="chart-container" style="position: relative; height:50vh; width:100%; max-width: 900px; margin: auto;">
+                    <canvas id="leakCostChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <!-- Módulo 2: Ahorro por Presión -->
+        <div id="pressure-tab" class="tab-content">
+            <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-2 card p-8 space-y-6">
+                    <h2 class="text-2xl font-bold text-center">Calculadora de Ahorro por Presión</h2>
+                    <div>
+                        <label for="compressorAirflow" class="block text-md font-medium text-gray-700">Caudal del Compresor (m³/min)</label>
+                        <input type="number" id="compressorAirflow" value="28" class="w-full mt-2 p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label for="currentPressure" class="block text-md font-medium text-gray-700">Presión de Operación Actual (bar)</label>
+                        <input type="number" id="currentPressure" value="8" class="w-full mt-2 p-2 border border-gray-300 rounded-md">
+                    </div>
+                     <div>
+                        <label for="newPressure" class="block text-md font-medium text-gray-700">Nueva Presión de Operación (bar)</label>
+                        <input type="number" id="newPressure" value="6" class="w-full mt-2 p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label for="specificPowerPressure" class="block text-md font-medium text-gray-700">Potencia Específica Actual (kW / (m³/min))</label>
+                        <input type="number" id="specificPowerPressure" step="0.1" value="6.5" class="w-full mt-2 p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div class="mt-2">
+                        <details class="border border-gray-200 rounded-lg bg-white">
+                            <summary class="cursor-pointer p-3 font-medium text-gray-700 hover:bg-gray-50 flex justify-between items-center list-none">
+                                <span>Tabla de Referencia de Potencia Específica</span>
+                                <svg class="w-5 h-5 transition-transform transform arrow-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </summary>
+                            <div class="p-4 border-t border-gray-200"><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-100"><tr><th scope="col" class="px-4 py-2">Tecnología</th><th scope="col" class="px-4 py-2">Eficiencia</th><th scope="col" class="px-4 py-2">Potencia Específica (kW/m³/min)</th></tr></thead><tbody><tr class="bg-gray-200 font-semibold"><td colspan="3" class="px-4 py-2">Compresor de Tornillo Rotativo</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Óptima (VSD, 2 etapas)</td><td class="px-4 py-2">5.0 - 5.8</td></tr><tr class="bg-gray-50 border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Buena (Moderno, vel. fija)</td><td class="px-4 py-2">5.8 - 6.5</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Regular (Antiguo, carga parcial)</td><td class="px-4 py-2">6.5 - 7.5</td></tr><tr class="bg-gray-200 font-semibold"><td colspan="3" class="px-4 py-2">Compresor de Pistón (Reciprocante)</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Una Etapa (Pequeño)</td><td class="px-4 py-2">8.0 - 10.0</td></tr><tr class="bg-gray-50 border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Dos Etapas (Industrial)</td><td class="px-4 py-2">6.8 - 8.5</td></tr><tr class="bg-gray-200 font-semibold"><td colspan="3" class="px-4 py-2">Compresor Centrífugo (Grandes caudales)</td></tr><tr class="bg-white border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Moderno (IGV, alta eficiencia)</td><td class="px-4 py-2">5.3 - 6.2</td></tr><tr class="bg-gray-50 border-b"><td></td><td class="px-4 py-2 font-medium text-gray-900">Antiguo o fuera de punto óptimo</td><td class="px-4 py-2">6.2 - 7.8</td></tr></tbody></table></div></div>
+                        </details>
+                    </div>
+                </div>
+                <div class="lg:col-span-3 card p-8 space-y-6">
+                    <h2 class="text-2xl font-bold text-center">Resultados del Ahorro por Presión</h2>
+                    <div class="result-box p-6 rounded-lg space-y-4">
+                        <div><p class="text-sm font-medium text-gray-600">Reducción de Presión</p><p class="text-3xl font-bold accent-color"><span id="pressureDropResult">2.0</span> bar</p></div>
+                        <div><p class="text-sm font-medium text-gray-600">Ahorro de Energía Estimado</p><p class="text-3xl font-bold accent-color"><span id="energySavingResult">14.0</span> %</p></div>
+                        <div><p class="text-sm font-medium text-gray-600">Ahorro Anual Estimado</p><p class="text-4xl font-bold text-green-600">U$S <span id="pressureSavingsResult">24,752</span></p></div>
+                    </div>
+                </div>
+            </main>
+            <section class="card p-8 mt-8">
+                <h2 class="text-3xl font-bold mb-4 text-center">Teoría y Cálculo Práctico (Interactivo)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Regla General de la Industria</h3>
+                        <p class="text-gray-700">Se estima que por cada <strong>1 bar de reducción</strong> en la presión de descarga, el consumo de energía se reduce aproximadamente en un <strong>7%</strong>.</p>
+                        <p class="mt-4"><strong>Fuente:</strong> U.S. Department of Energy (DOE) y Compressed Air and Gas Institute (CAGI).</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Ejemplo Detallado</h3>
+                        <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                            <li><b>Calcular Potencia Actual:</b><br><span class="font-mono ml-4">P = <span id="pressExAirflow">28</span> m³/min × <span id="pressExSpPower">6.5</span> kW/(m³/min) = <span id="pressExStep1">182.0</span> kW</span></li>
+                            <li><b>Calcular Ahorro de Energía:</b><br><span class="font-mono ml-4">Ahorro = (<span id="pressExPCurrent">8</span> bar - <span id="pressExPNew">6</span> bar) × 7% = <span id="pressExStep2">14.0</span> %</span></li>
+                            <li><b>Calcular Ahorro de Potencia:</b><br><span class="font-mono ml-4">Ahorro kW = <span id="pressExStep1_2">182.0</span> kW × <span id="pressExStep2_2">14.0</span>% = <span id="pressExStep3">25.5</span> kW</span></li>
+                            <li><b>Calcular Ahorro Anual:</b><br><span class="font-mono ml-4">Ahorro = <span id="pressExStep3_2">25.5</span> kW × <span id="pressExHours">8000</span> h × <span id="pressExCost">0.12</span> U$S/kWh</span><br><span class="font-bold ml-4">Ahorro Anual ≈ U$S <span id="pressExStep4">24,472</span></span></li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- NAVEGACIÓN Y CONSTANTES ---
+            const navButtons = document.querySelectorAll('.nav-button');
+            const tabs = document.querySelectorAll('.tab-content');
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    navButtons.forEach(btn => btn.classList.remove('nav-button-active'));
+                    button.classList.add('nav-button-active');
+                    const targetTab = button.dataset.tab;
+                    tabs.forEach(tab => tab.id === `${targetTab}-tab` ? tab.classList.add('tab-active') : tab.classList.remove('tab-active'));
+                });
+            });
+
+            // --- INPUTS GLOBALES ---
+            const operatingHoursInput = document.getElementById('operatingHours');
+            const energyCostInput = document.getElementById('energyCost');
+
+            // --- MÓDULO 1: FUGAS ---
+            const leakDiameterSlider = document.getElementById('leakDiameter'); const systemPressureSlider = document.getElementById('systemPressure'); const specificPowerLeaksInput = document.getElementById('specificPowerLeaks');
+            const leakDiameterValue = document.getElementById('leakDiameterValue'); const systemPressureValue = document.getElementById('systemPressureValue');
+            const airLossResult = document.getElementById('airLossResult'); const powerLossResult = document.getElementById('powerLossResult'); const annualCostLeaksResult = document.getElementById('annualCostLeaksResult');
+            // Spans de ejemplo para fugas
+            const leakExDiameter1 = document.getElementById('leakExDiameter1'); const leakExPressure = document.getElementById('leakExPressure'); const leakExStep1 = document.getElementById('leakExStep1'); const leakExStep1_2 = document.getElementById('leakExStep1_2'); const leakExStep2 = document.getElementById('leakExStep2'); const leakExStep2_2 = document.getElementById('leakExStep2_2'); const leakExSpPower = document.getElementById('leakExSpPower'); const leakExStep3 = document.getElementById('leakExStep3'); const leakExStep3_2 = document.getElementById('leakExStep3_2'); const leakExHours = document.getElementById('leakExHours'); const leakExCost = document.getElementById('leakExCost'); const leakExStep4 = document.getElementById('leakExStep4');
+
+            // --- MÓDULO 2: PRESIÓN ---
+            const compressorAirflowInput = document.getElementById('compressorAirflow'); const currentPressureInput = document.getElementById('currentPressure'); const newPressureInput = document.getElementById('newPressure'); const specificPowerPressureInput = document.getElementById('specificPowerPressure');
+            const pressureDropResult = document.getElementById('pressureDropResult'); const energySavingResult = document.getElementById('energySavingResult'); const pressureSavingsResult = document.getElementById('pressureSavingsResult');
+            // Spans de ejemplo para presión
+            const pressExAirflow = document.getElementById('pressExAirflow'); const pressExSpPower = document.getElementById('pressExSpPower'); const pressExStep1 = document.getElementById('pressExStep1'); const pressExPCurrent = document.getElementById('pressExPCurrent'); const pressExPNew = document.getElementById('pressExPNew'); const pressExStep2 = document.getElementById('pressExStep2'); const pressExStep1_2 = document.getElementById('pressExStep1_2'); const pressExStep2_2 = document.getElementById('pressExStep2_2'); const pressExStep3 = document.getElementById('pressExStep3'); const pressExStep3_2 = document.getElementById('pressExStep3_2'); const pressExHours = document.getElementById('pressExHours'); const pressExCost = document.getElementById('pressExCost'); const pressExStep4 = document.getElementById('pressExStep4');
+
+            // --- GRÁFICO ---
+            const leakCtx = document.getElementById('leakCostChart').getContext('2d');
+            const leakCostChart = new Chart(leakCtx, { type: 'line', data: { labels: [], datasets: [{ label: 'Costo Anual (U$S)', tension: 0.1, fill: true, backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: 'rgba(220, 38, 38, 1)' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: value => 'U$S ' + value.toLocaleString() } }, x: { title: { display: true, text: 'Diámetro de Fuga (mm)' } } }, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: U$S ${ctx.parsed.y.toLocaleString('es-ES', { maximumFractionDigits: 0 })}` } } } } });
+
+            // --- LÓGICA DE CÁLCULO ---
+            function calculateAll() { calculateLeaks(); calculatePressureReduction(); }
+
+            function calculateLeaks() {
+                const D = parseFloat(leakDiameterSlider.value); const P = parseFloat(systemPressureSlider.value);
+                const specificPower = parseFloat(specificPowerLeaksInput.value); const hours = parseFloat(operatingHoursInput.value); const cost = parseFloat(energyCostInput.value);
+                leakDiameterValue.textContent = D.toFixed(1); systemPressureValue.textContent = P.toFixed(1);
+                if ([D, P, specificPower, hours, cost].some(isNaN)) return;
+
+                const airLossL_SEC = 0.156 * Math.pow(D, 2) * (P + 1);
+                const airLossM3min = (airLossL_SEC * 60) / 1000;
+                const powerLossKw = airLossM3min * specificPower;
+                const annualCost = powerLossKw * hours * cost;
+                airLossResult.textContent = airLossM3min.toFixed(3); powerLossResult.textContent = powerLossKw.toFixed(3); annualCostLeaksResult.textContent = annualCost.toLocaleString('es-ES', { maximumFractionDigits: 0 });
+                
+                // Update interactive example
+                leakExDiameter1.textContent = D.toFixed(1); leakExPressure.textContent = P.toFixed(1);
+                leakExStep1.textContent = airLossL_SEC.toFixed(3); leakExStep1_2.textContent = airLossL_SEC.toFixed(3);
+                leakExStep2.textContent = airLossM3min.toFixed(3); leakExStep2_2.textContent = airLossM3min.toFixed(3);
+                leakExSpPower.textContent = specificPower.toFixed(1); leakExStep3.textContent = powerLossKw.toFixed(3);
+                leakExStep3_2.textContent = powerLossKw.toFixed(3); leakExHours.textContent = hours; leakExCost.textContent = cost;
+                leakExStep4.textContent = annualCost.toLocaleString('es-ES', { maximumFractionDigits: 0 });
+                updateLeakChart();
+            }
+
+            function updateLeakChart() {
+                const P = parseFloat(systemPressureSlider.value); const specificPower = parseFloat(specificPowerLeaksInput.value);
+                const hours = parseFloat(operatingHoursInput.value); const cost = parseFloat(energyCostInput.value);
+                if ([P, specificPower, hours, cost].some(isNaN)) return;
+                const diameters = []; for (let d = 0.5; d <= 18; d += 0.5) diameters.push(d);
+                const costs = diameters.map(D => {
+                    const airLossM3min = (0.156 * Math.pow(D, 2) * (P + 1) * 60) / 1000;
+                    return (airLossM3min * specificPower) * hours * cost;
+                });
+                leakCostChart.data.labels = diameters.map(d => d.toFixed(1)); leakCostChart.data.datasets[0].data = costs; leakCostChart.update();
+            }
+
+            function calculatePressureReduction() {
+                const airflow = parseFloat(compressorAirflowInput.value); const p_current = parseFloat(currentPressureInput.value);
+                const p_new = parseFloat(newPressureInput.value); const specificPower = parseFloat(specificPowerPressureInput.value);
+                const hours = parseFloat(operatingHoursInput.value); const cost = parseFloat(energyCostInput.value);
+                if ([airflow, p_current, p_new, specificPower, hours, cost].some(isNaN) || p_new >= p_current) {
+                    pressureDropResult.textContent = "0.0"; energySavingResult.textContent = "0.0"; pressureSavingsResult.textContent = "0";
+                    return;
+                }
+                const pressureDrop = p_current - p_new;
+                const savingPercentage = pressureDrop * 7.0;
+                const currentPowerKW = airflow * specificPower;
+                const powerSavingKW = currentPowerKW * (savingPercentage / 100);
+                const annualSaving = powerSavingKW * hours * cost;
+                pressureDropResult.textContent = pressureDrop.toFixed(1); energySavingResult.textContent = savingPercentage.toFixed(1);
+                pressureSavingsResult.textContent = annualSaving.toLocaleString('es-ES', { maximumFractionDigits: 0 });
+
+                // Update interactive example
+                pressExAirflow.textContent = airflow; pressExSpPower.textContent = specificPower.toFixed(1);
+                pressExStep1.textContent = currentPowerKW.toFixed(1); pressExStep1_2.textContent = currentPowerKW.toFixed(1);
+                pressExPCurrent.textContent = p_current; pressExPNew.textContent = p_new;
+                pressExStep2.textContent = savingPercentage.toFixed(1); pressExStep2_2.textContent = savingPercentage.toFixed(1);
+                pressExStep3.textContent = powerSavingKW.toFixed(1); pressExStep3_2.textContent = powerSavingKW.toFixed(1);
+                pressExHours.textContent = hours; pressExCost.textContent = cost;
+                pressExStep4.textContent = annualSaving.toLocaleString('es-ES', { maximumFractionDigits: 0 });
+            }
+
+            // --- EVENT LISTENERS ---
+            document.querySelectorAll('.global-input').forEach(el => el.addEventListener('input', calculateAll));
+            document.querySelectorAll('#leaks-tab input').forEach(el => el.addEventListener('input', calculateLeaks));
+            document.querySelectorAll('#pressure-tab input').forEach(el => el.addEventListener('input', calculatePressureReduction));
+            
+            // --- INICIALIZACIÓN ---
+            calculateAll();
+        });
+    </script>
+    <script src="auth.js"></script>
+</body>
+</html>

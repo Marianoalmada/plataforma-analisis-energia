@@ -3124,7 +3124,22 @@ ${dataContext}`;
                     }
                 });
 
-                generateComparativeConclusions(); 
+                generateComparativeConclusions();
+
+                // REGISTRO DE USO IA (Fase 4): notificar al servidor quién usó la IA
+                try {
+                    if (window.IEAuth && IEAuth.email) {
+                        IEAuth.callFunction('log-ia', {
+                            op: 'log',
+                            payload: {
+                                model: modelSelect.value,
+                                tool: 'plataforma_analisis_calidad_energia',
+                                promptTokens: Math.round(prompt.length / 4),
+                                responseTokens: Math.round((text || '').length / 4)
+                            }
+                        }).catch(() => {}); // best-effort: no bloquear si el log falla
+                    }
+                } catch (logErr) { /* silencioso */ }
                 
             } catch (error) {
                 aiOutput.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4"><p class="text-red-700 font-bold">${t('ai.error_title')}</p><p class="text-red-600">${error.message}</p></div>`;

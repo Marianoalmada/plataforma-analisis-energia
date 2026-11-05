@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora EIEC - Inteligencia Energética</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- Tipografía del Portal IE -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel para JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Chart.js para gráficos técnicos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- html2pdf.js para exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        /* Estilos de impresión y PDF */
+        @media print {
+            .no-print { display: none !important; }
+            .avoid-break { break-inside: avoid; }
+        }
+        
+        .pdf-content { background-color: white; }
+    </style>
+
+    <!-- Portal IE: Supabase + configuración compartida (sin credenciales embebidas) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body class="text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONOS SVG ---
+        const Icons = {
+            Zap: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Building: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>,
+            RotateCcw: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>,
+            BarChart2: ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>,
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+            Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
+            HelpCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>,
+            Loader: () => <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>,
+            Activity: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            Video: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+        };
+
+        // --- SISTEMA EXPERTO: RECOMENDACIONES (PERSONALIZADO IE) ---
+        const getRecommendations = (eiecClass, buildingType) => {
+            const recommendations = {
+                'EIEC 0': {
+                    title: 'Nivel Crítico - Instalación Obsoleta',
+                    color: 'red',
+                    diagnosis: 'Instalación con altas pérdidas técnicas y económicas. Riesgo potencial de seguridad eléctrica y paradas no programadas.',
+                    actions: [
+                        { type: 'inmediata', text: 'Auditoría de Seguridad Eléctrica y Termografía (Riesgo de Incendio).' },
+                        { type: 'capex', text: 'Corrección de Factor de Potencia Global para eliminar multas.' },
+                        { type: 'mantenimiento', text: 'Implementar Plan de Mantenimiento Correctivo inmediato en tableros principales.' },
+                        { type: 'gestion', text: 'Iniciar registro básico de facturas de energía.' }
+                    ]
+                },
+                'EIEC 1': {
+                    title: 'Nivel Bajo - Oportunidad de Mejora',
+                    color: 'orange',
+                    diagnosis: 'Instalación funcional pero tecnológicamente desactualizada. Consumos "fantasmas" no detectados.',
+                    actions: [
+                        { type: 'inmediata', text: 'Recambio de iluminación a LED en áreas productivas.' },
+                        { type: 'capex', text: 'Instalación de Medidores IoT IE en cabecera para perfil de carga.' },
+                        { type: 'mantenimiento', text: 'Mantenimiento Preventivo anual en TGBT y Trafos.' },
+                        { type: 'gestion', text: 'Designar responsable de energía.' }
+                    ]
+                },
+                'EIEC 2': {
+                    title: 'Nivel Medio - Estándar de Industria',
+                    color: 'yellow',
+                    diagnosis: 'Cumple lo básico normativo. Oportunidad de ahorro mediante Bancos de Capacitores y Automatización.',
+                    actions: [
+                        { type: 'inmediata', text: 'Estudio de Armónicos (THD) para evitar saturación de transformadores.' },
+                        { type: 'capex', text: 'Banco de Capacitores Automático (Protocolizado Schneider/IE).' },
+                        { type: 'mantenimiento', text: 'Implementar RCM (Mantenimiento Centrado en Confiabilidad).' },
+                        { type: 'gestion', text: 'Sectorizar costos de energía (Sub-metering).' }
+                    ]
+                },
+                'EIEC 3': {
+                    title: 'Nivel Alto - Instalación Eficiente',
+                    color: 'lime',
+                    diagnosis: 'Instalación optimizada. Siguiente paso: Energías Renovables y Digitalización.',
+                    actions: [
+                        { type: 'inmediata', text: 'Gestión de Picos de Demanda (Peak Shaving).' },
+                        { type: 'capex', text: 'Proyecto Solar FV (Autoconsumo) - Solución Llave en Mano IE.' },
+                        { type: 'mantenimiento', text: 'Monitoreo de Condición Online (IoT) en motores principales.' },
+                        { type: 'gestion', text: 'Implementación ISO 50001.' }
+                    ]
+                },
+                'EIEC 4': {
+                    title: 'Clase Mundial - Excelencia Operativa',
+                    color: 'emerald',
+                    diagnosis: 'Líder en eficiencia. Foco en sostenibilidad total y huella de carbono.',
+                    actions: [
+                        { type: 'inmediata', text: 'Certificación de Huella de Carbono.' },
+                        { type: 'capex', text: 'Cargadores de Vehículos Eléctricos y Almacenamiento (BESS).' },
+                        { type: 'mantenimiento', text: 'Mantenimiento Predictivo con IA y Gemelo Digital.' },
+                        { type: 'gestion', text: 'Integración total a BMS/SCADA con dashboards en tiempo real.' }
+                    ]
+                }
+            };
+            return recommendations[eiecClass] || recommendations['EIEC 0'];
+        };
+
+        // --- CONFIGURACIONES DE GRÁFICOS (Chart.js) ---
+        const barycenterConfig = {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'Cargas', data: [{x: 10, y: 20}, {x: 80, y: 80}, {x: 20, y: 80}, {x: 70, y: 20}, {x: 50, y: 50}], backgroundColor: '#0ea5e9' },
+                    { label: 'Baricentro Óptimo', data: [{x: 51, y: 48}], backgroundColor: '#10b981', pointStyle: 'star', radius: 15 },
+                    { label: 'Ubicación Ineficiente', data: [{x: 5, y: 5}], backgroundColor: '#ef4444', pointStyle: 'crossRot', radius: 12 }
+                ]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: true }, 
+                    title: { display: true, text: 'Baricentro de Cargas (Minimización I²R)' } 
+                }, 
+                scales: { x: { min: 0, max: 100 }, y: { min: 0, max: 100 } } 
+            }
+        };
+
+        const deratingConfig = {
+            type: 'line',
+            data: {
+                labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%'],
+                datasets: [{ label: 'Capacidad Disponible Trafo (%)', data: [100, 98, 94, 88, 80, 70, 58], borderColor: '#ef4444', fill: true, backgroundColor: 'rgba(239, 68, 68, 0.1)' }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false }, title: { display: true, text: 'Curva de Derating por Armónicos (K-Factor)' } }, 
+                scales: { y: { min: 50 } } 
+            }
+        };
+
+        const ChartComponent = ({ config }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+            useEffect(() => {
+                if (chartRef.current) {
+                    if (chartInstance.current) chartInstance.current.destroy();
+                    chartInstance.current = new Chart(chartRef.current, config);
+                }
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+            }, [config]);
+            return <canvas ref={chartRef} />;
+        };
+
+        // --- MODELO DE DATOS COMPLETO (RESTAURADO SEGÚN AEA 90364-8-1) ---
+        const parameters = [
+            // --- MEDIDA DE EFICIENCIA (EM) ---
+            {
+                id: 'A.1.1',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Determinación del perfil de demanda (kW)',
+                description: 'Registro de la demanda de potencia en función del tiempo.',
+                details: `<b>Referencia AEA 90364-8-1 Sec. 6.1:</b> Es fundamental conocer el perfil de carga para detectar picos y optimizar el contrato de suministro. Sin medición, no hay gestión.`,
+                options: [
+                    { value: 0, label: '0 pts - Ninguna consideración' },
+                    { value: 1, label: '1 pt - Medición puntual (spot)' },
+                    { value: 2, label: '2 pts - Registro periódico (ej. mensual)' },
+                    { value: 3, label: '3 pts - Registro perfil de carga con almacenamiento' },
+                    { value: 4, label: '4 pts - Registro permanente con análisis y alarmas' }
+                ]
+            },
+            {
+                id: 'A.1.2',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Ubicación de la Subestación Transformadora',
+                description: 'Optimización geométrica respecto al baricentro de cargas.',
+                chartConfig: barycenterConfig,
+                details: `<b>Referencia Sec. 6.3:</b> Ubicar el Transformador o TGBT en el baricentro de carga reduce la longitud de los cables de mayor corriente, minimizando pérdidas I²R y caídas de tensión.`,
+                options: [
+                    { value: 0, label: '0 pts - Ninguna consideración' },
+                    { value: 1, label: '1 pt - Consideración parcial' },
+                    { value: 2, label: '2 pts - Ubicación aproximada' },
+                    { value: 3, label: '3 pts - Cálculo de baricentro (<20% error)' },
+                    { value: 4, label: '4 pts - Ubicación óptima en el Baricentro' }
+                ]
+            },
+            {
+                id: 'A.1.3',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Motores Eléctricos',
+                description: 'Nivel de eficiencia (IE) de los motores instalados.',
+                details: `<b>Referencia IEC 60034-30:</b> Clasificación de eficiencia de motores (IE1 a IE4). El reemplazo por motores de alta eficiencia es una de las medidas de mayor impacto.`,
+                options: [
+                    { value: 0, label: '0 pts - IE1 (Estándar) o menor' },
+                    { value: 1, label: '1 pt - Mezcla IE1 / IE2' },
+                    { value: 2, label: '2 pts - Mayoría IE2 (Alta Eficiencia)' },
+                    { value: 3, label: '3 pts - Mayoría IE3 (Premium)' },
+                    { value: 4, label: '4 pts - 100% IE3 o superior (IE4)' }
+                ]
+            },
+            {
+                id: 'A.1.4',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Iluminación',
+                description: 'Tecnología y control de iluminación.',
+                details: `<b>Eficiencia Pasiva y Activa:</b> Uso de luminarias LED de alta eficacia (lm/W) y sistemas de control por presencia o luz diurna.`,
+                options: [
+                    { value: 0, label: '0 pts - Tecnologías ineficientes / Manual' },
+                    { value: 1, label: '1 pt - Lámparas eficientes (LED)' },
+                    { value: 2, label: '2 pts - LED + Zonificación manual' },
+                    { value: 3, label: '3 pts - LED + Sensores presencia/tiempo' },
+                    { value: 4, label: '4 pts - LED + Control luz diurna + Gestión central' }
+                ]
+            },
+            {
+                id: 'A.1.5',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'HVAC (Climatización)',
+                description: 'Control de sistemas de Calefacción, Ventilación y A/A.',
+                details: `<b>Optimización:</b> Zonificación de temperaturas, uso de variadores en ventiladores/bombas y control por demanda.`,
+                options: [
+                    { value: 0, label: '0 pts - Sin control' },
+                    { value: 1, label: '1 pt - Control On/Off simple' },
+                    { value: 2, label: '2 pts - Control por termostato programable' },
+                    { value: 3, label: '3 pts - Control por zonas y velocidad variable' },
+                    { value: 4, label: '4 pts - Gestión optimizada (BMS) / Free-cooling' }
+                ]
+            },
+            {
+                id: 'A.1.6',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Transformadores',
+                description: 'Eficiencia del equipo y gestión de operación.',
+                details: `<b>Pérdidas:</b> Selección de transformadores de bajas pérdidas en núcleo (vacío) y cobre (carga).`,
+                options: [
+                    { value: 0, label: '0 pts - Estándar antiguo' },
+                    { value: 1, label: '1 pt - Estándar actual' },
+                    { value: 2, label: '2 pts - Bajas pérdidas' },
+                    { value: 3, label: '3 pts - Muy bajas pérdidas (Amorfo)' },
+                    { value: 4, label: '4 pts - Gestión dinámica de bancos de trafos' }
+                ]
+            },
+            {
+                id: 'A.1.7',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Sistema de Cableado',
+                description: 'Dimensionamiento por criterio económico.',
+                details: `<b>Criterio IEC 60287:</b> Aumentar la sección del cable más allá del requisito térmico para reducir la resistencia y las pérdidas I²R durante la vida útil.`,
+                options: [
+                    { value: 0, label: '0 pts - Criterio térmico simple' },
+                    { value: 1, label: '1 pt - Verificación caída tensión' },
+                    { value: 2, label: '2 pts - Caída tensión optimizada (<3%)' },
+                    { value: 3, label: '3 pts - Sección económica en alimentadores' },
+                    { value: 4, label: '4 pts - Sección económica generalizada' }
+                ]
+            },
+            {
+                id: 'A.1.8',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Corrección Factor de Potencia',
+                description: 'Equipos de compensación de reactiva.',
+                details: `<b>Estrategia:</b> Compensar lo más cerca posible de la carga para liberar capacidad del sistema y reducir pérdidas.`,
+                options: [
+                    { value: 0, label: '0 pts - Sin compensación / Multas' },
+                    { value: 1, label: '1 pt - Fija en transformador' },
+                    { value: 2, label: '2 pts - Automática Global (TPBT)' },
+                    { value: 3, label: '3 pts - Compensación por sectores' },
+                    { value: 4, label: '4 pts - Compensación distribuida/individual' }
+                ]
+            },
+            {
+                id: 'A.1.9',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Medición Energía (kWh) y Potencia (kW)',
+                description: 'Nivel de desagregación de la medición.',
+                details: `<b>Sub-metering:</b> Capacidad de medir consumos por usos finales o centros de costo.`,
+                options: [
+                    { value: 0, label: '0 pts - Solo medidor fiscal' },
+                    { value: 1, label: '1 pt - Medición interna global' },
+                    { value: 2, label: '2 pts - Submedición por grandes áreas' },
+                    { value: 3, label: '3 pts - Submedición por usos (Ilum, HVAC, Fuerza)' },
+                    { value: 4, label: '4 pts - Submedición detallada (circuito final)' }
+                ]
+            },
+            {
+                id: 'A.1.10',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Medición de Tensión (V)',
+                description: 'Monitoreo de la calidad de tensión.',
+                details: `<b>Calidad:</b> Control de niveles de tensión, desequilibrios y huecos que afectan el rendimiento de equipos.`,
+                options: [
+                    { value: 0, label: '0 pts - Sin medición' },
+                    { value: 1, label: '1 pt - Medición puntual' },
+                    { value: 2, label: '2 pts - Voltímetro en tablero principal' },
+                    { value: 3, label: '3 pts - Registro histórico en cabecera' },
+                    { value: 4, label: '4 pts - Monitoreo permanente Calidad de Energía' }
+                ]
+            },
+            {
+                id: 'A.1.11',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Medición de Factor de Potencia',
+                description: 'Instrumentación para el control del FP.',
+                details: `<b>Visibilidad:</b> Necesaria para mantener el FP alto y evitar resonancias.`,
+                options: [
+                    { value: 0, label: '0 pts - Sin medición' },
+                    { value: 1, label: '1 pt - Factura de servicio' },
+                    { value: 2, label: '2 pts - Medición instantánea en TPBT' },
+                    { value: 3, label: '3 pts - Registro en TPBT' },
+                    { value: 4, label: '4 pts - Monitoreo permanente en TS' }
+                ]
+            },
+            {
+                id: 'A.1.12',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Medición de Armónicos',
+                chartConfig: deratingConfig,
+                description: 'Control de THDv y THDi.',
+                details: `<b>Impacto:</b> Los armónicos generan calor sin trabajo útil. Se requiere medir el espectro para dimensionar filtros.`,
+                options: [
+                    { value: 0, label: '0 pts - Sin consideración' },
+                    { value: 1, label: '1 pt - Medición puntual ocasional' },
+                    { value: 2, label: '2 pts - Medición periódica en origen' },
+                    { value: 3, label: '3 pts - Permanente en origen c/espectro' },
+                    { value: 4, label: '4 pts - Permanente en origen y seccionales' }
+                ]
+            },
+            {
+                id: 'A.1.13',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Energía Renovable',
+                description: 'Fuentes de energía renovables in-situ.',
+                details: `<b>Autogeneración:</b> Solar FV, Eólica, etc., para reducir la demanda de red y pérdidas de transmisión.`,
+                options: [
+                    { value: 0, label: '0 pts - Sin renovables' },
+                    { value: 1, label: '1 pt - Previsión de espacio/infraestructura' },
+                    { value: 2, label: '2 pts - < 1% de la demanda' },
+                    { value: 3, label: '3 pts - 1% a 5% de la demanda' },
+                    { value: 4, label: '4 pts - > 5% de la demanda o ZEB' }
+                ]
+            },
+            {
+                id: 'A.1.14',
+                category: 'EM',
+                categoryTitle: 'Medida de Eficiencia (EM)',
+                title: 'Regulación de Fluidos',
+                description: 'Control de bombas y ventiladores.',
+                details: `<b>Variadores:</b> Uso de VSD para ajustar la velocidad de bombas y ventiladores a la demanda real (Ahorro cúbico).`,
+                options: [
+                    { value: 0, label: '0 pts - Estrangulamiento mecánico' },
+                    { value: 1, label: '1 pt - Control On/Off' },
+                    { value: 2, label: '2 pts - Motores de 2 velocidades' },
+                    { value: 3, label: '3 pts - VSD en equipos principales' },
+                    { value: 4, label: '4 pts - VSD generalizado con lazo cerrado' }
+                ]
+            },
+            // --- NIVELES DE DESEMPEÑO (EEPL) ---
+            {
+                id: 'A.2.1',
+                category: 'EEPL',
+                categoryTitle: 'Nivel de Desempeño (EEPL)',
+                title: 'Distribución del Consumo Anual',
+                description: 'Capacidad de discriminar el consumo.',
+                details: `<b>Balance:</b> Porcentaje del consumo total que puede ser asignado a usos específicos mediante medición.`,
+                options: [
+                    { value: 0, label: '0 pts - Sin discriminación' },
+                    { value: 1, label: '1 pt - 75% discriminado' },
+                    { value: 2, label: '2 pts - 85% discriminado' },
+                    { value: 3, label: '3 pts - 90% discriminado' },
+                    { value: 4, label: '4 pts - 94% discriminado por zonas y uso' }
+                ]
+            },
+            {
+                id: 'A.2.2',
+                category: 'EEPL',
+                categoryTitle: 'Nivel de Desempeño (EEPL)',
+                title: 'Factor de Potencia (Resultado)',
+                description: 'Valor medio obtenido.',
+                details: `<b>Resultado:</b> Eficiencia lograda en la reducción de reactiva.`,
+                options: [
+                    { value: 0, label: '0 pts - < 0.85' },
+                    { value: 1, label: '1 pt - > 0.85' },
+                    { value: 2, label: '2 pts - > 0.90' },
+                    { value: 3, label: '3 pts - > 0.93' },
+                    { value: 4, label: '4 pts - > 0.95' }
+                ]
+            },
+            {
+                id: 'A.2.3',
+                category: 'EEPL',
+                categoryTitle: 'Nivel de Desempeño (EEPL)',
+                title: 'Eficiencia del Transformador',
+                description: 'Eficiencia operativa real.',
+                details: `<b>Punto de Operación:</b> Factor de carga y eficiencia resultante.`,
+                options: [
+                    { value: 0, label: '0 pts - Desconocida / Baja' },
+                    { value: 1, label: '1 pt - > 95%' },
+                    { value: 2, label: '2 pts - > 97%' },
+                    { value: 3, label: '3 pts - > 98%' },
+                    { value: 4, label: '4 pts - > 99% (Carga óptima)' }
+                ]
+            },
+        ];
+
+        const App = () => {
+            const [buildingType, setBuildingType] = useState('industrial'); 
+            const [clientName, setClientName] = useState('');
+            const [scores, setScores] = useState({});
+            const [totalScore, setTotalScore] = useState(0);
+            const [eiecClass, setEiecClass] = useState('EIEC 0');
+            const [showReport, setShowReport] = useState(false);
+            const [expandedDetails, setExpandedDetails] = useState(null);
+            const [isExporting, setIsExporting] = useState(false);
+            const [recommendation, setRecommendation] = useState(null);
+
+            useEffect(() => {
+                const initialScores = {};
+                parameters.forEach(p => initialScores[p.id] = 0);
+                setScores(initialScores);
+            }, []);
+
+            useEffect(() => {
+                const total = Object.values(scores).reduce((a, b) => a + b, 0);
+                setTotalScore(total);
+
+                let result = 'EIEC 0';
+                // Lógica AEA:
+                if (total < 24) result = 'EIEC 0';
+                else if (total < 36) result = 'EIEC 1';
+                else if (total < 48) result = 'EIEC 2';
+                else if (total < 60) result = 'EIEC 3';
+                else result = 'EIEC 4';
+                
+                setEiecClass(result);
+                setRecommendation(getRecommendations(result, buildingType));
+            }, [scores, buildingType]);
+
+            const handleScoreChange = (id, value) => setScores(prev => ({...prev, [id]: parseInt(value)}));
+            const toggleDetails = (id) => setExpandedDetails(expandedDetails === id ? null : id);
+            
+            const resetCalculator = () => {
+                const newScores = {};
+                parameters.forEach(p => newScores[p.id] = 0);
+                setScores(newScores);
+                setEiecClass('EIEC 0');
+                setClientName('');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const getEiecColor = (cls) => {
+                switch(cls) {
+                    case 'EIEC 0': return 'bg-red-500 text-white border-red-600';
+                    case 'EIEC 1': return 'bg-orange-500 text-white border-orange-600';
+                    case 'EIEC 2': return 'bg-yellow-400 text-black border-yellow-500';
+                    case 'EIEC 3': return 'bg-lime-500 text-black border-lime-600';
+                    case 'EIEC 4': return 'bg-emerald-600 text-white border-emerald-700';
+                    default: return 'bg-gray-400 text-white';
+                }
+            };
+
+            const handleExportPdf = () => {
+                setIsExporting(true);
+                const element = document.getElementById('report-content');
+                const opt = {
+                    margin: 5,
+                    filename: `IE_Reporte_EIEC_${clientName.replace(/\s+/g, '_') || 'Cliente'}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                };
+                
+                // Pequeño delay para asegurar que React actualizó el DOM
+                setTimeout(() => {
+                    html2pdf().set(opt).from(element).save().then(() => setIsExporting(false));
+                }, 500);
+            };
+
+            // Componente de Radar
+            const RadarChartComponent = ({ scores }) => {
+                const dataValues = [
+                    ((scores['A.1.2'] + scores['A.1.7'] + scores['A.1.6']) / 12) * 100, // Infraestructura
+                    ((scores['A.1.3'] + scores['A.1.4'] + scores['A.1.5'] + scores['A.1.14']) / 16) * 100, // Equipos
+                    ((scores['A.1.8'] + scores['A.1.12'] + scores['A.1.10']) / 12) * 100, // Calidad
+                    ((scores['A.1.9'] + scores['A.2.1'] + scores['A.1.1']) / 12) * 100, // Gestión
+                    ((scores['A.1.13']) / 4) * 100 // Renovables
+                ];
+                const config = {
+                    type: 'radar',
+                    data: {
+                        labels: ['Infraestructura', 'Equipos', 'Calidad Red', 'Gestión', 'Renovables'],
+                        datasets: [{ label: 'Estado Actual', data: dataValues, fill: true, backgroundColor: 'rgba(14, 165, 233, 0.4)', borderColor: '#0ea5e9' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+                };
+                return <ChartComponent config={config} />;
+            };
+
+            // Componente de Barras Horizontales con ESTILOS EN LÍNEA para PDF
+            const HorizontalBarChart = ({ items, scoreData }) => {
+                return (
+                    <div className="space-y-4 w-full">
+                        {items.map((item) => {
+                            const score = scoreData[item.id] || 0;
+                            const percentage = (score / 4) * 100;
+                            
+                            let barColor = '#e2e8f0'; // slate-200
+                            if (score === 4) barColor = '#10b981'; // emerald-500
+                            else if (score >= 2) barColor = '#3b82f6'; // blue-500
+                            else if (score > 0) barColor = '#fb923c'; // orange-400
+
+                            return (
+                                <div key={item.id} className="flex items-center text-xs sm:text-sm avoid-break w-full">
+                                    <div className="w-12 font-bold text-slate-500 flex-shrink-0">{item.id}</div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="font-medium text-slate-700 truncate pr-2" title={item.title}>{item.title}</span>
+                                            <span className="font-bold text-slate-900">{score}/4</span>
+                                        </div>
+                                        <div style={{ width: '100%', backgroundColor: '#f1f5f9', borderRadius: '9999px', height: '10px', overflow: 'hidden' }}>
+                                            <div 
+                                                style={{ width: `${percentage}%`, backgroundColor: barColor, height: '100%', borderRadius: '9999px', transition: 'width 0.5s' }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            };
+
+            const emParams = parameters.filter(p => p.category === 'EM');
+            const eeplParams = parameters.filter(p => p.category === 'EEPL');
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans pb-24">
+                    
+                    {/* NAVBAR — Estética unificada Portal IE */}
+                    <header className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-lg sticky top-0 z-20 no-print">
+                        <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/10 rounded border border-white/20">
+                                    <span className="font-black text-xl tracking-tighter">IE</span>
+                                </div>
+                                <div>
+                                    <h1 className="text-base sm:text-lg font-bold leading-tight">Inteligencia Energética <span className="text-blue-200 font-medium">— Herramientas de Ingeniería</span></h1>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <a 
+                                    href="https://youtu.be/4wcmu9xsBdM" 
+                                    target="_blank" 
+                                    className="text-xs bg-red-600 hover:bg-red-700 px-3 py-2 rounded font-bold transition-colors flex items-center gap-2"
+                                    title="Ver video explicativo AEA 90364-8"
+                                >
+                                    <Icons.Video /> VIDEO GUÍA
+                                </a>
+                                <button onClick={() => setShowReport(true)} className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded font-bold transition-colors flex items-center gap-2">
+                                    <Icons.FileText /> REPORTE
+                                </button>
+                                <button onClick={resetCalculator} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-2 rounded text-blue-100 transition-colors">
+                                    <Icons.RotateCcw />
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* MAIN CALCULATOR */}
+                    {!showReport && (
+                        <main className="max-w-4xl mx-auto px-4 py-8 animate-in fade-in duration-500 no-print">
+                            
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+                                <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2">
+                                    <Icons.User /> Datos del Cliente
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Empresa / Cliente</label>
+                                        <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Ej. Planta Industrial Córdoba" className="w-full mt-1 p-3 border rounded bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Tipo de Industria</label>
+                                        <div className="flex gap-2 mt-1">
+                                            <button onClick={() => setBuildingType('industrial')} className={`flex-1 p-3 rounded border text-sm font-bold ${buildingType === 'industrial' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500'}`}>INDUSTRIAL</button>
+                                            <button onClick={() => setBuildingType('residential')} className={`flex-1 p-3 rounded border text-sm font-bold ${buildingType === 'residential' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500'}`}>RESIDENCIAL</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {parameters.map((param) => (
+                                    <div key={param.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                        <div className="p-4 flex items-center gap-4">
+                                            <div className="w-16 text-center">
+                                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded block">{param.id}</span>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-bold text-slate-800">{param.title}</h3>
+                                                    <button onClick={() => toggleDetails(param.id)} className="text-slate-400 hover:text-blue-500"><Icons.HelpCircle /></button>
+                                                </div>
+                                                <p className="text-xs text-slate-500">{param.description}</p>
+                                            </div>
+                                            <div className="w-64">
+                                                <select value={scores[param.id]} onChange={(e) => handleScoreChange(param.id, e.target.value)} className="w-full p-2 text-xs border rounded bg-slate-50 font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-blue-500 outline-none truncate">
+                                                    {param.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* DETALLES TÉCNICOS + GRÁFICO */}
+                                        {expandedDetails === param.id && (
+                                            <div className="bg-slate-50 border-t border-slate-200 p-4 animate-in slide-in-from-top-2">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div className={`${param.chartConfig ? 'md:col-span-2' : 'md:col-span-3'}`}>
+                                                        <h4 className="text-xs font-bold text-blue-800 uppercase mb-2">Criterio Técnico AEA</h4>
+                                                        <p className="text-sm text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{__html: param.details}} />
+                                                    </div>
+                                                    {param.chartConfig && (
+                                                        <div className="bg-white p-2 rounded border h-48">
+                                                            <ChartComponent config={param.chartConfig} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </main>
+                    )}
+
+                    {/* MODAL DE REPORTE */}
+                    {showReport && recommendation && (
+                        <div className="fixed inset-0 bg-slate-900/50 z-50 overflow-y-auto backdrop-blur-sm">
+                            <div className="min-h-screen px-4 py-8 flex justify-center">
+                                <div className="bg-white w-full max-w-5xl rounded-xl shadow-2xl overflow-hidden flex flex-col h-fit">
+                                    
+                                    {/* Toolbar Reporte */}
+                                    <div className="p-4 bg-slate-100 border-b flex justify-between items-center no-print sticky top-0 z-10">
+                                        <h2 className="font-bold text-slate-700 flex items-center gap-2"><Icons.FileText /> Vista Previa del Informe</h2>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setShowReport(false)} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded">Cerrar</button>
+                                            <button onClick={handleExportPdf} disabled={isExporting} className="px-4 py-2 text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 rounded flex items-center gap-2">
+                                                {isExporting ? <Icons.Loader /> : <Icons.Download />} {isExporting ? 'Generando...' : 'Descargar PDF'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* CONTENIDO DEL PDF */}
+                                    <div id="report-content" className="pdf-content p-8 md:p-12">
+                                        
+                                        {/* Cabecera Informe */}
+                                        <div className="flex justify-between items-end border-b-4 border-blue-600 pb-6 mb-8">
+                                            <div>
+                                                <div className="text-4xl font-black text-slate-900 tracking-tight">IE</div>
+                                                <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">Inteligencia Energética</div>
+                                                <div className="text-xs text-slate-400 mt-1">Ingeniería & Gestión de Activos</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <h1 className="text-2xl font-bold text-slate-800">INFORME TÉCNICO EIEC</h1>
+                                                <p className="text-sm text-slate-500">Ref: AEA 90364-8-1</p>
+                                                <div className="mt-2 text-sm font-medium bg-slate-100 px-3 py-1 rounded inline-block">
+                                                    Cliente: {clientName || '---'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Dashboard Resultados */}
+                                        <div className="grid grid-cols-3 gap-8 mb-8 avoid-break">
+                                            <div className="col-span-1 bg-slate-50 rounded-xl border border-slate-200 p-6 flex flex-col justify-center items-center text-center">
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Clasificación Obtenida</span>
+                                                <div className={`text-5xl font-black px-6 py-2 rounded-lg border-2 mb-2 bg-white ${getEiecColor(eiecClass).replace('text-white', 'text-slate-800').replace('bg-', 'border-')}`}>
+                                                    {eiecClass}
+                                                </div>
+                                                <div className="text-3xl font-bold text-slate-800">{totalScore}</div>
+                                                <div className="text-xs text-slate-500 uppercase mt-1">Puntaje Total</div>
+                                            </div>
+                                            <div className="col-span-2 bg-white rounded-xl border border-slate-200 p-4 h-64 relative">
+                                                <span className="absolute top-4 left-4 text-xs font-bold text-slate-400 uppercase">Análisis de Brechas</span>
+                                                <RadarChartComponent scores={scores} />
+                                            </div>
+                                        </div>
+
+                                        {/* PLAN DE ACCIÓN EXPERTO */}
+                                        <div className="mb-8 avoid-break">
+                                            <h3 className="text-lg font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+                                                <Icons.Activity /> Plan de Acción Sugerido
+                                            </h3>
+                                            
+                                            <div className={`bg-${recommendation.color}-50 border-l-4 border-${recommendation.color}-500 p-6 rounded-r-lg mb-6`}>
+                                                <h4 className={`text-xl font-bold text-${recommendation.color}-800 mb-2`}>{recommendation.title}</h4>
+                                                <p className={`text-${recommendation.color}-900 font-medium italic mb-4`}>"{recommendation.diagnosis}"</p>
+                                                
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-white p-4 rounded shadow-sm border border-slate-100">
+                                                        <h5 className="font-bold text-slate-700 text-xs uppercase mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span> Inmediato / Seguridad</h5>
+                                                        <ul className="text-sm text-slate-600 list-disc list-inside">
+                                                            {recommendation.actions.filter(a => a.type === 'inmediata').map((a, i) => <li key={i}>{a.text}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div className="bg-white p-4 rounded shadow-sm border border-slate-100">
+                                                        <h5 className="font-bold text-slate-700 text-xs uppercase mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> CAPEX (Inversión)</h5>
+                                                        <ul className="text-sm text-slate-600 list-disc list-inside">
+                                                            {recommendation.actions.filter(a => a.type === 'capex').map((a, i) => <li key={i}>{a.text}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div className="bg-white p-4 rounded shadow-sm border border-slate-100">
+                                                        <h5 className="font-bold text-slate-700 text-xs uppercase mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Mantenimiento (RCM)</h5>
+                                                        <ul className="text-sm text-slate-600 list-disc list-inside">
+                                                            {recommendation.actions.filter(a => a.type === 'mantenimiento').map((a, i) => <li key={i}>{a.text}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div className="bg-white p-4 rounded shadow-sm border border-slate-100">
+                                                        <h5 className="font-bold text-slate-700 text-xs uppercase mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span> Gestión & Lean</h5>
+                                                        <ul className="text-sm text-slate-600 list-disc list-inside">
+                                                            {recommendation.actions.filter(a => a.type === 'gestion').map((a, i) => <li key={i}>{a.text}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* DETALLE DE PUNTUACIÓN (BARRAS HORIZONTALES) */}
+                                        <div className="space-y-8">
+                                            <div className="bg-white avoid-break">
+                                                <h3 className="text-lg font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                                                    <span className="text-blue-600"><Icons.BarChart2 /></span> 
+                                                    Medidas de Eficiencia (EM)
+                                                </h3>
+                                                <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                                                    <HorizontalBarChart items={emParams} scoreData={scores} />
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white avoid-break">
+                                                <h3 className="text-lg font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                                                    <span className="text-emerald-600"><Icons.BarChart2 /></span> 
+                                                    Nivel de Desempeño (EEPL)
+                                                </h3>
+                                                <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                                                    <HorizontalBarChart items={eeplParams} scoreData={scores} />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* RECURSOS Y REFERENCIAS (NUEVO) */}
+                                        <div className="mt-8 pt-4 border-t border-slate-200 avoid-break">
+                                            <h4 className="text-sm font-bold text-slate-700 mb-2">Referencias Normativas & Recursos</h4>
+                                            <ul className="text-xs text-slate-500 list-disc list-inside">
+                                                <li>Reglamentación AEA 90364-8-1 (Ed. 2019) "Eficiencia Energética en Instalaciones de Baja Tensión".</li>
+                                                <li>IEC 60034-30 (Eficiencia de Motores).</li>
+                                                <li>Video Capacitación Técnica: <a href="https://youtu.be/4wcmu9xsBdM" className="text-blue-600 underline">Guía de Implementación AEA 90364-8</a>.</li>
+                                            </ul>
+                                        </div>
+
+                                        {/* Footer firma */}
+                                        <div className="mt-12 pt-6 border-t border-slate-200 flex justify-between items-center avoid-break">
+                                            <div className="text-xs text-slate-400">
+                                                <p className="font-bold">Inteligencia Energética</p>
+                                                <p>www.inteligenciaenergetica.com.ar</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="h-16 w-32 bg-slate-50 mb-2 rounded flex items-end justify-center">
+                                                    {/* Espacio para firma digital */}
+                                                </div> 
+                                                <p className="text-sm font-bold text-slate-800">Ing. Mariano Almada</p>
+                                                <p className="text-xs text-slate-500">Gerente de Ingeniería</p>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer Flotante */}
+                    {!showReport && (
+                        <div className="fixed bottom-0 w-full bg-white border-t border-slate-200 p-4 shadow-lg z-30 no-print flex justify-between items-center max-w-4xl mx-auto left-0 right-0">
+                            <div>
+                                <div className="text-xs font-bold text-slate-400 uppercase">Puntaje</div>
+                                <div className="text-2xl font-black text-slate-800">{totalScore}</div>
+                            </div>
+                            <div className={`px-4 py-1 rounded text-lg font-bold border ${getEiecColor(eiecClass).replace('text-white', 'text-slate-700').replace('bg-', 'border-')}`}>
+                                {eiecClass}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+
+    <!-- Control de acceso compartido del Portal IE: auth.js inyecta la pantalla de login -->
+    <script src="auth.js"></script>
+</body>
+</html>
