@@ -86,16 +86,21 @@
         sb: null,
         email: null,
         isAdmin: false,
+        sharedAIConfig: null,
         _cbs: [],
         onLogin(cb) { if (typeof cb === 'function') this._cbs.push(cb); },
 
         async adminFetch(op, payload) {
+            return this.callFunction('admin-usuarios', { op, payload: payload || {} });
+        },
+
+        async callFunction(fnName, body) {
             const { data } = await sb.auth.getSession();
             const token = data && data.session ? data.session.access_token : '';
-            const res = await fetch(cfg().url + '/functions/v1/admin-usuarios', {
+            const res = await fetch(cfg().url + '/functions/v1/' + fnName, {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + token, 'apikey': cfg().anon, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ op, payload: payload || {} })
+                body: JSON.stringify(body)
             });
             const json = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(json.error || ('HTTP ' + res.status));
@@ -244,6 +249,11 @@
         btnUser.classList.remove('hidden');
         emailSpan.textContent = email;
         IEAuth.email = email;
+        // Descargar la configuración IA compartida del servidor (admin la configura
+        // en el portal; los usuarios la consumen automáticamente).
+        try {
+            IEAuth.sharedAIConfig = await IEAuth.callFunction('config-ia', { op: 'get' });
+        } catch (e) { IEAuth.sharedAIConfig = null; }
         await IEAuth._checkAdmin();
         IEAuth._cbs.forEach(cb => { try { cb(IEAuth); } catch (e) { } });
     }

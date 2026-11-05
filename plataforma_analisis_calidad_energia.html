@@ -953,13 +953,21 @@
         if (!AI_PROVIDERS[activeAIProviderId]) activeAIProviderId = 'xiaomi';
 
         function currentAIProvider() { return AI_PROVIDERS[activeAIProviderId]; }
-        // Key externa desde config.js (archivo local, ignorado por git). Prioridad:
-        // 1° key escrita por el usuario en la UI (localStorage) → 2° config.js → 3° pedir.
+        // Key externa: config.js local o configuración IA compartida del administrador
+        // (Edge Function config-ia, disponible tras login en el portal).
+        // Prioridad: 1° key del usuario (localStorage) → 2° config.js → 3° servidor → 4° pedir.
         function externalAIKey() {
             const cfg = window.IE_CONFIG;
-            if (!cfg) return '';
-            const k = cfg[String(activeAIProviderId).toUpperCase() + '_API_KEY'];
-            return (typeof k === 'string' && k.trim()) ? k.trim() : '';
+            if (cfg) {
+                const k = cfg[String(activeAIProviderId).toUpperCase() + '_API_KEY'];
+                if (typeof k === 'string' && k.trim()) return k.trim();
+            }
+            // Configuración compartida del administrador
+            if (window.IEAuth && IEAuth.sharedAIConfig && IEAuth.sharedAIConfig.apiKey
+                && IEAuth.sharedAIConfig.provider === activeAIProviderId) {
+                return IEAuth.sharedAIConfig.apiKey;
+            }
+            return '';
         }
         function storedAIKey() { const p = currentAIProvider(); return localStorage.getItem(p.keyStorage) || externalAIKey(); }
 
@@ -6391,5 +6399,24 @@ ${dataContext}`;
 
     <!-- Control de acceso compartido: auth.js inyecta la pantalla de login -->
     <script src="auth.js"></script>
+    <script>
+        // Tras el login: aplicar la configuración IA compartida del administrador
+        // (proveedor + key + modelo) si el usuario no configuró una propia.
+        IEAuth.onLogin((auth) => {
+            const cfg = auth.sharedAIConfig;
+            if (!cfg || !cfg.provider) return;
+            // Aplicar el proveedor del admin si el usuario no eligió uno
+            if (!localStorage.getItem('ai_provider') || localStorage.getItem('ai_provider') !== cfg.provider) {
+                localStorage.setItem('ai_provider', cfg.provider);
+                activeAIProviderId = cfg.provider;
+            }
+            // El modelo preferido del admin si el usuario no fijó uno
+            if (cfg.model && !localStorage.getItem('ai_model_' + cfg.provider)) {
+                localStorage.setItem('ai_model_' + cfg.provider, cfg.model);
+            }
+            // Refrescar la UI del selector de proveedor/modelos
+            applyAIProviderUI();
+        });
+    </script>
 </body>
 </html>

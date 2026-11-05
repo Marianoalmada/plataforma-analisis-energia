@@ -51,17 +51,68 @@
             </div>
 
             <!-- Gestión de usuarios: SÓLO administrador -->
-            <section id="admin-section" class="hidden">
-                <h2 class="text-white/90 font-bold text-sm uppercase tracking-widest mb-4 ml-1">Gestión de accesos</h2>
-                <div class="bg-white rounded-2xl shadow-xl p-6">
-                    <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-                        <div>
-                            <h3 class="text-xl font-bold text-indigo-700">Administración de Usuarios</h3>
-                            <p class="text-gray-500 text-sm">Alta, baja y modificación de accesos al portal. Los cambios aplican al instante.</p>
+            <section id="admin-section" class="hidden space-y-6">
+                <div>
+                    <h2 class="text-white/90 font-bold text-sm uppercase tracking-widest mb-4 ml-1">Gestión de accesos</h2>
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <div>
+                                <h3 class="text-xl font-bold text-indigo-700">Administración de Usuarios</h3>
+                                <p class="text-gray-500 text-sm">Alta, baja y modificación de accesos al portal. Los cambios aplican al instante.</p>
+                            </div>
+                            <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full">🔒 Modo administrador</span>
                         </div>
-                        <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full">🔒 Modo administrador</span>
+                        <div id="users-admin-container"></div>
                     </div>
-                    <div id="users-admin-container"></div>
+                </div>
+
+                <!-- Configuración IA: SÓLO administrador -->
+                <div>
+                    <h2 class="text-white/90 font-bold text-sm uppercase tracking-widest mb-4 ml-1">Configuración IA</h2>
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <div>
+                                <h3 class="text-xl font-bold text-indigo-700">Motor de Inteligencia Artificial</h3>
+                                <p class="text-gray-500 text-sm">Configurá el proveedor y la API key que usarán todos los usuarios habilitados al generar reportes.</p>
+                            </div>
+                            <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full">🔒 Solo administrador</span>
+                        </div>
+
+                        <div id="ai-config-form" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="ai-provider" class="block text-sm font-bold text-gray-700 mb-1">Proveedor de IA</label>
+                                    <select id="ai-provider" class="auth-input">
+                                        <option value="xiaomi">Xiaomi MiMo (directo)</option>
+                                        <option value="gemini">Google Gemini</option>
+                                        <option value="openrouter">OpenRouter</option>
+                                        <option value="custom">Personalizado (compatible OpenAI)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="ai-model-select" class="block text-sm font-bold text-gray-700 mb-1">Modelo
+                                        <button id="btn-refresh-models" class="ml-2 text-xs text-indigo-600 hover:text-indigo-800 font-bold underline" title="Actualizar listado desde el servidor del proveedor">↻ actualizar</button>
+                                    </label>
+                                    <select id="ai-model-select" class="auth-input"><option value="">— Ingresá la API key y actualizá —</option></select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="ai-key" class="block text-sm font-bold text-gray-700 mb-1">API Key</label>
+                                    <input id="ai-key" type="password" class="auth-input" placeholder="Se usa para todos los usuarios habilitados" autocomplete="off">
+                                    <p class="text-xs text-gray-400 mt-1">La clave se guarda en el servidor (solo vos podés verla/editarla desde acá).</p>
+                                </div>
+                                <div id="ai-custom-url-wrapper" class="hidden">
+                                    <label for="ai-custom-url" class="block text-sm font-bold text-gray-700 mb-1">URL base del endpoint</label>
+                                    <input id="ai-custom-url" type="text" class="auth-input" placeholder="Ej: http://localhost:11434/v1">
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3 pt-2">
+                                <button id="btn-save-ai-config" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">Guardar configuración</button>
+                                <span id="ai-config-status" class="text-sm font-semibold hidden"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -80,13 +131,140 @@
     </script>
     <script src="auth.js"></script>
     <script>
-        // Con sesión confirmada: mostrar gestión de usuarios sólo al administrador.
+        // Con sesión confirmada: mostrar gestión + config IA sólo al administrador.
         IEAuth.onLogin(async (auth) => {
             if (auth.isAdmin) {
                 document.getElementById('admin-section').classList.remove('hidden');
                 IEAuth.mountUsersUI(document.getElementById('users-admin-container'));
+                initAIConfig();
             }
         });
+
+        // ===== Configuración IA (solo admin) =====
+        const AI_PROVIDER_INFO = {
+            xiaomi:    { label: 'Xiaomi MiMo', baseUrl: 'https://token-plan-sgp.xiaomimimo.com/v1', modelsUrl: '/models', needsKey: true },
+            gemini:    { label: 'Google Gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', modelsUrl: '/models', needsKey: true },
+            openrouter:{ label: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', modelsUrl: '/models', needsKey: false },
+            custom:    { label: 'Personalizado', baseUrl: '', modelsUrl: '/models', needsKey: false }
+        };
+
+        async function initAIConfig() {
+            const sel = document.getElementById('ai-provider');
+            const keyIn = document.getElementById('ai-key');
+            const modelSel = document.getElementById('ai-model-select');
+            const statusEl = document.getElementById('ai-config-status');
+            const customUrlWrap = document.getElementById('ai-custom-url-wrapper');
+            const customUrlIn = document.getElementById('ai-custom-url');
+            const saveBtn = document.getElementById('btn-save-ai-config');
+            const refreshBtn = document.getElementById('btn-refresh-models');
+
+            function setStatus(text, isError) {
+                statusEl.textContent = text;
+                statusEl.className = 'text-sm font-semibold ' + (isError ? 'text-red-600' : 'text-green-700');
+                statusEl.classList.remove('hidden');
+                setTimeout(() => statusEl.classList.add('hidden'), 5000);
+            }
+
+            // Cargar configuración actual del servidor
+            try {
+                const cfg = await IEAuth.callFunction('config-ia', { op: 'get' });
+                if (cfg && cfg.provider) {
+                    sel.value = cfg.provider;
+                    keyIn.value = cfg.apiKey || '';
+                    if (cfg.customUrl) customUrlIn.value = cfg.customUrl;
+                    customUrlWrap.style.display = cfg.provider === 'custom' ? '' : 'none';
+                    if (cfg.apiKey) await fetchModels(cfg.provider, cfg.apiKey, cfg.customUrl);
+                    if (cfg.model) modelSel.value = cfg.model;
+                } else {
+                    // Valores por defecto: Xiaomi
+                    sel.value = 'xiaomi';
+                    keyIn.value = localStorage.getItem('xiaomi_api_key') || (window.IE_CONFIG && window.IE_CONFIG.XIAOMI_API_KEY) || '';
+                    if (keyIn.value) await fetchModels('xiaomi', keyIn.value);
+                }
+            } catch (e) {
+                setStatus('No se pudo cargar la configuración: ' + e.message, true);
+            }
+
+            async function fetchModels(provider, key, customUrl) {
+                modelSel.innerHTML = '<option value="">Actualizando modelos…</option>';
+                const info = AI_PROVIDER_INFO[provider];
+                if (!info) return;
+                const base = provider === 'custom' ? (customUrl || '').replace(/\/+$/, '') : info.baseUrl;
+                if (!base) { modelSel.innerHTML = '<option value="">— Ingresá la URL base —</option>'; return; }
+                const headers = { 'Content-Type': 'application/json' };
+                if (key) headers['Authorization'] = 'Bearer ' + key;
+                try {
+                    const res = await fetch(base + info.modelsUrl, { headers });
+                    const data = await res.json();
+                    let models = [];
+                    if (provider === 'gemini') {
+                        models = (data.models || []).filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+                            .map(m => ({ id: m.name.replace(/^models\//, ''), label: m.displayName || m.name }));
+                    } else if (provider === 'openrouter') {
+                        models = (data.data || []).filter(m => m.id && !/:batch$/.test(m.id))
+                            .map(m => ({ id: m.id, label: m.name || m.id })).sort((a, b) => a.id.localeCompare(b.id));
+                    } else {
+                        models = (data.data || []).filter(m => m.id && !/(asr|tts|voice)/i.test(m.id))
+                            .map(m => ({ id: m.id, label: m.id }));
+                    }
+                    modelSel.innerHTML = '';
+                    if (models.length === 0) { modelSel.innerHTML = '<option value="">— Sin modelos disponibles —</option>'; return; }
+                    // Agrupar: gratis ≥1M ctx primero (solo OpenRouter)
+                    if (provider === 'openrouter') {
+                        const free = models.filter(m => m.label && m.label.includes('free'));
+                        const rest = models.filter(m => !m.label || !m.label.includes('free'));
+                        if (free.length > 0) {
+                            const g = document.createElement('optgroup'); g.label = 'GRATIS';
+                            free.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; g.appendChild(o); });
+                            modelSel.appendChild(g);
+                        }
+                        const g2 = document.createElement('optgroup'); g2.label = 'Todos (' + rest.length + ')';
+                        rest.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; g2.appendChild(o); });
+                        modelSel.appendChild(g2);
+                    } else {
+                        models.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; modelSel.appendChild(o); });
+                    }
+                    // Preselección del modelo guardado
+                    const saved = modelSel.dataset.savedModel;
+                    if (saved && [...modelSel.options].some(o => o.value === saved)) modelSel.value = saved;
+                } catch (e) {
+                    modelSel.innerHTML = '<option value="">— Error al conectar: ' + e.message.slice(0, 60) + '</option>';
+                }
+            }
+
+            sel.addEventListener('change', async () => {
+                customUrlWrap.style.display = sel.value === 'custom' ? '' : 'none';
+                const key = keyIn.value.trim();
+                if (sel.value === 'openrouter' || (key && sel.value !== 'custom')) await fetchModels(sel.value, key, customUrlIn.value);
+            });
+
+            refreshBtn.addEventListener('click', async () => {
+                const key = keyIn.value.trim();
+                const cu = customUrlIn.value.trim();
+                if (sel.value !== 'openrouter' && sel.value !== 'custom' && !key) { setStatus('Ingresá la API key primero.', true); return; }
+                await fetchModels(sel.value, key, cu);
+            });
+
+            keyIn.addEventListener('change', async () => {
+                const key = keyIn.value.trim();
+                if (key && sel.value !== 'custom') await fetchModels(sel.value, key, customUrlIn.value);
+            });
+
+            saveBtn.addEventListener('click', async () => {
+                const provider = sel.value;
+                const apiKey = keyIn.value.trim();
+                const model = modelSel.value;
+                const customUrl = customUrlIn.value.trim();
+                if (!provider) { setStatus('Seleccioná un proveedor.', true); return; }
+                if (AI_PROVIDER_INFO[provider].needsKey && !apiKey) { setStatus('Ingresá la API key del proveedor.', true); return; }
+                saveBtn.disabled = true; saveBtn.textContent = 'Guardando…';
+                try {
+                    await IEAuth.callFunction('config-ia', { op: 'save', payload: { provider, apiKey, model, customUrl } });
+                    setStatus('Configuración guardada. Todos los usuarios habilitados usarán este motor.', false);
+                } catch (e) { setStatus('Error al guardar: ' + e.message, true); }
+                saveBtn.disabled = false; saveBtn.textContent = 'Guardar configuración';
+            });
+        }
     </script>
 </body>
 </html>
