@@ -1,0 +1,19 @@
+# Configuración local con API keys — NUNCA subir
+config.js
+
+# Datos y artefactos de prueba/desarrollo
+testdata/
+preview/
+
+# Sistema
+Thumbs.db
+.DS_Store
+desktop.ini
+*.log
+
+# Copias de respaldo locales (contienen versiones previas del archivo)
+* copia*.html
+*copia*.html
+
+# Estado interno de herramientas de desarrollo
+.mimosa/
