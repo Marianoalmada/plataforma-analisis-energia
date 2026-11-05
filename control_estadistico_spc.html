@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Didáctico: Control Estadístico de Procesos (SPC)</title>
+    <!-- Cargar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cargar Chart.js y el plugin de anotaciones -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <!-- Tipografía Inter (estética unificada Portal IE) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Tipografía unificada del Portal IE */
+        body, body.font-sans { font-family: 'Inter', sans-serif; }
+
+        /* Estilos para el "wizard" de selección */
+        .wizard-box {
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .wizard-box:hover {
+            border-color: #4f46e5; /* indigo-600 */
+            transform: translateY(-2px);
+        }
+        .wizard-box.selected {
+            border-color: #4f46e5;
+            background-color: #3730a3; /* indigo-800 */
+        }
+        .chart-section {
+            display: none; /* Ocultos por defecto */
+        }
+        .chart-section.active {
+            display: block; /* Mostrar el activo */
+        }
+        /* Estilo para la tabla de patrones */
+        .pattern-table th, .pattern-table td {
+            border: 1px solid #4b5563; /* gray-600 */
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .pattern-table th {
+            background-color: #1f2937; /* gray-800 */
+            color: #818cf8; /* indigo-400 */
+        }
+        /* Estilos para Zonas Sigma */
+        .sigma-band {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #111827;
+        }
+        /* Estilo para la calculadora Cpk */
+        .cpk-calculator {
+            display: none; /* Oculto por defecto */
+            background-color: #1f2937; /* gray-800 */
+            border: 1px solid #4f46e5; /* indigo-600 */
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+        .cpk-calculator.active {
+            display: block;
+        }
+        /* Estilo para la Caja de Herramientas */
+        details summary {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        details summary:hover {
+            color: #818cf8; /* indigo-400 */
+        }
+        details[open] summary {
+            color: #818cf8; /* indigo-400 */
+        }
+        .formula {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #111827;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #f3f4f6;
+        }
+        /* Estilos para los 4 cuadrantes */
+        .quadrant-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1px;
+            background-color: #818cf8; /* indigo-400 */
+            border: 1px solid #818cf8;
+        }
+        .quadrant-box {
+            background-color: #1f2937; /* gray-800 */
+            padding: 16px;
+        }
+        .quadrant-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+    </style>
+    <!-- Integración con el Portal de Herramientas IE (Supabase + configuración) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- Encabezado -->
+        <header class="text-center mb-12">
+            <h1 class="text-3xl md:text-5xl font-bold text-white mb-3">Módulo Didáctico: Control Estadístico de Procesos (SPC)</h1>
+            <p class="text-lg text-blue-300">Una guía interactiva y herramienta práctica para el Gemba (v7).</p>
+        </header>
+
+        <!-- Sección 1: Introducción y Tipos de Variación -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">1. ¿Qué es el SPC y Por Qué Usarlo?</h2>
+            
+            <p class="mb-4 text-lg">El Control Estadístico de Procesos (SPC) es un método <strong>proactivo</strong> para el control de calidad. A diferencia de herramientas reactivas (Histogramas, Pareto) que analizan problemas *después* de que ocurren, el SPC monitorea el proceso en tiempo real para <strong>detectar la inestabilidad *antes*</strong> de que se produzcan defectos.</p>
+            
+            <div class="grid md:grid-cols-2 gap-6 mt-6">
+                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-blue-300 mb-2">Variación por Causas Comunes</h3>
+                    <p>Es la variación "natural" o inherente al proceso, aportada por las <strong>6M</strong> (Mano de obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente). Es pequeña, aleatoria y predecible. Un proceso que *solo* tiene causas comunes está <strong>"bajo control estadístico"</strong>. No se debe reaccionar a cada punto.</p>
+                </div>
+                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-red-300 mb-2">Variación por Causas Especiales</h3>
+                    <p>Son eventos inesperados, no predecibles (ej. lote defectuoso, máquina descalibrada, operario nuevo). El gráfico de control nos alerta de esto. <strong>Se debe investigar y eliminar la causa raíz</strong> para devolver el proceso a su estado de control.</p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-white mt-8 mb-3">Los Dos Errores Comunes (Deming)</h3>
+            <ul class="list-decimal list-inside space-y-2 text-lg">
+                <li><strong>Error 1 (Sobre-ajuste):</strong> Reaccionar a una causa <span class="text-blue-300">común</span> como si fuera <span class="text-red-300">especial</span>. (Solo se empeora la variación).</li>
+                <li><strong>Error 2 (Negligencia):</strong> Tratar una causa <span class="text-red-300">especial</span> como si fuera <span class="text-blue-300">común</span>. (Se permite que el problema continúe y genere defectos).</li>
+            </ul>
+        </section>
+
+        <!-- SECCIÓN 2: Herramientas de Diagnóstico (Pareto e Histograma) -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">2. Herramientas de Diagnóstico (Pareto e Histograma)</h2>
+            <p class="mb-6 text-lg">Antes de implementar gráficos de control, solemos usar dos herramientas clave: Pareto para **priorizar** problemas e Histogramas para **entender** la variación.</p>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Demo Pareto -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico de Pareto (Interactivo)</h3>
+                    <p class="mb-4 text-sm text-gray-300">Herramienta de priorización (80/20). Ingrese sus causas de falla (ej. para gestión de mantenimiento) en formato: `Causa, Frecuencia`.</p>
+                    <textarea id="pareto-data-input" class="w-full h-32 p-3 bg-gray-700 text-white rounded-md font-mono text-sm" placeholder="Ejemplo:
+Falla de Motor, 25
+Parada Eléctrica, 18
+Falla de Sensor, 10
+Atasco Mecánico, 7
+Error de Operador, 3
+Otro, 2"></textarea>
+                    <button id="btn-pareto-calc" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">Generar Gráfico de Pareto</button>
+                    <div class="bg-white p-2 rounded-lg shadow-md mt-4 min-h-[300px]">
+                        <canvas id="paretoChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Demo Histograma -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-white mb-4">Demo: Histograma (Interactivo)</h3>
+                    <p class="mb-4 text-sm text-gray-300">Permite "ver" la forma, centro y dispersión de sus datos. Pegue sus datos (uno por línea) o genere un ejemplo.</p>
+                    <textarea id="histogram-data-input" class="w-full h-32 p-3 bg-gray-700 text-white rounded-md font-mono text-sm" placeholder="Ejemplo:
+50.1
+49.8
+50.3
+50.0
+..."></textarea>
+                    <div class="flex gap-3 mt-3">
+                        <button id="btn-histogram-calc" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">Generar Histograma</button>
+                        <button id="btn-histogram-generate" class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">Generar Datos</button>
+                    </div>
+                    <div class="bg-white p-2 rounded-lg shadow-md mt-4 min-h-[300px]">
+                        <canvas id="histogramChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- SECCIÓN 3: La Distribución Normal y Niveles Sigma -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">3. La Distribución Normal (Campana de Gauss) y 1-2-3 Sigma</h2>
+            <p class="mb-4 text-lg">La base teórica de las "causas comunes" es la Distribución Normal. Nos dice qué esperar de un proceso estable.</p>
+            
+            <div class="text-center p-4 bg-gray-700 rounded-lg">
+                <svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-lg mx-auto rounded-md bg-white p-4" aria-labelledby="gaussTitle gaussDesc">
+                    <title id="gaussTitle">Campana de Gauss (Distribución Normal)</title>
+                    <desc id="gaussDesc">Un gráfico que muestra la distribución normal, con áreas para 1, 2 y 3 desviaciones estándar (sigma).</desc>
+                    <rect x="50" y="10" width="300" height="120" fill="#fca5a5" rx="5"/>
+                    <rect x="100" y="10" width="200" height="120" fill="#fde047" rx="5"/>
+                    <rect x="150" y="10" width="100" height="120" fill="#86efac" rx="5"/>
+                    <path d="M 10 130 C 60 130, 100 10, 200 10 C 300 10, 340 130, 390 130" stroke="#1d4ed8" stroke-width="3" fill="none"/>
+                    <line x1="200" y1="10" x2="200" y2="130" stroke="#15803d" stroke-width="2"/>
+                    <line x1="150" y1="48" x2="150" y2="130" stroke="#166534" stroke-width="1.5" stroke-dasharray="4 2"/>
+                    <line x1="250" y1="48" x2="250" y2="130" stroke="#166534" stroke-width="1.5" stroke-dasharray="4 2"/>
+                    <line x1="100" y1="88" x2="100" y2="130" stroke="#a16207" stroke-width="1.5" stroke-dasharray="4 2"/>
+                    <line x1="300" y1="88" x2="300" y2="130" stroke="#a16207" stroke-width="1.5" stroke-dasharray="4 2"/>
+                    <line x1="50" y1="118" x2="50" y2="130" stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="4 2"/>
+                    <line x1="350" y1="118" x2="350" y2="130" stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="4 2"/>
+                    <line x1="0" y1="130" x2="400" y2="130" stroke="#4b5563" stroke-width="2"/>
+                    <text x="200" y="145" text-anchor="middle" font-size="12" font-family="Arial" fill="#111827">μ</text>
+                    <text x="150" y="145" text-anchor="middle" font-size="12" font-family="Arial" fill="#111827">-1σ</text>
+                    <text x="250" y="145" text-anchor="middle" font-size="12" font-family="Arial" fill="#111827">+1σ</text>
+                    <text x="100" y="145" text-anchor="middle" font-size="12" font-family="Arial" fill="#111827">-2σ</text>
+                    <text x="300" y="145" text-anchor="middle" font-size="12" font-family="Arial" fill="#111827">+2σ</text>
+                    <text x="50" y="145" text-anchor="middle" font-size="12" font-family="Arial" fill="#111827">-3σ</text>
+                    <text x="350" y="145" text-anchor="middle" font-size="12" font-family="Arial" fill="#111827">+3σ</text>
+                    <text x="200" y="90" text-anchor="middle" font-size="14" font-family="Arial" fill="#14532d" font-weight="bold">68.2%</text>
+                    <text x="200" y="65" text-anchor="middle" font-size="14" font-family="Arial" fill="#854d0e" font-weight="bold">95.4%</text>
+                    <text x="200" y="40" text-anchor="middle" font-size="14" font-family="Arial" fill="#991b1b" font-weight="bold">99.7%</text>
+                </svg>
+                <p class="mt-4 text-lg">En un proceso estable, podemos esperar que:</p>
+                <ul class="list-none space-y-1 text-lg mt-2">
+                    <li><span class="font-bold text-green-300">~ 68.2%</span> de los datos caigan dentro de <span class="font-bold">+/- 1 Sigma</span> (Zona C).</li>
+                    <li><span class="font-bold text-yellow-300">~ 95.4%</span> de los datos caigan dentro de <span class="font-bold">+/- 2 Sigma</span> (Zonas C+B).</li>
+                    <li><span class="font-bold text-red-300">~ 99.7%</span> de los datos caigan dentro de <span class="font-bold">+/- 3 Sigma</span> (Zonas C+B+A).</li>
+                </ul>
+                <p class="mt-3 text-lg text-cyan-200 italic">Por esto, un punto fuera de +/- 3 Sigma (Límites de Control) es tan raro (0.3%) que lo consideramos una señal de una **causa especial**.</p>
+            </div>
+        </section>
+
+        <!-- Sección 4: Los 3 Objetivos del SPC -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">4. Los 3 Objetivos Clave del SPC</h2>
+            <p class="mb-6 text-lg">El SPC se implementa para lograr tres objetivos fundamentales en la gestión de la calidad y la mejora continua:</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-2">1. Diagnóstico</h3>
+                    <p>Permite evaluar la estabilidad inicial de un proceso. Responde a la pregunta: ¿Nuestro proceso es predecible o es caótico?</p>
+                </div>
+                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-2">2. Control</h3>
+                    <p>Sirve como una herramienta de monitoreo en tiempo real para determinar cuándo es necesario ajustar un proceso y, más importante, cuándo se debe dejar tal como está.</p>
+                </div>
+                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-2">3. Confirmación</h3>
+                    <p>Después de realizar una mejora (ej. un proyecto Lean o Kaizen), el gráfico de control confirma si la mejora fue efectiva y si el proceso se mantiene estable en su nuevo nivel de rendimiento.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección 5: Plan de Recolección de Datos -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">5. El Plan de Recolección de Datos</h2>
+            <p class="mb-6 text-lg">Para implementar un gráfico de control, se necesita un plan sistemático. El video describe 5 pasos fundamentales:</p>
+            <ol class="list-decimal list-inside space-y-3 text-lg">
+                <li><strong>Determinar el tipo de gráfico a utilizar</strong> (Ver la siguiente sección interactiva).</li>
+                <li><strong>Determinar el tamaño de la muestra (subgrupo, n)</strong> (Ej. 5 piezas por hora).</li>
+                <li><strong>Determinar la frecuencia de toma de muestra</strong> (Ej. una vez por hora, cada 15 minutos).</li>
+                <li><strong>Determinar el periodo inicial</strong> (Recolectar al menos 25-30 muestras para calcular los límites iniciales).</li>
+                <li><strong>Recolectar los datos</strong> y registrar cualquier evento relevante (cambios de turno, material, etc.).</li>
+            </ol>
+        </section>
+
+        <!-- Sección 6: Wizard - Selección del Gráfico de Control -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">6. ¿Qué Gráfico de Control Debo Usar?</h2>
+            
+            <!-- Paso 1: Tipo de Dato -->
+            <div id="q1">
+                <h3 class="text-2xl font-semibold text-white mb-4">Paso 1: ¿Qué tipo de datos mides?</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div id="btn-variables" class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q1', 'variables')">
+                        <h4 class="text-xl font-bold text-green-300">Datos por Variables (Continuos)</h4>
+                        <p>Mediciones en una escala: Peso (kg), Longitud (mm), Temperatura (°C), Resistencia (Ohm).</p>
+                    </div>
+                    <div id="btn-atributos" class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q1', 'atributos')">
+                        <h4 class="text-xl font-bold text-yellow-300">Datos por Atributos (Discretos)</h4>
+                        <p>Conteo de "Pasa / No Pasa": N° de piezas defectuosas, N° de defectos por unidad. Se recomiendan muestras grandes (n=50 a 200).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 2 (Ocultos) -->
+            <div id="q2" class="mt-8" style="display: none;">
+                <h3 class="text-2xl font-semibold text-white mb-4">Paso 2: ¿Cómo recolectas los datos?</h3>
+                
+                <!-- Opción Variables -->
+                <div id="q2-variables" style="display: none;">
+                    <h4 class="text-lg text-green-300 mb-2">Para Datos de Variables... ¿Cuál es el tamaño de tu subgrupo (n)?</h4>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xrm')">
+                            <h4 class="text-xl font-bold">n = 1 (Muestra Individual)</h4>
+                            <p>Procesos lentos, mediciones costosas (destructivas), o cada pieza es única. Ej. **MTTR de un activo**, % químico por lote.</p>
+                        </div>
+                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xr')">
+                            <h4 class="text-xl font-bold">n = 2 a 8 (Subgrupo Pequeño)</h4>
+                            <p>El caso más común. Tomas 5 piezas cada hora y mides su longitud. Ej. Monitoreo de vibraciones (PdM).</p>
+                        </div>
+                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xs')">
+                            <h4 class="text-xl font-bold">n = 9 o más (Subgrupo Grande)</h4>
+                            <p>Menos común. Cuando se toman muestras grandes (ej. 10+ piezas) y se prefiere la Desv. Estándar (S) sobre el Rango (R).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opción Atributos -->
+                <div id="q2-atributos" style="display: none;">
+                    <h4 class="text-lg text-yellow-300 mb-2">Para Datos de Atributos... ¿Qué estás contando?</h4>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2a', 'p')">
+                            <h4 class="text-xl font-bold">Unidades Defectuosas (Pasa/No Pasa)</h4>
+                            <p>Cuentas cuántas piezas están "malas" en un lote. Ej. 8 piezas defectuosas de 200 inspeccionadas.</p>
+                        </div>
+                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2a', 'u')">
+                            <h4 class="text-xl font-bold">Defectos por Unidad (N° de fallas)</h4>
+                            <p>Cuentas *cuántos defectos* hay en *una sola unidad*. Ej. 3 rayones en un parabrisas, **N° de averías por semana** en una línea.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultado -->
+            <div id="chart-recommendation" class="mt-8 p-4 bg-gray-900 rounded-lg shadow-inner text-center" style="display: none;">
+                <h3 class="text-2xl font-bold text-white">Recomendación:</h3>
+                <p id="recommendation-text" class="text-3xl font-bold text-cyan-300"></p>
+                <p id="recommendation-desc" class="text-lg text-gray-300"></p>
+            </div>
+        </section>
+        
+        <!-- Sección 7: Las Zonas de Control (3 Sigma) -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">7. Las Zonas de Control (Concepto SPC)</h2>
+            <p class="mb-6 text-lg">Como vimos en la Sección 3, los límites de +/- 1, 2 y 3 Sigma definen las "Zonas de Decisión" para interpretar los patrones en un gráfico de control:</p>
+            <div class="w-full h-48 flex flex-col border-2 border-gray-600 rounded-md overflow-hidden">
+                <div class="sigma-band bg-red-400 h-[16.6%]">Zona A (+3σ)</div>
+                <div class="sigma-band bg-yellow-400 h-[16.6%]">Zona B (+2σ)</div>
+                <div class="sigma-band bg-green-400 h-[16.6%]">Zona C (+1σ)</div>
+                <div class="sigma-band bg-green-400 h-[16.6%]">Zona C (-1σ)</div>
+                <div class="sigma-band bg-yellow-400 h-[16.6%]">Zona B (-2σ)</div>
+                <div class="sigma-band bg-red-400 h-[16.6%]">Zona A (-3σ)</div>
+            </div>
+            <div class="flex justify-between text-sm px-2 mt-1">
+                <span class="text-red-300 font-bold">LCL (-3σ)</span>
+                <span class="text-green-300 font-bold">CL (Media)</span>
+                <span class="text-red-300 font-bold">UCL (+3σ)</span>
+            </div>
+        </section>
+
+        <!-- Sección 8: Demos Interactivas (Dojo de RCA) -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">8. Dojo de Simulación (Análisis Causa-Raíz)</h2>
+
+            <!-- Pestañas para Demos -->
+            <nav class="flex flex-wrap justify-center border-b border-gray-700 mb-6 -mt-3">
+                <button class="tab-button-demo active text-lg font-medium py-3 px-6 border-b-2 border-indigo-600 text-indigo-400" onclick="switchDemo('demo-xr')">Gráfico X-R</button>
+                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-400" onclick="switchDemo('demo-xrm')">Gráfico X-Rm</button>
+                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-400" onclick="switchDemo('demo-p')">Gráfico P</button>
+                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-400" onclick="switchDemo('demo-u')">Gráfico U</button>
+            </nav>
+
+            <!-- Demo 1: Gráfico X-R (Medias y Rangos) -->
+            <div id="demo-xr" class="chart-section active">
+                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico X-R (para Medias y Rangos)</h3>
+                <p class="mb-4 text-yellow-300 italic">Regla de interpretación: <strong>"Primero se debe interpretar el gráfico de Rango (R).</strong> Si la variabilidad (R) no está bajo control, los límites del gráfico de Media (X) no son válidos."</p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-xl font-semibold text-center mb-2">Gráfico X-bar (Medias)</h4>
+                        <div class="bg-white p-2 rounded-lg shadow-md">
+                            <canvas id="spcChartXbar"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-center mb-2">Gráfico R (Rangos)</h4>
+                        <div class="bg-white p-2 rounded-lg shadow-md">
+                            <canvas id="spcChartR"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="analysis-box-xr" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
+                    <p id="analysis-text-xr" class="text-lg font-medium text-yellow-300"></p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-4 mt-6">
+                    <button id="btn-xr-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable</button>
+                    <button id="btn-xr-shift" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">Causa: Nuevo Lote de Material (Shift)</button>
+                    <button id="btn-xr-spread" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition">Causa: Falta de Mantenimiento (Variación)</button>
+                    <button id="btn-xr-trend" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">Causa: Desgaste de Herramienta (Tendencia)</button>
+                </div>
+
+                <!-- Calculadora Cpk X-R -->
+                <div id="cpk-calculator-xr" class="cpk-calculator">
+                    <h4 class="text-xl font-semibold text-white mb-3 text-center">Calculadora de Capacidad (Cp/Cpk)</h4>
+                    <p class="text-sm text-center mb-4 text-gray-400">Solo habilitada en procesos estables. Ingrese la Voz del Cliente (Límites de Especificación):</p>
+                    <div class="flex flex-wrap justify-center gap-4 items-center">
+                        <label for="lie-xr" class="font-medium">LIE:</label>
+                        <input type="number" id="lie-xr" value="45" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <label for="lse-xr" class="font-medium">LSE:</label>
+                        <input type="number" id="lse-xr" value="55" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <button id="btn-calc-cpk-xr" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Calcular</button>
+                    </div>
+                    <div id="cpk-result-xr" class="mt-4 text-center text-lg font-bold"></div>
+                </div>
+            </div>
+            
+            <!-- Demo 2: Gráfico X-Rm (Individuales y Rango Móvil) -->
+            <div id="demo-xrm" class="chart-section">
+                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico X-Rm (Individuales y Rango Móvil)</h3>
+                <p class="mb-4 text-yellow-300 italic">El Gráfico de Rango Móvil (Rm) usa la diferencia entre un punto y el anterior (n=2) para estimar la variabilidad.</p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-xl font-semibold text-center mb-2">Gráfico X (Individuales)</h4>
+                        <div class="bg-white p-2 rounded-lg shadow-md">
+                            <canvas id="spcChartXInd"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-center mb-2">Gráfico Rm (Rango Móvil)</h4>
+                        <div class="bg-white p-2 rounded-lg shadow-md">
+                            <canvas id="spcChartRm"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="analysis-box-xrm" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
+                    <p id="analysis-text-xrm" class="text-lg font-medium text-yellow-300"></p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-4 mt-6">
+                    <button id="btn-xrm-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable</button>
+                    <button id="btn-xrm-shift" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition">Causa: Ajuste de Máquina (Shift)</button>
+                </div>
+
+                <!-- Calculadora Cpk X-Rm -->
+                <div id="cpk-calculator-xrm" class="cpk-calculator">
+                    <h4 class="text-xl font-semibold text-white mb-3 text-center">Calculadora de Capacidad (Cp/Cpk)</h4>
+                    <div class="flex flex-wrap justify-center gap-4 items-center">
+                        <label for="lie-xrm" class="font-medium">LIE:</label>
+                        <input type="number" id="lie-xrm" value="95" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <label for="lse-xrm" class="font-medium">LSE:</label>
+                        <input type="number" id="lse-xrm" value="105" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <button id="btn-calc-cpk-xrm" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Calcular</button>
+                    </div>
+                    <div id="cpk-result-xrm" class="mt-4 text-center text-lg font-bold"></div>
+                </div>
+            </div>
+
+            <!-- Demo 3: Gráfico P (Atributos) -->
+            <div id="demo-p" class="chart-section">
+                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico P (para Atributos - Defectuosos)</h3>
+                <p class="mb-4 text-lg">Simula la <strong>proporción (%)</strong> de piezas defectuosas ("Pasa/No Pasa") encontradas en lotes de inspección.</p>
+                <div class="bg-white p-2 rounded-lg shadow-md">
+                    <canvas id="spcChartP"></canvas>
+                </div>
+                <div id="analysis-box-p" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
+                    <p id="analysis-text-p" class="text-lg font-medium text-yellow-300"></p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-4 mt-6">
+                    <button id="btn-p-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable (n=100 fijo)</button>
+                    <button id="btn-p-variable" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable (n=Variable)</button>
+                    <button id="btn-p-shift" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition">Causa: Lote de Proveedor Defectuoso</button>
+                </div>
+            </div>
+            
+            <!-- Demo 4: Gráfico U (Atributos) -->
+            <div id="demo-u" class="chart-section">
+                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico U (para Atributos - Defectos)</h3>
+                <p class="mb-4 text-lg">Simula el <strong>número de defectos por unidad</strong> (ej. rayones por parabrisas, fallas por m² de tela). Aquí `n=1` unidad.</p>
+                <div class="bg-white p-2 rounded-lg shadow-md">
+                    <canvas id="spcChartU"></canvas>
+                </div>
+                <div id="analysis-box-u" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
+                    <p id="analysis-text-u" class="text-lg font-medium text-yellow-300"></p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-4 mt-6">
+                    <button id="btn-u-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable</button>
+                    <button id="btn-u-shift" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition">Causa: Falla de Lubricación (más rayones)</button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Sección 9: Interpretación de Patrones Visuales -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">9. Interpretación de Patrones (Causas Especiales)</h2>
+            <p class="mb-6 text-lg">Un proceso está "fuera de control" si muestra patrones no aleatorios. Estos patrones señalan una causa especial que debe ser investigada. Aquí se muestran los patrones más comunes y sus posibles causas raíz:</p>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full pattern-table">
+                    <thead>
+                        <tr>
+                            <th>Patrón Visual</th>
+                            <th>Descripción de la Regla (Ejemplos)</th>
+                            <th>Posibles Causas Raíz (Ejemplos del video)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Regla 1: Punto Fuera de Límites -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/><line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/><line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <polyline points="10,45 30,35 50,42 70,8 90,38 110,45 130,40" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 1: 1 Punto en Zona A</strong><br>1 o más puntos caen fuera del Límite de Control Superior (UCL) o Inferior (LCL).</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Error grave en la medición.</li>
+                                    <li>Falla catastrófica de una herramienta.</li>
+                                    <li>Lote de materia prima completamente fuera de especificación.</li>
+                                    <li>Error en el cálculo de los límites.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <!-- Regla 2: Desplazamiento (Shift) -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/><line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/><line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <polyline points="10,50 25,45 40,55 55,25 70,20 85,28 100,22 115,26 130,24 145,27" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 2: Desplazamiento (Shift)</strong><br>8 o 9 puntos consecutivos caen del mismo lado de la Línea Central (CL).</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Introducción de un nuevo operario, máquina o material.</li>
+                                    <li>Cambio en el método de inspección.</li>
+                                    <li>Un ajuste (o "sobre-ajuste") realizado en el proceso.</li>
+                                    <li>Fijación de máquina desgastada.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <!-- Regla 3: Tendencia -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/><line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/><line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <polyline points="10,65 30,60 50,50 70,45 90,38 110,30 130,25" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 3: Tendencia</strong><br>5 o 6 puntos consecutivos en tendencia continua (ascendente o descendente).</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Desgaste gradual de la herramienta o equipo.</li>
+                                    <li>Acumulación de desperdicios o sedimentos.</li>
+                                    <li>Calentamiento gradual de la máquina.</li>
+                                    <li>Cambio gradual en las condiciones ambientales.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <!-- Regla 4: Ciclos -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/><line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/><line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <polyline points="10,60 25,25 40,60 55,25 70,60 85,25 100,60 115,25 130,60" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 4: Alternancia (Oscilación)</strong><br>14 o más puntos alternando arriba y abajo (oscilación).</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Cambios periódicos en el ambiente (ej. temperatura día/noche).</li>
+                                    <li>Rotación regular de máquinas u operarios.</li>
+                                    <li>Efectos sistemáticos (ej. fatiga del operario al final del turno).</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <!-- Regla 5: 2 de 3 en Zona A -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/>
+                                    <line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/>
+                                    <line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <!-- Zonas A -->
+                                    <rect x="0" y="10" width="150" height="10" fill="#ef4444" opacity="0.2"/>
+                                    <rect x="0" y="60" width="150" height="10" fill="#ef4444" opacity="0.2"/>
+                                    <polyline points="10,45 30,35 50,15 70,40 90,18 110,45 130,40" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 5: 2 de 3 Puntos en Zona A</strong><br>2 de 3 puntos consecutivos caen en la Zona A (o más allá) del mismo lado de la media.</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Un aviso temprano de un desplazamiento de proceso.</li>
+                                    <li>Lote de material al borde de la especificación.</li>
+                                    <li>Sobre-control o ajuste excesivo.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <!-- Regla 6: 4 de 5 en Zona B -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/>
+                                    <line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/>
+                                    <line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <!-- Zonas B -->
+                                    <rect x="0" y="20" width="150" height="10" fill="#facc15" opacity="0.2"/>
+                                    <rect x="0" y="50" width="150" height="10" fill="#facc15" opacity="0.2"/>
+                                    <polyline points="10,45 30,25 50,28 70,55 90,22 110,27 130,40" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 6: 4 de 5 Puntos en Zona B</strong><br>4 de 5 puntos consecutivos caen en la Zona B (o más allá) del mismo lado de la media.</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Un aviso más débil de un desplazamiento de proceso.</li>
+                                    <li>Cambio en el método de inspección.</li>
+                                    <li>Diferencias entre máquinas u operarios.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <!-- Regla 7: Falta de Variabilidad -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/><line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/><line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <!-- Zona C -->
+                                    <rect x="0" y="30" width="150" height="20" fill="#4ade80" opacity="0.2"/>
+                                    <polyline points="10,42 25,38 40,41 55,39 70,43 85,40 100,38 115,41 130,39" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 7: "Abrazo" a la Media (Zona C)</strong><br>15 puntos consecutivos en la "Zona C" (abrazando la línea central, +/- 1 sigma).</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Los datos están siendo "filtrados" o manipulados (censura de datos).</li>
+                                    <li>El método de medición no es lo suficientemente preciso.</li>
+                                    <li>El proceso ha mejorado drásticamente (¡buena causa!).</li>
+                                    <li>Error en el cálculo de límites (demasiado anchos).</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <!-- Regla 8: Evitación de Zona C -->
+                        <tr>
+                            <td class="flex justify-center">
+                                <svg width="150" height="80" xmlns="http://www.w3.org/2000/svg" class="bg-gray-700 rounded-md">
+                                    <line x1="0" y1="40" x2="150" y2="40" stroke="#22c55e" stroke-width="1" stroke-dasharray="4 2"/><line x1="0" y1="10" x2="150" y2="10" stroke="#ef4444" stroke-width="1.5"/><line x1="0" y1="70" x2="150" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+                                    <!-- Zona C -->
+                                    <rect x="0" y="30" width="150" height="20" fill="#4ade80" opacity="0.2"/>
+                                    <polyline points="10,25 25,55 40,28 55,52 70,22 85,58 100,24 115,51 130,29" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                </svg>
+                            </td>
+                            <td><strong>Regla 8: Evitación de la Media</strong><br>8 puntos consecutivos fuera de la Zona C (en Zonas A o B) en ambos lados.</td>
+                            <td class="text-sm">
+                                <ul class="list-disc list-inside">
+                                    <li>Dos o más procesos (ej. 2 máquinas) con medias diferentes graficados en la misma carta.</li>
+                                    <li>Sobre-control sistemático.</li>
+                                    <li>Diferencias sistemáticas en la calidad del material.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Sección 10: Capacidad de Proceso (Cp/Cpk) -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">10. El Siguiente Paso: Capacidad de Proceso (Cp/Cpk)</h2>
+            <p class="mb-4 text-lg">Una vez que un proceso está <strong>"Bajo Control Estadístico"</strong> (es estable y predecible, sin causas especiales), el siguiente paso es preguntar: <strong>¿Es capaz de cumplir con los requisitos del cliente?</strong></p>
+            <p class="mb-6 text-lg">Aquí es donde entra la **Capacidad de Proceso**. Compara la "Voz del Proceso" con la "Voz del Cliente".</p>
+            
+            <div class="grid md:grid-cols-2 gap-6 mt-6">
+                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-blue-300 mb-2">Límites de Control (UCL/LCL)</h3>
+                    <p>Calculados desde los datos del proceso. Representan la <strong>Voz del Proceso (VoP)</strong>. Muestran la variación *natural* y nos dicen si el proceso es estable.</p>
+                </div>
+                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-green-300 mb-2">Límites de Especificación (LIE/LSE)</h3>
+                    <p>Definidos por el cliente o el diseño de ingeniería (planos). Representan la <strong>Voz del Cliente (VoC)</strong>. Definen lo que es un producto aceptable o inaceptable.</p>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <div class="bg-gray-900 p-4 rounded-lg shadow-inner">
+                    <h4 class="text-2xl font-bold text-white mb-2">Cp, Cpk y K</h4>
+                    <p class="text-lg mb-3">Usamos tres índices clave para el diagnóstico:</p>
+                    <ul class="list-none space-y-2 text-left text-lg">
+                        <li><span class="font-bold text-cyan-300">Cp (Capacidad Potencial):</span> ¿Qué tan "ancho" es el proceso comparado con la tolerancia? (Ignora el centrado).</li>
+                        <li><span class="font-bold text-cyan-300">Cpk (Capacidad Real):</span> ¿Cómo se desempeña el proceso realmente, tomando en cuenta el centrado?</li>
+                        <li><span class="font-bold text-cyan-300">K (Índice de Centrado):</span> ¿Qué tan "desviada" está la media del proceso del centro de las especificaciones?</li>
+                    </ul>
+                    <p class="text-lg mt-3 italic text-yellow-300">Regla de Oro: Si **Cp es alto** pero **Cpk es bajo**, el proceso está **descentrado**. (¡Mire el Índice K!)</p>
+                </div>
+            </div>
+
+            <!-- Nota ISO 9001 -->
+            <div class="mt-6 bg-gray-700 p-4 rounded-md shadow-inner text-sm text-cyan-200">
+                <h5 class="font-bold text-cyan-100">Contexto ISO 9001:2015 (Cláusula 9.1.1)</h5>
+                <p>El SPC y los estudios de capacidad (Cp/Cpk/K) son herramientas clave para cumplir con el requisito de "Monitoreo, medición, análisis y evaluación". Permiten a la organización "evaluar el desempeño y la eficacia del sistema de gestión de la calidad" y determinar "la necesidad de mejoras".</p>
+            </div>
+        </section>
+
+        <!-- NUEVA SECCIÓN 11: Los 4 Estados del Proceso (del video) -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">11. Los 4 Estados del Proceso (Capacidad vs. Estabilidad)</h2>
+            <p class="mb-4 text-lg">Como explica el video, un proceso puede existir en cuatro estados, basados en la combinación de su Capacidad (cumplir especificaciones) y su Estabilidad (ser predecible). La analogía del "camión en el túnel" lo ilustra bien.</p>
+            <p class="mb-6 text-lg">El objetivo siempre es mover cualquier proceso al cuadrante **Estable y Capaz**.</p>
+            
+            <div class="quadrant-grid rounded-lg overflow-hidden">
+                <!-- Ejes -->
+                <div class="col-start-1 col-span-2 row-start-2 row-span-1 flex items-center justify-center p-2"><span class="text-xl font-bold">Inestable (Fuera de Control)</span></div>
+                <div class="col-start-1 col-span-2 row-start-1 row-span-1 flex items-center justify-center p-2"><span class="text-xl font-bold">Estable (Bajo Control)</span></div>
+                <div class="col-start-1 row-start-1 row-span-2 flex items-center justify-center -rotate-90 p-2"><span class="text-xl font-bold">Incapaz (No Cumple Specs)</span></div>
+                <div class="col-start-2 row-start-1 row-span-2 flex items-center justify-center -rotate-90 p-2"><span class="text-xl font-bold">Capaz (Cumple Specs)</span></div>
+
+                <!-- Cuadrantes -->
+                <div class="quadrant-box col-start-1 row-start-1 z-10">
+                    <h4 class="quadrant-title text-orange-300">Estado 1: Estable pero Incapaz</h4>
+                    <p>"Establemente malo". El proceso es predecible, pero produce defectos de forma consistente. (El camión es estable, pero más ancho que el túnel).</p>
+                    <p class="font-bold mt-2">Acción: Rediseño del proceso (Kaizen) para reducir la variación o cambiar la media.</p>
+                </div>
+                <div class="quadrant-box col-start-2 row-start-1 z-10">
+                    <h4 class="quadrant-title text-green-300">Estado 2: Estable y Capaz (Ideal)</h4>
+                    <p>"El estado ideal". El proceso es predecible y cumple con las especificaciones del cliente. (El camión es estable y cabe en el túnel).</p>
+                    <p class="font-bold mt-2">Acción: Monitorear y mantener el control (SPC).</p>
+                </div>
+                <div class="quadrant-box col-start-1 row-start-2 z-10">
+                    <h4 class="quadrant-title text-red-300">Estado 3: Inestable e Incapaz</h4>
+                    <p>"El peor estado". El proceso es caótico y no cumple especificaciones. (El camión es más ancho y el conductor es errático).</p>
+                    <p class="font-bold mt-2">Acción: ¡Prioridad N°1! Usar SPC y RCA para eliminar causas especiales y estabilizar el proceso.</p>
+                </div>
+                <div class="quadrant-box col-start-2 row-start-2 z-10">
+                    <h4 class="quadrant-title text-yellow-300">Estado 4: Inestable pero Capaz</h4>
+                    <p>"Engañoso". El proceso es capaz *por ahora*, pero es impredecible. (El camión cabe, pero el conductor es errático y chocará eventualmente).</p>
+                    <p class="font-bold mt-2">Acción: Usar SPC para eliminar causas especiales y alcanzar la estabilidad.</p>
+                </div>
+            </div>
+            <p class="mt-4 text-lg text-cyan-200 italic font-bold">¡Regla Clave! Primero debe garantizarse que un proceso es **Estable** antes de que tenga sentido analizar su **Capacidad** (Cpk).</p>
+        </section>
+
+
+        <!-- NUEVA SECCIÓN 12: Nivel Seis Sigma (6σ) -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">12. Interpretación de Capacidad y Nivel Seis Sigma (6σ)</h2>
+            <p class="mb-4 text-lg">El Nivel Seis Sigma es una métrica de desempeño de clase mundial que cuantifica la capacidad de un proceso. Un proceso "Seis Sigma" es aquel cuya media está a 6 desviaciones estándar de distancia del límite de especificación más cercano (Cp = 2.0).</p>
+            <p class="mb-4 text-lg">Debido a que los procesos tienden a "desplazarse" 1.5 sigma a largo plazo, la métrica de 6σ (con el desplazamiento) equivale a solo **3.4 Defectos por Millón de Oportunidades (DPMO)**, un nivel de calidad cercano a la perfección.</p>
+            
+            <h4 class="text-2xl font-semibold text-white mb-4 text-center">Tabla de Interpretación de Índices (Cp)</h4>
+            <div class="flex justify-center">
+                <table class="w-full max-w-lg pattern-table text-center">
+                    <thead>
+                        <tr>
+                            <th>Valor Cp</th>
+                            <th>Categoría (según video)</th>
+                            <th>Nivel Sigma Aprox.</th>
+                            <th>DPMO</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-300">
+                        <tr><td class="font-bold text-green-300">Cp ≥ 2.00</td><td class="font-bold text-green-300">Clase Mundial</td><td>6σ</td><td>3.4</td></tr>
+                        <tr><td class="font-bold text-cyan-300">Cp ≥ 1.33</td><td class="font-bold text-cyan-300">Adecuado</td><td>4σ - 5σ</td><td>~6,210</td></tr>
+                        <tr><td class="font-bold text-yellow-300">Cp ≥ 1.00</td><td class="font-bold text-yellow-300">Parcialmente Adecuado</td><td>3σ</td><td>~66,807</td></tr>
+                        <tr><td class="font-bold text-orange-300">Cp ≥ 0.67</td><td class="font-bold text-orange-300">No Adecuado</td><td>2σ</td><td>~308,537</td></tr>
+                        <tr><td class="font-bold text-red-300">Cp < 0.67</td><td class="font-bold text-red-300">Requiere Modificación Seria</td><td>< 2σ</td><td>> 308,537</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Sección 13: MODO GEMBA (HERRAMIENTA PRÁCTICA) -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">13. Calculadora de Gráficos (Modo Gemba)</h2>
+            <p class="mb-6 text-lg">Pase sus propios datos desde Excel o un bloc de notas para generar un gráfico de control al instante. (Mínimo 20 puntos de datos recomendados).</p>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Columna de Entrada de Datos -->
+                <div>
+                    <h3 class="text-xl font-semibold text-white mb-2">1. Seleccione el Tipo de Gráfico:</h3>
+                    <div id="gemba-chart-type" class="flex flex-wrap gap-4 mb-4">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="gemba-type" value="xr" class="form-radio text-indigo-600" checked>
+                            <span>X-R (Subgrupos)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="gemba-type" value="xrm" class="form-radio text-indigo-600">
+                            <span>X-Rm (Individuales)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="gemba-type" value="p" class="form-radio text-indigo-600">
+                            <span>Gráfico P (Defectuosos)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="gemba-type" value="u" class="form-radio text-indigo-600">
+                            <span>Gráfico U (Defectos)</span>
+                        </label>
+                    </div>
+
+                    <h3 class="text-xl font-semibold text-white mb-2">2. Pegue sus Datos:</h3>
+                    <textarea id="gemba-data-input" class="w-full h-64 p-3 bg-gray-700 text-white rounded-md font-mono text-sm" placeholder="Formato de Datos:
+- Para X-R: Pegue subgrupos, un subgrupo por línea.
+  Ej:
+  50.1 50.3 49.9 50.0 50.2
+  49.8 50.1 50.0 49.9 49.7
+  ...
+- Para X-Rm: Pegue valores individuales, uno por línea.
+  Ej:
+  10.2
+  10.1
+  10.3
+  ...
+- Para P: Pegue 'defectuosos, tamaño_muestra' por línea.
+  Ej:
+  5, 100
+  8, 120
+  4, 90
+  ...
+- Para U: Pegue 'defectos, tamaño_unidad' por línea (ej. 1).
+  Ej:
+  3, 1
+  5, 1
+  2, 1
+  ..."></textarea>
+                    
+                    <h3 class="text-xl font-semibold text-white mt-4 mb-2">3. Ingrese Especificaciones (Opcional):</h3>
+                     <div class="flex flex-wrap justify-center gap-4 items-center">
+                        <label for="gemba-lie" class="font-medium">LIE:</label>
+                        <input type="number" id="gemba-lie" placeholder="Ej. 45" class="bg-gray-700 text-white p-2 rounded-md w-28 text-center">
+                        <label for="gemba-target" class="font-medium">Objetivo:</label>
+                        <input type="number" id="gemba-target" placeholder="Ej. 50" class="bg-gray-700 text-white p-2 rounded-md w-28 text-center">
+                        <label for="gemba-lse" class="font-medium">LSE:</label>
+                        <input type="number" id="gemba-lse" placeholder="Ej. 55" class="bg-gray-700 text-white p-2 rounded-md w-28 text-center">
+                    </div>
+                    
+                    <button id="btn-gemba-calc" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition">Generar Gráfico y Análisis</button>
+                </div>
+                
+                <!-- Columna de Gráfico Generado -->
+                <div>
+                    <h3 class="text-xl font-semibold text-white mb-2">4. Análisis y Gráficos Generados:</h3>
+                    <div id="gemba-analysis" class="mb-4 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[100px] text-lg">
+                        <p id="gemba-analysis-text"></p>
+                    </div>
+                    <div class="bg-white p-2 rounded-lg shadow-md min-h-[250px]">
+                        <canvas id="gembaChart1"></canvas>
+                    </div>
+                    <div class="bg-white p-2 rounded-lg shadow-md min-h-[250px] mt-4" id="gembaChart2-container" style="display: none;">
+                        <canvas id="gembaChart2"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección 14: CAJA DE HERRAMIENTAS DEL EXPERTO -->
+        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <details>
+                <summary class="text-3xl font-semibold text-white cursor-pointer hover:text-indigo-400">
+                    14. Caja de Herramientas del Experto (Fórmulas y Constantes)
+                </summary>
+                
+                <div class="grid md:grid-cols-2 gap-8 mt-6 border-t border-gray-700 pt-6">
+                    <!-- Columna Fórmulas -->
+                    <div>
+                        <h4 class="text-2xl font-semibold text-white mb-4">Fórmulas Clave</h4>
+                        
+                        <div class="mb-4">
+                            <h5 class="text-lg font-bold text-cyan-300">Gráfico X-R (Subgrupos)</h5>
+                            <p><span class="formula">UCLx = X&#773;&#773; + A₂ * R&#773;</span></p>
+                            <p><span class="formula">LCLx = X&#773;&#773; - A₂ * R&#773;</span></p>
+                            <p><span class="formula">UCLr = D₄ * R&#773;</span></p>
+                            <p><span class="formula">LCLr = D₃ * R&#773;</span></p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="text-lg font-bold text-cyan-300">Gráfico X-Rm (Individuales)</h5>
+                            <p><span class="formula">UCLx = X&#773; + (3 * R&#773;m / d₂)</span></p>
+                            <p><span class="formula">LCLx = X&#773; - (3 * R&#773;m / d₂)</span></p>
+                            <p><span class="formula">UCLr = D₄ * R&#773;m</span> (Usando n=2)</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5 class="text-lg font-bold text-cyan-300">Gráfico P (Proporción)</h5>
+                            <p><span class="formula">U/LCLp = p&#773; &pm; 3 * &radic;(p&#773;(1-p&#773;)/n)</span></p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5 class="text-lg font-bold text-cyan-300">Gráfico U (Defectos/Unidad)</h5>
+                            <p><span class="formula">U/LCLu = u&#773; &pm; 3 * &radic;(u&#773;/n)</span></p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5 class="text-lg font-bold text-cyan-300">Capacidad (Cp, Cpk, K)</h5>
+                            <p><span class="formula">&sigma;&#770; = R&#773; / d₂</span> (para X-R)</p>
+                            <p><span class="formula">Cp = (LSE - LIE) / (6&sigma;&#770;)</span></p>
+                            <p><span class="formula">Cpk = min( (LSE - X&#773;&#773;)/(3&sigma;&#770;), (X&#773;&#773; - LIE)/(3&sigma;&#770;) )</span></p>
+                            <p><span class="formula">K = |Target - X&#773;&#773;| / ((LSE - LIE) / 2)</span></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Columna Tabla de Constantes -->
+                    <div>
+                        <h4 class="text-2xl font-semibold text-white mb-4">Tabla de Constantes de Control</h4>
+                        <table class="w-full pattern-table text-center">
+                            <thead>
+                                <tr>
+                                    <th>n</th><th>A₂</th><th>D₃</th><th>D₄</th><th>d₂</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-300">
+                                <tr><td>2</td><td>1.880</td><td>0</td><td>3.267</td><td>1.128</td></tr>
+                                <tr><td>3</td><td>1.023</td><td>0</td><td>2.574</td><td>1.693</td></tr>
+                                <tr><td>4</td><td>0.729</td><td>0</td><td>2.282</td><td>2.059</td></tr>
+                                <tr><td>5</td><td>0.577</td><td>0</td><td>2.114</td><td>2.326</td></tr>
+                                <tr><td>6</td><td>0.483</td><td>0</td><td>2.004</td><td>2.534</td></tr>
+                                <tr><td>7</td><td>0.419</td><td>0.076</td><td>1.924</td><td>2.704</td></tr>
+                                <tr><td>8</td><td>0.373</td><td>0.136</td><td>1.864</td><td>2.847</td></tr>
+                                <tr><td>9</td><td>0.337</td><td>0.184</td><td>1.816</td><td>2.970</td></tr>
+                                <tr><td>10</td><td>0.308</td><td>0.223</td><td>1.777</td><td>3.078</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+    </div>
+
+    <script>
+        // --- CONSTANTES GLOBALES DE CONTROL ---
+        const CHART_CONSTANTS = {
+            n: [2, 3, 4, 5, 6, 7, 8, 9, 10],
+            A2: [1.880, 1.023, 0.729, 0.577, 0.483, 0.419, 0.373, 0.337, 0.308],
+            D3: [0, 0, 0, 0, 0, 0.076, 0.136, 0.184, 0.223],
+            D4: [3.267, 2.574, 2.282, 2.114, 2.004, 1.924, 1.864, 1.816, 1.777],
+            d2: [1.128, 1.693, 2.059, 2.326, 2.534, 2.704, 2.847, 2.970, 3.078]
+        };
+        const getConstant = (type, n) => {
+            const index = CHART_CONSTANTS.n.indexOf(n);
+            if (index > -1) return CHART_CONSTANTS[type][index];
+            return null; // Fuera de rango
+        };
+
+        // --- NUEVA FUNCIÓN: Categoría de Capacidad ---
+        function getCapabilityCategory(cp) {
+            if (cp >= 2.0) return `<span class="text-green-300">Clase Mundial (≥ 2.0)</span>`;
+            if (cp >= 1.33) return `<span class="text-cyan-300">Adecuado (≥ 1.33)</span>`;
+            if (cp >= 1.0) return `<span class="text-yellow-300">Parcialmente Adecuado (≥ 1.0)</span>`;
+            if (cp >= 0.67) return `<span class="text-orange-300">No Adecuado (≥ 0.67)</span>`;
+            return `<span class="text-red-300">Requiere Modificación Seria (< 0.67)</span>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupDemoTabs();
+            setupChartXR();
+            setupChartXRm();
+            setupChartP();
+            setupChartU();
+            setupParetoChart();
+            setupHistogramChart();
+            setupGembaMode();
+        });
+        
+        // --- WIZARD DE SELECCIÓN DE GRÁFICO ---
+        let q1Selection = null;
+        let q2Selection = null;
+        const recommendationBox = document.getElementById('chart-recommendation');
+        const recommendationText = document.getElementById('recommendation-text');
+        const recommendationDesc = document.getElementById('recommendation-desc');
+
+        function selectWizard(question, selection) {
+            const eventTarget = event.currentTarget; // Capturar el elemento clickeado
+            if (question === 'q1') {
+                q1Selection = selection;
+                q2Selection = null; // Reset
+                recommendationBox.style.display = 'none';
+                document.getElementById('btn-variables').classList.toggle('selected', selection === 'variables');
+                document.getElementById('btn-atributos').classList.toggle('selected', selection === 'atributos');
+                document.getElementById('q2').style.display = 'block';
+                document.getElementById('q2-variables').style.display = (selection === 'variables') ? 'block' : 'none';
+                document.getElementById('q2-atributos').style.display = (selection === 'atributos') ? 'block' : 'none';
+                document.querySelectorAll('#q2-variables .wizard-box, #q2-atributos .wizard-box').forEach(el => el.classList.remove('selected'));
+
+            } else if (question === 'q2v') {
+                q2Selection = selection;
+                document.querySelectorAll('#q2-variables .wizard-box').forEach(el => el.classList.remove('selected'));
+                eventTarget.classList.add('selected');
+                showRecommendation();
+            } else if (question === 'q2a') {
+                q2Selection = selection;
+                document.querySelectorAll('#q2-atributos .wizard-box').forEach(el => el.classList.remove('selected'));
+                eventTarget.classList.add('selected');
+                showRecommendation();
+            }
+        }
+
+        function showRecommendation() {
+            let chart = '';
+            let desc = '';
+            if (q1Selection === 'variables') {
+                if (q2Selection === 'xrm') { chart = 'Gráfico X-Rm'; desc = 'Para mediciones individuales. Mide la Medida Individual (X) y el Rango Móvil (Rm).'; }
+                if (q2Selection === 'xr') { chart = 'Gráfico X-R'; desc = 'Para subgrupos pequeños (n=2-8). Mide la Media del subgrupo (X) y el Rango (R).'; }
+                if (q2Selection === 'xs') { chart = 'Gráfico X-S'; desc = 'Para subgrupos grandes (n>=9). Mide la Media (X) y la Desviación Estándar (S).'; }
+            } else if (q1Selection === 'atributos') {
+                if (q2Selection === 'p') { chart = 'Gráfico P (o NP)'; desc = 'Para la *proporción* (P) o número (NP) de unidades defectuosas en una muestra.'; }
+                if (q2Selection === 'u') { chart = 'Gráfico U (o C)'; desc = 'Para el *número promedio* (U) o conteo (C) de defectos por unidad.'; }
+            }
+            recommendationText.textContent = chart;
+            recommendationDesc.textContent = desc;
+            recommendationBox.style.display = 'block';
+        }
+        window.selectWizard = selectWizard;
+
+        // --- LÓGICA DE PESTAÑAS DE DEMOS ---
+        function setupDemoTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button-demo');
+            const tabContents = document.querySelectorAll('.chart-section');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('active', 'border-indigo-600', 'text-indigo-400');
+                        btn.classList.add('border-transparent', 'text-gray-400');
+                    });
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    const buttonElement = e.currentTarget;
+                    buttonElement.classList.add('active', 'border-indigo-600', 'text-indigo-400');
+                    buttonElement.classList.remove('border-transparent', 'text-gray-400');
+                    
+                    const targetId = buttonElement.getAttribute('onclick').match(/'([^']+)'/)[1];
+                    document.getElementById(targetId).classList.add('active');
+                });
+            });
+        }
+        window.switchDemo = (targetId) => {};
+
+        // --- FUNCIONES COMUNES ---
+        function randn_bm(mean, stdev) {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random();
+            while(v === 0) v = Math.random();
+            let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+            return num * stdev + mean;
+        }
+        function poissonRandom(mean) {
+            let L = Math.exp(-mean);
+            let k = 0, p = 1;
+            do { k++; p *= Math.random(); } while (p > L);
+            return k - 1;
+        }
+        const getMean = arr => arr.filter(v => !isNaN(v)).reduce((acc, val) => acc + val, 0) / arr.filter(v => !isNaN(v)).length;
+        const getStdev = (arr) => {
+            const n = arr.length;
+            if (n < 2) return 0;
+            const mean = getMean(arr);
+            return Math.sqrt(arr.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1));
+        };
+        const getSum = arr => arr.filter(v => !isNaN(v)).reduce((acc, val) => acc + val, 0);
+        const getRange = arr => Math.max(...arr) - Math.min(...arr);
+
+        // --- LÓGICA GRÁFICO DE PARETO ---
+        let paretoChartInstance;
+        function setupParetoChart() {
+            document.getElementById('btn-pareto-calc').addEventListener('click', () => {
+                const dataText = document.getElementById('pareto-data-input').value;
+                renderParetoChart(dataText);
+            });
+            // Cargar ejemplo inicial
+            renderParetoChart(document.getElementById('pareto-data-input').placeholder.replace("Ejemplo:\n", ""));
+        }
+
+        function renderParetoChart(dataText) {
+            if (paretoChartInstance) paretoChartInstance.destroy();
+            
+            try {
+                const lines = dataText.trim().split('\n');
+                let data = lines.map(line => {
+                    const parts = line.split(',');
+                    if (parts.length !== 2) return null;
+                    const label = parts[0].trim();
+                    const value = parseInt(parts[1].trim(), 10);
+                    if (isNaN(value)) return null;
+                    return { label, value };
+                }).filter(Boolean);
+
+                if (data.length === 0) throw new Error("No se encontraron datos válidos.");
+
+                data.sort((a, b) => b.value - a.value);
+
+                const labels = data.map(d => d.label);
+                const values = data.map(d => d.value);
+                const total = getSum(values);
+                let cumulativePct = 0;
+                const cumulativeData = values.map(v => {
+                    cumulativePct += (v / total) * 100;
+                    return cumulativePct;
+                });
+
+                let eightyPercentIndex = cumulativeData.findIndex(pct => pct >= 80);
+                let annotations = {}; 
+
+                if (eightyPercentIndex !== -1) {
+                    annotations.eightyPercentLine = {
+                        type: 'line',
+                        scaleID: 'x',
+                        value: eightyPercentIndex + 0.5, 
+                        borderColor: 'rgba(239, 68, 68, 0.8)', 
+                        borderWidth: 3,
+                        borderDash: [6, 6],
+                        label: {
+                            content: '80% Acumulado',
+                            enabled: true,
+                            position: 'start',
+                            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                            color: 'white',
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    };
+                }
+                
+                const ctx = document.getElementById('paretoChart').getContext('2d');
+                paretoChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Frecuencia',
+                                data: values,
+                                backgroundColor: '#3b82f6', // blue-500
+                                yAxisID: 'y-axis-1',
+                            },
+                            {
+                                label: 'Acumulado %',
+                                data: cumulativeData,
+                                type: 'line',
+                                borderColor: '#ef4444', // red-500
+                                borderWidth: 3,
+                                pointBackgroundColor: '#ef4444',
+                                yAxisID: 'y-axis-2',
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: 'Gráfico de Pareto', color: '#111827', font: { size: 16 } },
+                            legend: { display: false },
+                            annotation: { 
+                                annotations: annotations
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#111827' } },
+                            'y-axis-1': {
+                                type: 'linear',
+                                position: 'left',
+                                title: { display: true, text: 'Frecuencia', color: '#111827' },
+                                ticks: { color: '#111827' },
+                                grid: { drawOnChartArea: false }
+                            },
+                            'y-axis-2': {
+                                type: 'linear',
+                                position: 'right',
+                                min: 0,
+                                max: 100,
+                                title: { display: true, text: '% Acumulado', color: '#111827' },
+                                ticks: { color: '#111827', callback: value => value + '%' }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Error al generar Pareto:", e);
+                const ctx = document.getElementById('paretoChart').getContext('2d');
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#ef4444';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Error: ${e.message}`, ctx.canvas.width / 2, ctx.canvas.height / 2);
+            }
+        }
+        
+        // --- LÓGICA GRÁFICO DE HISTOGRAMA ---
+        let histogramChartInstance;
+        function setupHistogramChart() {
+            document.getElementById('btn-histogram-calc').addEventListener('click', () => {
+                const dataText = document.getElementById('histogram-data-input').value;
+                renderHistogramChart(dataText);
+            });
+            document.getElementById('btn-histogram-generate').addEventListener('click', () => {
+                let generatedData = "";
+                for(let i=0; i < 150; i++) {
+                    generatedData += randn_bm(50, 2).toFixed(2) + '\n';
+                }
+                document.getElementById('histogram-data-input').value = generatedData;
+                renderHistogramChart(generatedData);
+            });
+            document.getElementById('btn-histogram-generate').click();
+        }
+
+        function renderHistogramChart(dataText) {
+            if (histogramChartInstance) histogramChartInstance.destroy();
+            
+            try {
+                const data = dataText.trim().split('\n').map(Number).filter(n => !isNaN(n));
+                if (data.length < 5) throw new Error("Se necesitan al menos 5 puntos de datos.");
+
+                const n = data.length;
+                const min = Math.min(...data);
+                const max = Math.max(...data);
+                const numBins = Math.ceil(Math.sqrt(n)); // Regla de la raíz cuadrada
+                const binWidth = (max - min) / numBins;
+
+                let bins = [];
+                for (let i = 0; i < numBins; i++) {
+                    const binMin = min + i * binWidth;
+                    const binMax = min + (i + 1) * binWidth;
+                    bins.push({
+                        label: `${binMin.toFixed(2)} - ${binMax.toFixed(2)}`,
+                        min: binMin,
+                        max: binMax,
+                        count: 0
+                    });
+                }
+                bins[bins.length - 1].max = max; 
+
+                data.forEach(val => {
+                    for (let bin of bins) {
+                        if (val >= bin.min && val <= bin.max) {
+                            if (bin === bins[bins.length - 1] && val === max) {
+                                bin.count++;
+                                break;
+                            }
+                            if (val < bin.max || bin === bins[0]) {
+                                bin.count++;
+                                break;
+                            }
+                        }
+                    }
+                });
+
+                const labels = bins.map(b => b.label);
+                const counts = bins.map(b => b.count);
+                const mean = getMean(data);
+                const stdev = getStdev(data);
+
+                const ctx = document.getElementById('histogramChart').getContext('2d');
+                histogramChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Frecuencia',
+                            data: counts,
+                            backgroundColor: '#10b981', // green-500
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { 
+                                display: true, 
+                                text: `Histograma (Media: ${mean.toFixed(2)}, Desv. Est: ${stdev.toFixed(2)})`, 
+                                color: '#111827', 
+                                font: { size: 14 }
+                            },
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { 
+                                ticks: { color: '#111827', maxRotation: 60, minRotation: 60 }, 
+                                grid: { display: false }
+                            },
+                            y: {
+                                title: { display: true, text: 'Frecuencia', color: '#111827' },
+                                ticks: { color: '#111827' },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+            } catch (e) {
+                console.error("Error al generar Histograma:", e);
+                const ctx = document.getElementById('histogramChart').getContext('2d');
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#ef4444';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Error: ${e.message}`, ctx.canvas.width / 2, ctx.canvas.height / 2);
+            }
+        }
+
+        // --- LÓGICA GRÁFICO X-R (VARIABLES) ---
+        let spcChartXbar, spcChartR;
+        let current_X_DOUBLE_BAR = 0, current_R_BAR = 0; // Para Cpk
+        const SUBGROUP_SIZE_DEMO = 5, NUM_POINTS_XR = 25;
+        const A2_DEMO = getConstant('A2', SUBGROUP_SIZE_DEMO);
+        const D3_DEMO = getConstant('D3', SUBGROUP_SIZE_DEMO);
+        const D4_DEMO = getConstant('D4', SUBGROUP_SIZE_DEMO);
+        const d2_DEMO = getConstant('d2', SUBGROUP_SIZE_DEMO);
+        const MEAN_XR = 50, STDEV_XR = 2;
+
+        function setupChartXR() {
+            const ctxXbar = document.getElementById('spcChartXbar').getContext('2d');
+            const ctxR = document.getElementById('spcChartR').getContext('2d');
+            const analysisTextElement = document.getElementById('analysis-text-xr');
+            const cpkCalculator = document.getElementById('cpk-calculator-xr');
+            const cpkResult = document.getElementById('cpk-result-xr');
+
+            function getSubgroupData(simulationType = 'stable') {
+                const subgroups = [];
+                for (let i = 0; i < NUM_POINTS_XR; i++) {
+                    let currentMean = MEAN_XR;
+                    let currentStdev = STDEV_XR;
+                    if (simulationType === 'shift' && i >= 15) currentMean = MEAN_XR + STDEV_XR * 1.5;
+                    if (simulationType === 'spread' && i >= 15) currentStdev = STDEV_XR * 2;
+                    if (simulationType === 'trend' && i >= 10) currentMean = MEAN_XR + (i - 9) * 0.5; // Tendencia
+                    const subgroup = [];
+                    for (let j = 0; j < SUBGROUP_SIZE_DEMO; j++) subgroup.push(randn_bm(currentMean, currentStdev));
+                    subgroups.push(subgroup);
+                }
+                return subgroups;
+            }
+            
+            function processData(subgroups) {
+                const dataXbar = subgroups.map(sg => getMean(sg));
+                const dataR = subgroups.map(sg => getRange(sg));
+                const R_BAR = getMean(dataR);
+                const X_DOUBLE_BAR = getMean(dataXbar);
+                current_X_DOUBLE_BAR = X_DOUBLE_BAR; // Guardar para Cpk
+                current_R_BAR = R_BAR; // Guardar para Cpk
+                const UCL_R = D4_DEMO * R_BAR, LCL_R = D3_DEMO * R_BAR;
+                const UCL_X = X_DOUBLE_BAR + (A2_DEMO * R_BAR), LCL_X = X_DOUBLE_BAR - (A2_DEMO * R_BAR);
+                const labels = Array.from({length: NUM_POINTS_XR}, (_, i) => `M${i + 1}`);
+                return { labels, dataXbar, dataR, R_BAR, X_DOUBLE_BAR, UCL_R, LCL_R, UCL_X, LCL_X };
+            }
+
+            function renderChart(simulationType, analysisMessage) {
+                if (spcChartXbar) spcChartXbar.destroy();
+                if (spcChartR) spcChartR.destroy();
+                const d = processData(getSubgroupData(simulationType));
+                analysisTextElement.textContent = analysisMessage;
+
+                // Mostrar/Ocultar Cpk
+                if (simulationType === 'stable') {
+                    cpkCalculator.classList.add('active');
+                    cpkResult.textContent = ''; // Limpiar resultado
+                } else {
+                    cpkCalculator.classList.remove('active');
+                }
+
+                spcChartXbar = new Chart(ctxXbar, {
+                    type: 'line',
+                    data: { labels: d.labels, datasets: [{ label: 'Media (X-bar)', data: d.dataXbar, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fff' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: d.LCL_X - (d.R_BAR*A2_DEMO), max: d.UCL_X + (d.R_BAR*A2_DEMO), ticks: { color: '#111827' } }, x: { ticks: { color: '#111827' } } }, plugins: { legend: { display: false }, annotation: { annotations: {
+                        ucl: { type: 'line', yMin: d.UCL_X, yMax: d.UCL_X, borderColor: '#ef4444', borderWidth: 3, label: { content: `UCL=${d.UCL_X.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} },
+                        cl: { type: 'line', yMin: d.X_DOUBLE_BAR, yMax: d.X_DOUBLE_BAR, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], label: { content: `CL=${d.X_DOUBLE_BAR.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#22c55e'} },
+                        lcl: { type: 'line', yMin: d.LCL_X, yMax: d.LCL_X, borderColor: '#ef4444', borderWidth: 3, label: { content: `LCL=${d.LCL_X.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} }
+                    }}}}
+                });
+                spcChartR = new Chart(ctxR, {
+                    type: 'line',
+                    data: { labels: d.labels, datasets: [{ label: 'Rango (R)', data: d.dataR, borderColor: '#f97316', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fff' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: d.UCL_R * 1.5, ticks: { color: '#111827' } }, x: { ticks: { color: '#111827' } } }, plugins: { legend: { display: false }, annotation: { annotations: {
+                        ucl: { type: 'line', yMin: d.UCL_R, yMax: d.UCL_R, borderColor: '#ef4444', borderWidth: 3, label: { content: `UCL=${d.UCL_R.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} },
+                        cl: { type: 'line', yMin: d.R_BAR, yMax: d.R_BAR, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], label: { content: `CL=${d.R_BAR.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#22c55e'} },
+                        lcl: { type: 'line', yMin: d.LCL_R, yMax: d.LCL_R, borderColor: '#ef4444', borderWidth: 3, label: { content: `LCL=${d.LCL_R.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} }
+                    }}}}
+                });
+            }
+            document.getElementById('btn-xr-stable').addEventListener('click', () => renderChart('stable', "Proceso Estable. Tanto la Media como la Variabilidad (Rango) están bajo control."));
+            document.getElementById('btn-xr-shift').addEventListener('click', () => renderChart('shift', "¡Causa Especial! El Gráfico X-bar muestra un desplazamiento. Causa probable: nuevo lote de material o ajuste de máquina."));
+            document.getElementById('btn-xr-spread').addEventListener('click', () => renderChart('spread', "¡Causa Especial! El Gráfico R está fuera de control. Causa probable: falta de mantenimiento, operarios con métodos distintos."));
+            document.getElementById('btn-xr-trend').addEventListener('click', () => renderChart('trend', "¡Causa Especial! El Gráfico X-bar muestra una tendencia. Causa probable: desgaste gradual de herramienta."));
+            
+            // Cpk Calculator Logic
+            document.getElementById('btn-calc-cpk-xr').addEventListener('click', () => {
+                const lie = parseFloat(document.getElementById('lie-xr').value);
+                const lse = parseFloat(document.getElementById('lse-xr').value);
+                const target = (lse + lie) / 2; // Asumir objetivo en el centro
+                if (isNaN(lie) || isNaN(lse)) {
+                    cpkResult.textContent = "Error: Ingrese LSE y LIE numéricos."; return;
+                }
+                const stdev_est = current_R_BAR / d2_DEMO;
+                const cp = (lse - lie) / (6 * stdev_est);
+                const cpk_u = (lse - current_X_DOUBLE_BAR) / (3 * stdev_est);
+                const cpk_l = (current_X_DOUBLE_BAR - lie) / (3 * stdev_est);
+                const cpk = Math.min(cpk_u, cpk_l);
+                const k = (Math.abs(target - current_X_DOUBLE_BAR) / ((lse - lie) / 2)) * 100;
+                
+                let result = `<b>Cp:</b> ${cp.toFixed(2)} | <b>Cpk:</b> ${cpk.toFixed(2)} | <b>K:</b> ${k.toFixed(1)}% (Centrado)<br>`;
+                result += `<b>Categoría:</b> ${getCapabilityCategory(cp)}`;
+                if (cpk < cp * 0.95) result += `<br><span class="text-yellow-300">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
+                
+                cpkResult.innerHTML = result;
+            });
+
+            renderChart('stable', "Proceso Estable. Tanto la Media como la Variabilidad (Rango) están bajo control.");
+        }
+
+        // --- LÓGICA GRÁFICO X-Rm ---
+        let spcChartXInd, spcChartRm;
+        let current_X_BAR_XRM = 0, current_RM_BAR = 0; // Para Cpk
+        const NUM_POINTS_XRM = 25;
+        const MEAN_XRM = 100, STDEV_XRM = 1.5;
+        const d2_RM = getConstant('d2', 2); // 1.128
+        const D3_RM = getConstant('D3', 2); // 0
+        const D4_RM = getConstant('D4', 2); // 3.267
+        
+        function setupChartXRm() {
+            const ctxXInd = document.getElementById('spcChartXInd').getContext('2d');
+            const ctxRm = document.getElementById('spcChartRm').getContext('2d');
+            const analysisTextElement = document.getElementById('analysis-text-xrm');
+            const cpkCalculator = document.getElementById('cpk-calculator-xrm');
+            const cpkResult = document.getElementById('cpk-result-xrm');
+
+            function getXrmData(simulationType = 'stable') {
+                const xData = [];
+                for (let i = 0; i < NUM_POINTS_XRM; i++) {
+                    let currentMean = MEAN_XRM;
+                    if (simulationType === 'shift' && i >= 15) currentMean = MEAN_XRM + STDEV_XRM * 3;
+                    xData.push(randn_bm(currentMean, STDEV_XRM));
+                }
+                const rmData = [NaN];
+                for (let i = 1; i < xData.length; i++) rmData.push(Math.abs(xData[i] - xData[i-1]));
+                const X_BAR = getMean(xData);
+                const RM_BAR = getMean(rmData.slice(1));
+                current_X_BAR_XRM = X_BAR; // Guardar
+                current_RM_BAR = RM_BAR; // Guardar
+                const UCL_RM = D4_RM * RM_BAR, LCL_RM = D3_RM * RM_BAR;
+                const UCL_X = X_BAR + (3 * RM_BAR / d2_RM), LCL_X = X_BAR - (3 * RM_BAR / d2_RM);
+                const labels = Array.from({length: NUM_POINTS_XRM}, (_, i) => `M${i + 1}`);
+                return { labels, xData, rmData, X_BAR, RM_BAR, UCL_RM, LCL_RM, UCL_X, LCL_X };
+            }
+            
+            function renderChartXrm(simulationType, analysisMessage) {
+                if (spcChartXInd) spcChartXInd.destroy();
+                if (spcChartRm) spcChartRm.destroy();
+                const d = getXrmData(simulationType);
+                analysisTextElement.textContent = analysisMessage;
+
+                if (simulationType === 'stable') {
+                    cpkCalculator.classList.add('active');
+                    cpkResult.textContent = '';
+                } else {
+                    cpkCalculator.classList.remove('active');
+                }
+
+                spcChartXInd = new Chart(ctxXInd, {
+                    type: 'line',
+                    data: { labels: d.labels, datasets: [{ label: 'Individual (X)', data: d.xData.map(v => v.toFixed(2)), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fff' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: d.LCL_X * 0.95, max: d.UCL_X * 1.05, ticks: { color: '#111827' } }, x: { ticks: { color: '#111827' } } }, plugins: { legend: { display: false }, annotation: { annotations: {
+                        ucl: { type: 'line', yMin: d.UCL_X, yMax: d.UCL_X, borderColor: '#ef4444', borderWidth: 3, label: { content: `UCL=${d.UCL_X.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} },
+                        cl: { type: 'line', yMin: d.X_BAR, yMax: d.X_BAR, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], label: { content: `CL=${d.X_BAR.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#22c55e'} },
+                        lcl: { type: 'line', yMin: d.LCL_X, yMax: d.LCL_X, borderColor: '#ef4444', borderWidth: 3, label: { content: `LCL=${d.LCL_X.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} }
+                    }}}}
+                });
+                spcChartRm = new Chart(ctxRm, {
+                    type: 'line',
+                    data: { labels: d.labels, datasets: [{ label: 'Rango Móvil (Rm)', data: d.rmData.map(v => v.toFixed(2)), borderColor: '#f97316', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fff' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: d.UCL_RM * 1.5, ticks: { color: '#111827' } }, x: { ticks: { color: '#111827' } } }, plugins: { legend: { display: false }, annotation: { annotations: {
+                        ucl: { type: 'line', yMin: d.UCL_RM, yMax: d.UCL_RM, borderColor: '#ef4444', borderWidth: 3, label: { content: `UCL=${d.UCL_RM.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} },
+                        cl: { type: 'line', yMin: d.RM_BAR, yMax: d.RM_BAR, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], label: { content: `CL=${d.RM_BAR.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#22c55e'} }
+                    }}}}
+                });
+            }
+            document.getElementById('btn-xrm-stable').addEventListener('click', () => renderChartXrm('stable', "Proceso Estable. Tanto las mediciones individuales como el Rango Móvil están bajo control."));
+            document.getElementById('btn-xrm-shift').addEventListener('click', () => renderChartXrm('shift', "¡Causa Especial! Un ajuste en el setpoint de la máquina ha desplazado la media."));
+            
+            // Cpk Calculator Logic X-Rm
+            document.getElementById('btn-calc-cpk-xrm').addEventListener('click', () => {
+                const lie = parseFloat(document.getElementById('lie-xrm').value);
+                const lse = parseFloat(document.getElementById('lse-xrm').value);
+                const target = (lse + lie) / 2; // Asumir objetivo en el centro
+                if (isNaN(lie) || isNaN(lse)) {
+                    cpkResult.textContent = "Error: Ingrese LSE y LIE numéricos."; return;
+                }
+                const stdev_est = current_RM_BAR / d2_RM; // d2 para n=2
+                const cp = (lse - lie) / (6 * stdev_est);
+                const cpk_u = (lse - current_X_BAR_XRM) / (3 * stdev_est);
+                const cpk_l = (current_X_BAR_XRM - lie) / (3 * stdev_est);
+                const cpk = Math.min(cpk_u, cpk_l);
+                const k = (Math.abs(target - current_X_BAR_XRM) / ((lse - lie) / 2)) * 100;
+
+                let result = `<b>Cp:</b> ${cp.toFixed(2)} | <b>Cpk:</b> ${cpk.toFixed(2)} | <b>K:</b> ${k.toFixed(1)}% (Centrado)<br>`;
+                result += `<b>Categoría:</b> ${getCapabilityCategory(cp)}`;
+                if (cpk < cp * 0.95) result += `<br><span class="text-yellow-300">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
+                
+                document.getElementById('cpk-result-xrm').innerHTML = result;
+            });
+            
+            renderChartXrm('stable', "Proceso Estable. Tanto las mediciones individuales como el Rango Móvil están bajo control.");
+        }
+
+        // --- LÓGICA GRÁFICO P (ATRIBUTOS) ---
+        let spcChartP;
+        function setupChartP() {
+            const ctx = document.getElementById('spcChartP').getContext('2d');
+            const analysisTextElement = document.getElementById('analysis-text-p');
+            const P_BAR = 0.05; // 5% defectuosos promedio
+            const N_FIXED = 100; // Tamaño de muestra fijo
+            const NUM_POINTS_P = 25;
+
+            function getPData(variableN = false, shift = false) {
+                const labels = [], pData = [], uclData = [], lclData = [], clData = [];
+                let p_bar_actual = P_BAR;
+                for (let i = 0; i < NUM_POINTS_P; i++) {
+                    labels.push(`Lote ${i + 1}`);
+                    if (shift && i >= 15 && i <= 19) p_bar_actual = 0.15;
+                    else if (shift) p_bar_actual = P_BAR;
+                    const n = variableN ? Math.floor(randn_bm(100, 20)) + 30 : N_FIXED;
+                    let defectuosos = 0;
+                    for(let j=0; j < n; j++) if(Math.random() < p_bar_actual) defectuosos++;
+                    const p = defectuosos / n;
+                    pData.push(p.toFixed(3));
+                    const stdev_p = Math.sqrt((P_BAR * (1 - P_BAR)) / n);
+                    uclData.push((P_BAR + 3 * stdev_p).toFixed(3));
+                    lclData.push(Math.max(0, P_BAR - 3 * stdev_p).toFixed(3));
+                    clData.push(P_BAR);
+                }
+                return { labels, pData, uclData, lclData, clData };
+            }
+
+            function renderChartP(chartData, analysisMessage, variableN) {
+                if (spcChartP) spcChartP.destroy();
+                analysisTextElement.textContent = analysisMessage;
+                spcChartP = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: chartData.labels, datasets: [
+                        { label: 'Proporción (p)', data: chartData.pData, borderColor: '#f97316', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fff', tension: 0.1 },
+                        { label: 'UCL', data: chartData.uclData, borderColor: '#ef4444', borderWidth: 3, borderDash: variableN ? [4, 4] : [], pointRadius: 0, fill: false, stepped: variableN },
+                        { label: 'LCL', data: chartData.lclData, borderColor: '#ef4444', borderWidth: 3, borderDash: variableN ? [4, 4] : [], pointRadius: 0, fill: false, stepped: variableN },
+                        { label: 'CL', data: chartData.clData, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], pointRadius: 0, fill: false }
+                    ]},
+                    options: { responsive: true, scales: { y: { min: 0, max: 0.25, ticks: { color: '#111827', callback: val => (val * 100).toFixed(0) + '%' } }, x: { ticks: { color: '#111827' } } },
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label || ''}: ${(parseFloat(ctx.parsed.y) * 100).toFixed(2)}%` }}}
+                    }
+                });
+            }
+            document.getElementById('btn-p-stable').addEventListener('click', () => renderChartP(getPData(false, false), "Proceso Estable (n=100 fijo). Los límites de control son constantes.", false));
+            document.getElementById('btn-p-variable').addEventListener('click', () => renderChartP(getPData(true, false), "Proceso Estable (n=Variable). ¡Nota cómo los límites se ajustan!", true));
+            document.getElementById('btn-p-shift').addEventListener('click', () => renderChartP(getPData(false, true), "¡Causa Especial! Un lote de materia prima defectuoso causó un pico en la proporción.", false));
+            document.getElementById('btn-p-stable').click();
+        }
+
+        // --- LÓGICA GRÁFICO U ---
+        let spcChartU;
+        const NUM_POINTS_U = 25;
+        const MEAN_U = 3.0; // Media de 3 defectos por unidad
+
+        function setupChartU() {
+            const ctx = document.getElementById('spcChartU').getContext('2d');
+            const analysisTextElement = document.getElementById('analysis-text-u');
+
+            function getUData(simulationType = 'stable') {
+                const labels = [], uData = [], uclData = [], lclData = [], clData = [];
+                let currentMean = MEAN_U;
+                const U_BAR = MEAN_U;
+                const UCL_U = U_BAR + 3 * Math.sqrt(U_BAR), LCL_U = Math.max(0, U_BAR - 3 * Math.sqrt(U_BAR));
+                for (let i = 0; i < NUM_POINTS_U; i++) {
+                    labels.push(`Unidad ${i + 1}`);
+                    if (simulationType === 'shift' && i >= 15) currentMean = MEAN_U * 2.5;
+                    else currentMean = MEAN_U;
+                    uData.push(poissonRandom(currentMean));
+                    uclData.push(UCL_U); lclData.push(LCL_U); clData.push(U_BAR);
+                }
+                return { labels, uData, uclData, lclData, clData };
+            }
+            
+            function renderChartU(simulationType, analysisMessage) {
+                if (spcChartU) spcChartU.destroy();
+                const d = getUData(simulationType);
+                analysisTextElement.textContent = analysisMessage;
+                spcChartU = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: d.labels, datasets: [
+                        { label: 'Defectos (u)', data: d.uData, borderColor: '#8b5cf6', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fff', tension: 0.1, stepped: true },
+                        { label: 'UCL', data: d.uclData, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0, fill: false },
+                        { label: 'LCL', data: d.lclData, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0, fill: false },
+                        { label: 'CL (u-bar)', data: d.clData, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], pointRadius: 0, fill: false }
+                    ]},
+                    options: { responsive: true, scales: { y: { min: 0, max: d.uclData[0] * 1.5, ticks: { color: '#111827', precision: 0 } }, x: { ticks: { color: '#111827' } } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            document.getElementById('btn-u-stable').addEventListener('click', () => renderChartU('stable', "Proceso Estable. El número de defectos por unidad está bajo control estadístico."));
+            document.getElementById('btn-u-shift').addEventListener('click', () => renderChartU('shift', "¡Causa Especial! Causa probable: una falla de lubricación está generando más rayones."));
+            document.getElementById('btn-u-stable').click();
+        }
+
+        // --- MODO GEMBA (HERRAMIENTA PRÁCTICA) ---
+        let gembaChart1Instance, gembaChart2Instance;
+        function setupGembaMode() {
+            document.getElementById('btn-gemba-calc').addEventListener('click', () => {
+                const chartType = document.querySelector('input[name="gemba-type"]:checked').value;
+                const dataText = document.getElementById('gemba-data-input').value;
+                const analysisTextEl = document.getElementById('gemba-analysis-text');
+                const chart2Container = document.getElementById('gembaChart2-container');
+                
+                // Specs
+                const lie = parseFloat(document.getElementById('gemba-lie').value);
+                const lse = parseFloat(document.getElementById('gemba-lse').value);
+                let target = parseFloat(document.getElementById('gemba-target').value);
+                if (isNaN(target) && !isNaN(lie) && !isNaN(lse)) {
+                    target = (lse + lie) / 2; // Asumir objetivo en el centro
+                }
+                const hasSpecs = !isNaN(lie) && !isNaN(lse);
+
+                if (gembaChart1Instance) gembaChart1Instance.destroy();
+                if (gembaChart2Instance) gembaChart2Instance.destroy();
+                chart2Container.style.display = 'none';
+
+                try {
+                    const data = parseGembaData(dataText, chartType);
+                    if (data.values.length < 2) throw new Error("Se necesitan al menos 2 puntos de datos.");
+                    
+                    let analysisHTML = `Límites calculados de ${data.nPoints} muestras.`;
+                    let stabilityReport = {};
+                    
+                    if (chartType === 'xr') {
+                        const { charts, metrics } = renderGembaChartXR(data);
+                        chart2Container.style.display = 'block';
+                        stabilityReport = analyzeStability(charts.xbar.data, charts.xbar.limits);
+                        if(hasSpecs) analysisHTML += calculateGembaCpk(metrics.X_DOUBLE_BAR, metrics.stdev_est, lie, lse, target);
+                    } else if (chartType === 'xrm') {
+                        const { charts, metrics } = renderGembaChartXRm(data);
+                        chart2Container.style.display = 'block';
+                        stabilityReport = analyzeStability(charts.x.data, charts.x.limits);
+                        if(hasSpecs) analysisHTML += calculateGembaCpk(metrics.X_BAR, metrics.stdev_est, lie, lse, target);
+                    } else if (chartType === 'p') {
+                        const { charts, metrics } = renderGembaChartP(data);
+                        stabilityReport = analyzeStability(charts.p.data, charts.p.limits);
+                    } else if (chartType === 'u') {
+                        const { charts, metrics } = renderGembaChartU(data);
+                        stabilityReport = analyzeStability(charts.u.data, charts.u.limits);
+                    }
+
+                    // Añadir reporte de estabilidad
+                    const St = (stabilityReport.specialCausePoints / data.nPoints) * 100;
+                    analysisHTML += `<br><b>Índice de Inestabilidad (St): <span class="${St > 10 ? 'text-red-300' : 'text-green-300'}">${St.toFixed(1)}%</span></b>`;
+                    if (St > 10) analysisHTML += ` (Proceso Inestable, ${stabilityReport.specialCausePoints} puntos con causas especiales)`;
+                    else analysisHTML += ` (Proceso Estable)`;
+
+
+                    analysisTextEl.innerHTML = analysisHTML;
+
+                } catch (e) {
+                    analysisTextEl.textContent = `Error: ${e.message}`;
+                }
+            });
+        }
+
+        function parseGembaData(text, type) {
+            const lines = text.trim().split('\n').filter(l => l.trim() !== '');
+            let values = [];
+            let sampleSizes = []; // Para P y U
+            let subgroupSize = 0;
+            
+            if (type === 'xr') {
+                values = lines.map(line => {
+                    const points = line.trim().split(/[,\s+]/).map(Number).filter(n => !isNaN(n));
+                    if (points.length === 0) return null; // Ignorar líneas vacías
+                    if (subgroupSize === 0) subgroupSize = points.length;
+                    if (points.length !== subgroupSize) throw new Error(`Tamaño de subgrupo inconsistente. Se esperaba ${subgroupSize} pero se encontró ${points.length}.`);
+                    return points;
+                }).filter(v => v !== null); // Filtrar nulos
+            } else if (type === 'xrm') {
+                values = lines.map(line => Number(line.trim().split(/[,\s+]/)[0])).filter(n => !isNaN(n));
+            } else if (type === 'p' || type === 'u') {
+                values = lines.map(line => {
+                    const parts = line.trim().split(/[,\s+]/).map(Number).filter(n => !isNaN(n));
+                    if (parts.length === 0) return null; // Ignorar
+                    if (parts.length === 1 && type === 'u') { // Permitir solo 'defectos' si es U (asumir n=1)
+                        sampleSizes.push(1);
+                        return parts[0];
+                    }
+                    if (parts.length !== 2) throw new Error("Formato debe ser: 'defectos, tamaño_muestra' (o solo 'defectos' para U con n=1).");
+                    sampleSizes.push(parts[1]); // n
+                    return parts[0]; // defectos
+                }).filter(v => v !== null); // Filtrar nulos
+            }
+            
+            return { values, sampleSizes, subgroupSize, nPoints: values.length };
+        }
+        
+        // --- NUEVA FUNCIÓN: Calcular Cpk para Gemba ---
+        function calculateGembaCpk(mean, stdev, lie, lse, target) {
+            if (stdev === 0) return "<br><span class='text-red-300'>Error: Desviación estándar es cero. No se puede calcular Cpk.</span>";
+            const cp = (lse - lie) / (6 * stdev);
+            const cpk_u = (lse - mean) / (3 * stdev);
+            const cpk_l = (mean - lie) / (3 * stdev);
+            const cpk = Math.min(cpk_u, cpk_l);
+            let k = NaN;
+            if(!isNaN(target)) {
+                 k = (Math.abs(target - mean) / ((lse - lie) / 2)) * 100;
+            }
+
+            let result = `<br><b>Cp:</b> ${cp.toFixed(2)} | <b>Cpk:</b> ${cpk.toFixed(2)}`;
+            if(!isNaN(k)) result += ` | <b>K:</b> ${k.toFixed(1)}%`;
+            result += `<br><b>Categoría:</b> ${getCapabilityCategory(cp)}`;
+            if (cpk < cp * 0.95) result += `<br><span class="text-yellow-300">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
+            return result;
+        }
+
+        // --- NUEVA FUNCIÓN: Analizar Estabilidad (St) ---
+        function analyzeStability(data, limits) {
+            let specialCausePoints = 0;
+            const flags = new Set(); // Para no contar doble un punto
+            
+            // Regla 1: 1 punto fuera de límites
+            for(let i=0; i < data.length; i++) {
+                const ucl_i = Array.isArray(limits.ucl) ? limits.ucl[i] : limits.ucl;
+                const lcl_i = Array.isArray(limits.lcl) ? limits.lcl[i] : limits.lcl;
+                if (data[i] > ucl_i || data[i] < lcl_i) {
+                    flags.add(i);
+                }
+            }
+
+            // Regla 2: 9 puntos a un lado de la media (CL)
+            const cl = limits.cl;
+            let above = 0, below = 0;
+            for(let i=0; i < data.length; i++) {
+                if (data[i] > cl) { above++; below = 0; }
+                else if (data[i] < cl) { below++; above = 0; }
+                else { above = 0; below = 0; }
+                
+                if (above >= 9) for(let j=i-8; j<=i; j++) flags.add(j);
+                if (below >= 9) for(let j=i-8; j<=i; j++) flags.add(j);
+            }
+            
+            specialCausePoints = flags.size;
+            return { specialCausePoints };
+        }
+
+
+        function renderGembaChartXR(data) {
+            const n = data.subgroupSize;
+            if (n < 2 || n > 10) throw new Error("El tamaño del subgrupo (n) debe estar entre 2 y 10 para esta calculadora.");
+            
+            const A2 = getConstant('A2', n);
+            const D3 = getConstant('D3', n);
+            const D4 = getConstant('D4', n);
+            const d2 = getConstant('d2', n);
+
+            const xbarData = data.values.map(sg => getMean(sg));
+            const rData = data.values.map(sg => getRange(sg));
+            const X_DOUBLE_BAR = getMean(xbarData);
+            const R_BAR = getMean(rData);
+            const stdev_est = R_BAR / d2;
+            
+            const UCL_X = X_DOUBLE_BAR + (A2 * R_BAR), LCL_X = X_DOUBLE_BAR - (A2 * R_BAR);
+            const UCL_R = D4 * R_BAR, LCL_R = D3 * R_BAR;
+            
+            const labels = Array.from({length: data.nPoints}, (_, i) => `M${i + 1}`);
+            const xbarLimits = { ucl: UCL_X, lcl: LCL_X, cl: X_DOUBLE_BAR };
+            const rLimits = { ucl: UCL_R, lcl: LCL_R, cl: R_BAR };
+
+            const ctx1 = document.getElementById('gembaChart1').getContext('2d');
+            gembaChart1Instance = new Chart(ctx1, {
+                type: 'line', data: { labels, datasets: [{ label: 'Media (X-bar)', data: xbarData, borderColor: '#3b82f6', ...chartDefaults() }] },
+                options: chartOptions('Gráfico X-bar (Medias)', xbarLimits)
+            });
+
+            const ctx2 = document.getElementById('gembaChart2').getContext('2d');
+            gembaChart2Instance = new Chart(ctx2, {
+                type: 'line', data: { labels, datasets: [{ label: 'Rango (R)', data: rData, borderColor: '#f97316', ...chartDefaults() }] },
+                options: chartOptions('Gráfico R (Rangos)', rLimits, true)
+            });
+            
+            return {
+                charts: { xbar: { data: xbarData, limits: xbarLimits }, r: { data: rData, limits: rLimits } },
+                metrics: { X_DOUBLE_BAR, R_BAR, stdev_est }
+            };
+        }
+        
+        function renderGembaChartXRm(data) {
+            const d2 = getConstant('d2', 2);
+            const D4 = getConstant('D4', 2);
+            
+            const xData = data.values;
+            const rmData = [NaN];
+            for (let i = 1; i < xData.length; i++) rmData.push(Math.abs(xData[i] - xData[i-1]));
+            
+            const X_BAR = getMean(xData);
+            const RM_BAR = getMean(rmData.slice(1));
+            const stdev_est = RM_BAR / d2;
+            
+            const UCL_X = X_BAR + (3 * RM_BAR / d2), LCL_X = X_BAR - (3 * RM_BAR / d2);
+            const UCL_RM = D4 * RM_BAR, LCL_RM = 0;
+            
+            const labels = Array.from({length: data.nPoints}, (_, i) => `M${i + 1}`);
+            const xLimits = { ucl: UCL_X, lcl: LCL_X, cl: X_BAR };
+            const rmLimits = { ucl: UCL_RM, lcl: LCL_RM, cl: RM_BAR };
+
+            const ctx1 = document.getElementById('gembaChart1').getContext('2d');
+            gembaChart1Instance = new Chart(ctx1, {
+                type: 'line', data: { labels, datasets: [{ label: 'Individual (X)', data: xData, borderColor: '#3b82f6', ...chartDefaults() }] },
+                options: chartOptions('Gráfico X (Individuales)', xLimits)
+            });
+            
+            const ctx2 = document.getElementById('gembaChart2').getContext('2d');
+            gembaChart2Instance = new Chart(ctx2, {
+                type: 'line', data: { labels, datasets: [{ label: 'Rango Móvil (Rm)', data: rmData, borderColor: '#f97316', ...chartDefaults() }] },
+                options: chartOptions('Gráfico Rm (Rango Móvil)', rmLimits, true)
+            });
+            
+            return {
+                charts: { x: { data: xData, limits: xLimits }, rm: { data: rmData, limits: rmLimits } },
+                metrics: { X_BAR, RM_BAR, stdev_est }
+            };
+        }
+        
+        function renderGembaChartP(data) {
+            const totalDefectuosos = getSum(data.values);
+            const totalMuestreado = getSum(data.sampleSizes);
+            if (totalMuestreado === 0) throw new Error("El tamaño total de la muestra no puede ser cero.");
+            const P_BAR = totalDefectuosos / totalMuestreado;
+            
+            const pData = [], uclData = [], lclData = [], clData = [];
+            const n_fijo = data.sampleSizes.every(n => n === data.sampleSizes[0]); // ¿Es n fijo?
+            
+            for(let i=0; i < data.nPoints; i++) {
+                const n_i = data.sampleSizes[i];
+                if (n_i === 0) throw new Error(`El tamaño de muestra para el lote ${i+1} no puede ser cero.`);
+                pData.push(data.values[i] / n_i);
+                clData.push(P_BAR);
+                
+                const stdev_i = Math.sqrt((P_BAR * (1 - P_BAR)) / n_i);
+                uclData.push(P_BAR + 3 * stdev_i);
+                lclData.push(Math.max(0, P_BAR - 3 * stdev_i));
+            }
+            
+            const labels = Array.from({length: data.nPoints}, (_, i) => `Lote ${i + 1}`);
+            const pLimits = { ucl: uclData, lcl: lclData, cl: P_BAR };
+            
+            const ctx1 = document.getElementById('gembaChart1').getContext('2d');
+            gembaChart1Instance = new Chart(ctx1, {
+                type: 'line', 
+                data: { labels, datasets: [
+                    { label: 'Proporción (p)', data: pData, borderColor: '#f97316', ...chartDefaults() },
+                    { label: 'UCL', data: uclData, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0, stepped: !n_fijo, borderDash: n_fijo ? [] : [4,4] },
+                    { label: 'LCL', data: lclData, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0, stepped: !n_fijo, borderDash: n_fijo ? [] : [4,4] },
+                    { label: 'CL', data: clData, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], pointRadius: 0 }
+                ]},
+                options: chartOptions('Gráfico P (Defectuosos)', null, true)
+            });
+            
+            return {
+                charts: { p: { data: pData, limits: pLimits } },
+                metrics: { P_BAR }
+            };
+        }
+
+        function renderGembaChartU(data) {
+            const totalDefectos = getSum(data.values);
+            const totalUnidades = getSum(data.sampleSizes);
+            if (totalUnidades === 0) throw new Error("El tamaño total de unidades no puede ser cero.");
+            const U_BAR = totalDefectos / totalUnidades;
+            
+            const uData = [], uclData = [], lclData = [], clData = [];
+            const n_fijo = data.sampleSizes.every(n => n === data.sampleSizes[0]); // ¿Es n fijo?
+            
+            for(let i=0; i < data.nPoints; i++) {
+                const n_i = data.sampleSizes[i];
+                if (n_i === 0) throw new Error(`El tamaño de unidad para el punto ${i+1} no puede ser cero.`);
+                uData.push(data.values[i] / n_i); // c/n
+                clData.push(U_BAR);
+                
+                const stdev_i = Math.sqrt(U_BAR / n_i);
+                uclData.push(U_BAR + 3 * stdev_i);
+                lclData.push(Math.max(0, U_BAR - 3 * stdev_i));
+            }
+            
+            const labels = Array.from({length: data.nPoints}, (_, i) => `Unidad ${i + 1}`);
+            const uLimits = { ucl: uclData, lcl: lclData, cl: U_BAR };
+            
+            const ctx1 = document.getElementById('gembaChart1').getContext('2d');
+            gembaChart1Instance = new Chart(ctx1, {
+                type: 'line', 
+                data: { labels, datasets: [
+                    { label: 'Defectos/Unidad (u)', data: uData, borderColor: '#8b5cf6', ...chartDefaults() },
+                    { label: 'UCL', data: uclData, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0, stepped: !n_fijo, borderDash: n_fijo ? [] : [4,4] },
+                    { label: 'LCL', data: lclData, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0, stepped: !n_fijo, borderDash: n_fijo ? [] : [4,4] },
+                    { label: 'CL', data: clData, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], pointRadius: 0 }
+                ]},
+                options: chartOptions('Gráfico U (Defectos por Unidad)', null, true)
+            });
+            
+            return {
+                charts: { u: { data: uData, limits: uLimits } },
+                metrics: { U_BAR }
+            };
+        }
+        
+        // --- Funciones Helper para Gráficos Gemba ---
+        const chartDefaults = () => ({
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#fff',
+            tension: 0.1
+        });
+        
+        const chartOptions = (title, limits, yMinZero = false) => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: yMinZero ? 0 : undefined, ticks: { color: '#111827' } },
+                x: { ticks: { color: '#111827' } }
+            },
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: title, color: '#111827', font: { size: 16 } },
+                annotation: limits ? {
+                    annotations: {
+                        ucl: { type: 'line', yMin: limits.ucl, yMax: limits.ucl, borderColor: '#ef4444', borderWidth: 3, label: { content: `UCL=${limits.ucl.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} },
+                        cl: { type: 'line', yMin: limits.cl, yMax: limits.cl, borderColor: '#22c55e', borderWidth: 2, borderDash: [6, 6], label: { content: `CL=${limits.cl.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#22c55e'} },
+                        lcl: { type: 'line', yMin: limits.lcl, yMax: limits.lcl, borderColor: '#ef4444', borderWidth: 3, label: { content: `LCL=${limits.lcl.toFixed(2)}`, enabled: true, position: 'end', backgroundColor: '#ef4444'} }
+                    }
+                } : {}
+            }
+        });
+
+    </script>
+
+    <!-- Control de acceso compartido del Portal de Herramientas IE -->
+    <script src="auth.js"></script>
+</body>
+</html>
