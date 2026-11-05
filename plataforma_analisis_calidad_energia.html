@@ -293,6 +293,7 @@
                 <button type="button" class="tab-button" data-tab="tab-ai-report" role="tab" aria-selected="false" aria-controls="tab-ai-report" id="tabbtn-ai-report" tabindex="-1">Reporte IA</button>
                 <button type="button" class="tab-button" data-tab="tab-conclusions" role="tab" aria-selected="false" aria-controls="tab-conclusions" id="tabbtn-conclusions" tabindex="-1">Conclusiones</button>
                 <button type="button" class="tab-button" data-tab="tab-audit" role="tab" aria-selected="false" aria-controls="tab-audit" id="tabbtn-audit" tabindex="-1">Auditoría</button>
+                <button type="button" class="tab-button hidden" data-tab="tab-users" role="tab" aria-selected="false" aria-controls="tab-users" id="tabbtn-users" tabindex="-1">Usuarios</button>
             </nav>
 
             <div class="pt-6">
@@ -770,6 +771,44 @@
                          </button>
                          <p id="pdf-loading-message" class="text-gray-600 mt-2 font-semibold hidden">Generando PDF, por favor espere...</p>
                      </div>
+                </div>
+
+                <!-- TAB: ADMIN DE USUARIOS (solo administrador) -->
+                <div id="tab-users" class="tab-content p-4 md:p-8">
+                    <div class="max-w-4xl mx-auto space-y-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-xl border border-gray-200">
+                            <h3 class="text-2xl font-bold text-indigo-700 mb-1">Administración de Usuarios</h3>
+                            <p class="text-gray-500 text-sm mb-6">Gestioná quién puede acceder a la plataforma. Los cambios aplican al instante: nadie entra sin un usuario creado acá.</p>
+
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
+                                <h4 class="font-bold text-gray-700 mb-3">Crear nuevo acceso</h4>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input id="new-user-email" type="email" class="form-input flex-grow" placeholder="Email del usuario (ej: cliente@empresa.com)" autocomplete="off">
+                                    <input id="new-user-pass" type="text" class="form-input sm:w-52" placeholder="Contraseña inicial (mín. 6)" autocomplete="off">
+                                    <button id="btn-new-user" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 whitespace-nowrap">Crear acceso</button>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-2">El usuario queda habilitado de inmediato (sin confirmación por email). Podés cambiar su contraseña cuando quieras desde la tabla.</p>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead class="bg-gray-800 text-white">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left">Email</th>
+                                            <th class="px-4 py-3 text-left">Estado</th>
+                                            <th class="px-4 py-3 text-left">Último ingreso</th>
+                                            <th class="px-4 py-3 text-left">Creado</th>
+                                            <th class="px-4 py-3 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-tbody" class="divide-y divide-gray-200 bg-white">
+                                        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Cargando usuarios…</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p id="users-msg" class="text-sm mt-3 font-semibold hidden"></p>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -6458,6 +6497,7 @@ ${dataContext}`;
                 gate.classList.add('hidden');
                 btnUser.classList.remove('hidden');
                 emailSpan.textContent = email;
+                if (typeof checkAdmin === 'function') checkAdmin();
             }
 
             async function initGate() {
@@ -6469,9 +6509,146 @@ ${dataContext}`;
                 if (data && data.session) showApp(data.session.user.email);
                 else showGate('login');
                 sb.auth.onAuthStateChange((event, session) => {
-                    if (event === 'SIGNED_OUT') { btnUser.classList.add('hidden'); showGate('login'); }
+                    if (event === 'SIGNED_OUT') { btnUser.classList.add('hidden'); document.getElementById('tabbtn-users').classList.add('hidden'); showGate('login'); }
                 });
             }
+
+            // ============ FASE 3: pestaña "Usuarios" (solo administrador) ============
+            // Toda operación pasa por la Edge Function admin-usuarios: la service key
+            // vive en el servidor y la función solo acepta órdenes del ADMIN_EMAIL.
+            async function adminFetch(op, payload) {
+                const { data } = await sb.auth.getSession();
+                const token = data && data.session ? data.session.access_token : '';
+                const res = await fetch(cfg().url + '/functions/v1/admin-usuarios', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'apikey': cfg().anon, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ op, payload: payload || {} })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || ('HTTP ' + res.status));
+                return json;
+            }
+
+            function usersMsg(text, isError) {
+                const p = document.getElementById('users-msg');
+                p.textContent = text;
+                p.className = 'text-sm mt-3 font-semibold ' + (isError ? 'text-red-600' : 'text-green-700');
+                p.classList.remove('hidden');
+                setTimeout(() => p.classList.add('hidden'), 6000);
+            }
+
+            function fmtFecha(iso) {
+                if (!iso) return '—';
+                try { return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                } catch (e) { return iso; }
+            }
+
+            async function loadUsers() {
+                const tbody = document.getElementById('users-tbody');
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Cargando usuarios…</td></tr>';
+                try {
+                    const { users } = await adminFetch('list');
+                    const miEmail = (emailSpan.textContent || '').toLowerCase();
+                    tbody.innerHTML = '';
+                    users.forEach(u => {
+                        const esAdmin = u.email.toLowerCase() === miEmail;
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-50';
+                        const estado = u.bloqueado
+                            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">Bloqueado</span>'
+                            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Habilitado</span>';
+                        const acciones = esAdmin
+                            ? '<span class="text-xs text-gray-400 italic">Tu cuenta de administrador</span>'
+                            : `<button data-act="toggle" data-id="${u.id}" data-bloq="${u.bloqueado}" class="text-xs font-bold px-3 py-1.5 rounded-lg ${u.bloqueado ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-yellow-500 text-white hover:bg-yellow-600'}">${u.bloqueado ? 'Habilitar' : 'Bloquear'}</button>
+                               <button data-act="reset" data-id="${u.id}" data-email="${u.email}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 ml-1">Reset clave</button>
+                               <button data-act="delete" data-id="${u.id}" data-email="${u.email}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 ml-1">Eliminar</button>`;
+                        tr.innerHTML = `
+                            <td class="px-4 py-3 font-semibold text-gray-800">${u.email}${esAdmin ? ' <span class="text-[10px] align-top bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-bold">ADMIN</span>' : ''}</td>
+                            <td class="px-4 py-3">${estado}</td>
+                            <td class="px-4 py-3 text-gray-500 text-xs">${fmtFecha(u.ultimoLogin)}</td>
+                            <td class="px-4 py-3 text-gray-500 text-xs">${fmtFecha(u.creado)}</td>
+                            <td class="px-4 py-3 text-right whitespace-nowrap">${acciones}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                    if (users.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Sin usuarios aún.</td></tr>';
+                } catch (e) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-red-500">No se pudo cargar: ' + e.message + '</td></tr>';
+                }
+            }
+
+            // Delegación de acciones de la tabla
+            document.getElementById('users-tbody').addEventListener('click', async (e) => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const { act, id, email, bloq } = btn.dataset;
+                try {
+                    if (act === 'toggle') {
+                        await adminFetch(bloq === 'true' ? 'unban' : 'ban', { id });
+                        usersMsg(bloq === 'true' ? email + ' habilitado.' : email + ' bloqueado.', false);
+                        loadUsers();
+                    } else if (act === 'reset') {
+                        const modal = document.getElementById('custom-prompt-modal');
+                        const input = document.getElementById('custom-prompt-input');
+                        document.getElementById('custom-prompt-title').textContent = 'Resetear contraseña';
+                        document.getElementById('custom-prompt-msg').textContent = 'Nueva contraseña para ' + email + ' (mínimo 6 caracteres):';
+                        input.value = '';
+                        input.type = 'text';
+                        modal.classList.remove('hidden');
+                        input.focus();
+                        const okBtn = document.getElementById('custom-prompt-ok');
+                        const cancelBtn = document.getElementById('custom-prompt-cancel');
+                        const cerrar = () => { modal.classList.add('hidden'); input.type = 'text'; okBtn.replaceWith(okBtn.cloneNode(true)); cancelBtn.replaceWith(cancelBtn.cloneNode(true)); };
+                        cancelBtn.onclick = cerrar;
+                        okBtn.onclick = async () => {
+                            const pass = input.value.trim();
+                            cerrar();
+                            if (pass.length < 6) { usersMsg('La contraseña debe tener al menos 6 caracteres.', true); return; }
+                            try {
+                                await adminFetch('resetPassword', { id, password: pass });
+                                usersMsg('Contraseña de ' + email + ' actualizada.', false);
+                            } catch (err) { usersMsg('Error: ' + err.message, true); }
+                        };
+                    } else if (act === 'delete') {
+                        if (btn.dataset.confirm !== 'si') {
+                            btn.dataset.confirm = 'si';
+                            btn.textContent = '¿Confirmar baja?';
+                            btn.classList.add('bg-red-600', 'text-white');
+                            setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = 'Eliminar'; btn.classList.remove('bg-red-600', 'text-white'); }, 4000);
+                            return;
+                        }
+                        await adminFetch('delete', { id });
+                        usersMsg(email + ' eliminado.', false);
+                        loadUsers();
+                    }
+                } catch (err) {
+                    usersMsg('Error: ' + err.message, true);
+                }
+            });
+
+            // Crear usuario
+            document.getElementById('btn-new-user').addEventListener('click', async () => {
+                const email = document.getElementById('new-user-email').value.trim();
+                const pass = document.getElementById('new-user-pass').value;
+                if (!email || !email.includes('@')) { usersMsg('Ingresá un email válido.', true); return; }
+                if (pass.length < 6) { usersMsg('La contraseña debe tener al menos 6 caracteres.', true); return; }
+                try {
+                    await adminFetch('create', { email, password: pass });
+                    usersMsg('Acceso creado para ' + email + '.', false);
+                    document.getElementById('new-user-email').value = '';
+                    document.getElementById('new-user-pass').value = '';
+                    loadUsers();
+                } catch (err) { usersMsg('Error: ' + err.message, true); }
+            });
+
+            // Cargar la tabla al entrar a la pestaña y detectar si el usuario es admin
+            document.getElementById('tabbtn-users').addEventListener('click', loadUsers);
+            async function checkAdmin() {
+                try {
+                    const r = await adminFetch('whoami');
+                    if (r && r.admin) document.getElementById('tabbtn-users').classList.remove('hidden');
+                } catch (e) { /* no admin o función caída: pestaña queda oculta */ }
+            }
+
 
             document.getElementById('btn-save-supabase').addEventListener('click', async () => {
                 const url = document.getElementById('supabase-url').value.trim();
