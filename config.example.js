@@ -9,6 +9,10 @@
 // Las keys viven únicamente en tu máquina.
 // =========================================================================
 window.IE_CONFIG = {
+    // --- Control de acceso (Supabase): Settings → API Keys en tu proyecto ---
+    SUPABASE_URL: "",       // ej: "https://xxxxx.supabase.co"
+    SUPABASE_ANON: "",      // publishable key ("sb_publishable_..." o la legacy "eyJ...")
+
     // Xiaomi MiMo directo (Token Plan): https://www.xiaomimimo.com
     XIAOMI_API_KEY: "",
 
