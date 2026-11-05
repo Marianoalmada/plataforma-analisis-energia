@@ -36,7 +36,11 @@ Deno.serve(async (req) => {
     if (op === 'get') {
       const { data, error } = await service.from('app_config').select('data').eq('id', 1).single();
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = sin fila aún
-      return new Response(JSON.stringify(data?.data ?? {}), { headers: { ...CORS, 'Content-Type': 'application/json' } });
+      // SEGURIDAD: la apiKey NUNCA se envía al cliente — se usa sólo dentro
+      // del servidor (proxy-ia la lee directamente de esta misma tabla).
+      const cfg = data?.data ?? {};
+      const { apiKey, ...safeConfig } = cfg;
+      return new Response(JSON.stringify(safeConfig), { headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
     if (op === 'save') {

@@ -3057,54 +3057,61 @@ ${dataContext}`;
             const SYSTEM_INSTRUCTION_AI = (MODE_PERSONA[activeMeasurementMode] || MODE_PERSONA.loads) +
                 " MUY IMPORTANTE: NO uses sintaxis de ecuaciones matemáticas LaTeX (como $$, \\ge, \\le). Escribe siempre en texto plano utilizando los símbolos convencionales (>=, <=, +).";
 
-            // Despacho por proveedor: Gemini usa generateContent; OpenRouter y
-            // endpoints compatibles OpenAI usan chat/completions con el mismo prompt.
-            let url, payload;
-            const requestHeaders = { 'Content-Type': 'application/json' };
-
-            if (activeAIProviderId === 'gemini') {
-                let modelName = modelSelect.value;
-                if(!modelName.startsWith('models/')) modelName = `models/${modelName}`;
-                url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${keyToUse}`;
-                payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION_AI }] }
-                };
-            } else {
-                const base = currentAIProvider().baseUrl
-                    || ((aiCustomBaseUrlInput && aiCustomBaseUrlInput.value.trim()) || '').replace(/\/+$/, '');
-                if (!base) {
-                    throw new Error(t('notif.baseurl_missing'));
-                }
-                url = `${base}/chat/completions`;
-                if (keyToUse) requestHeaders['Authorization'] = `Bearer ${keyToUse}`;
-                // Atribución opcional de OpenRouter (identifica la app en su ranking público).
-                requestHeaders['X-Title'] = 'Plataforma de Analisis de Energia IE';
-                payload = {
-                    model: modelSelect.value,
-                    messages: [
-                        { role: 'system', content: SYSTEM_INSTRUCTION_AI },
-                        { role: 'user', content: prompt }
-                    ]
-                };
-            }
+            // PROXY IA: la llamada va al servidor (Edge Function proxy-ia), que
+            // tiene la API key del proveedor. La key NUNCA llega al navegador.
+            const sbCfg = {
+                url: localStorage.getItem('supabase_url') || (window.IE_CONFIG && window.IE_CONFIG.SUPABASE_URL) || '',
+                anon: localStorage.getItem('supabase_anon') || (window.IE_CONFIG && window.IE_CONFIG.SUPABASE_ANON) || ''
+            };
 
             try {
-                const result = await fetchWithBackoff(url, {
-                    method: 'POST',
-                    headers: requestHeaders,
-                    body: JSON.stringify(payload)
-                });
-
-                if (result.error) {
-                    throw new Error(result.error.message || "Error desconocido de la API");
-                }
-
+                let result;
                 let text;
-                if (activeAIProviderId === 'gemini') {
-                    text = result.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar el texto.";
+
+                if (window.IEAuth && IEAuth.sb && sbCfg.url) {
+                    // RUTA 1 (preferida): proxy del servidor — sin key en el cliente
+                    const { data: sessData } = await IEAuth.sb.auth.getSession();
+                    const sessionToken = sessData?.session?.access_token || '';
+                    result = await fetchWithBackoff(sbCfg.url + '/functions/v1/proxy-ia', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + sessionToken,
+                            'apikey': sbCfg.anon,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            messages: [
+                                { role: 'system', content: SYSTEM_INSTRUCTION_AI },
+                                { role: 'user', content: prompt }
+                            ],
+                            model: modelSelect.value
+                        })
+                    });
+                    if (result.error) throw new Error(result.error);
+                    text = result.text || "No se pudo generar el texto.";
                 } else {
-                    text = result.choices?.[0]?.message?.content || "No se pudo generar el texto.";
+                    // RUTA 2 (fallback local sin sesión): llamada directa con key del usuario
+                    let url, payload;
+                    const requestHeaders = { 'Content-Type': 'application/json' };
+
+                    if (activeAIProviderId === 'gemini') {
+                        let modelName = modelSelect.value;
+                        if(!modelName.startsWith('models/')) modelName = `models/${modelName}`;
+                        url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${keyToUse}`;
+                        payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION_AI }] } };
+                    } else {
+                        const base = currentAIProvider().baseUrl || ((aiCustomBaseUrlInput && aiCustomBaseUrlInput.value.trim()) || '').replace(/\/+$/, '');
+                        if (!base) throw new Error(t('notif.baseurl_missing'));
+                        url = `${base}/chat/completions`;
+                        if (keyToUse) requestHeaders['Authorization'] = `Bearer ${keyToUse}`;
+                        payload = { model: modelSelect.value, messages: [{ role: 'system', content: SYSTEM_INSTRUCTION_AI }, { role: 'user', content: prompt }] };
+                    }
+
+                    result = await fetchWithBackoff(url, { method: 'POST', headers: requestHeaders, body: JSON.stringify(payload) });
+                    if (result.error) throw new Error(result.error.message || "Error desconocido de la API");
+                    text = (activeAIProviderId === 'gemini')
+                        ? (result.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar el texto.")
+                        : (result.choices?.[0]?.message?.content || "No se pudo generar el texto.");
                 }
                 
                 text = text.replace(/^```(markdown|text)?\n/im, '').replace(/\n```$/i, '');
@@ -6434,5 +6441,10 @@ ${dataContext}`;
             applyAIProviderUI();
         });
     </script>
+
+<footer style="text-align:center;padding:20px 10px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:auto;">
+  © 2026 Inteligencia Energética (IE) — Todos los derechos reservados. Uso exclusivo bajo licencia.<br>
+  Prohibida su reproducción, distribución o modificación sin autorización escrita del autor.
+</footer>
 </body>
 </html>
