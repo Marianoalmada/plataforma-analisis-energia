@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mantenimiento Centrado en la Confiabilidad (RCM)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .header-custom {
+            background-color: #1e3a8a; /* Dark blue background (e.g., blue-900) */
+            color: white; /* White text for contrast */
+            padding-top: 1.5rem; 
+            padding-bottom: 1.5rem;
+            /* Horizontal padding will be handled by the inner container */
+            border-radius: 0.5rem; 
+        }
+        .header-content-inner { /* Class to constrain header's inner content */
+            display: flex;
+            align-items: center;
+            justify-content: space-between; 
+            flex-wrap: wrap; 
+            max-width: 80rem; /* Max width for header content (Tailwind max-w-7xl is 80rem) */
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 1rem; /* Corresponds to px-4 */
+            padding-right: 1rem; /* Corresponds to px-4 */
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+            .header-content-inner {
+                padding-left: 1.5rem; /* Corresponds to sm:px-6 */
+                padding-right: 1.5rem;
+            }
+        }
+        @media (min-width: 1024px) { /* lg breakpoint */
+            .header-content-inner {
+                padding-left: 2rem; /* Corresponds to lg:px-8 */
+                padding-right: 2rem;
+            }
+        }
+
+        .header-logo {
+             max-height: 62px; /* Original size */
+             flex-shrink: 0; 
+             margin-right: 1rem; 
+        }
+        .header-profile-pic {
+            max-height: 78px; /* Increased size by ~25% from 62px */
+            flex-shrink: 0; 
+            margin-left: 1rem; 
+            border-radius: 50%; 
+        }
+        .header-image-fallback { 
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #4a5568; 
+            color: #e2e8f0;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+        .header-text-block {
+            flex-grow: 1; 
+            text-align: center; 
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden; 
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+            background-color: #ffffff; 
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+        .accordion-content.active {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            overflow-y: auto; 
+        }
+        .accordion-content-inner { /* Class to constrain accordion text content */
+            max-width: 64rem; /* Tailwind max-w-5xl */
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 1rem; /* px-4 */
+            padding-right: 1rem; /* px-4 */
+        }
+        .accordion-button {
+            transition: background-color 0.3s ease;
+        }
+        .accordion-button.active {
+            background-color: #3b82f6; 
+            color: white;
+        }
+        .accordion-button:not(.active):hover {
+            background-color: #dbeafe; 
+        }
+        .icon-rotate {
+            transition: transform 0.3s ease;
+        }
+        .active .icon-rotate {
+            transform: rotate(180deg);
+        }
+        /* Styles for content blocks within accordion */
+         .content-block {
+            margin-bottom: 1.5rem; /* Space between tool descriptions */
+            padding: 1rem; /* Padding inside the block */
+            border: 1px solid #e5e7eb; /* Light border */
+            border-radius: 0.375rem; /* Rounded corners */
+            background-color: #f9fafb; /* Very light gray background */
+        }
+        .content-block h4 {
+             font-semibold: 600;
+             font-size: 1.125rem; /* text-lg */
+             color: #1e40af; /* Darker blue for titles */
+             margin-bottom: 0.5rem;
+        }
+         .content-block p strong {
+             color: #111827; /* Darker text for emphasis */
+         }
+         .content-block p {
+             color: #4b5563; /* Slightly lighter text for descriptions */
+             margin-bottom: 0.25rem;
+         }
+
+        .visual-representation {
+            background-color: #ffffff;
+            padding: 1rem; /* 16px */
+            margin-top: 0.75rem; /* 12px */
+            border-radius: 0.375rem; /* 6px */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
+        }
+        .visual-representation h5 {
+            font-weight: 600;
+            color: #1e40af; /* Azul oscuro para títulos visuales */
+            margin-bottom: 0.5rem; /* 8px */
+        }
+        .rca-item, .fta-item, .logic-item {
+            margin-left: 1rem; /* 16px */
+            padding-left: 0.5rem; /* 8px */
+            border-left: 2px solid #93c5fd; /* Azul más claro para bordes de lista */
+            margin-bottom: 0.25rem; /* 4px */
+            font-size: 0.875rem; /* text-sm */
+            color: #374151; /* gray-700 */
+        }
+        .rca-item strong, .logic-item strong {
+             color: #1f2937; /* gray-800 */
+        }
+
+        .example-box { /* Kept for consistency if used elsewhere */
+            background-color: #e0f2fe;
+            border-left: 4px solid #0ea5e9;
+            padding: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+        }
+        .example-box h4 {
+            color: #0369a1;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 0.5rem; /* 8px */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #e5e7eb; /* Borde gris claro para celdas de tabla */
+            padding: 0.5rem; /* 8px */
+            text-align: left;
+            font-size: 0.875rem; /* 14px */
+        }
+        th {
+            background-color: #eff6ff; /* Azul muy claro para encabezados de tabla */
+            font-weight: 600;
+            color: #374151;
+        }
+        td {
+             background-color: #ffffff;
+             color: #4b5563;
+        }
+
+        .lifecycle-container {
+            max-width: 700px; 
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .phase-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            padding: 1.25rem;
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
+            border: 1px solid #e2e8f0;
+        }
+        .phase-indicator {
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            margin-right: 1.5rem; 
+            flex-shrink: 0; 
+        }
+        .phase-icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+        .phase-content {
+            flex-grow: 1;
+        }
+        .phase-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.375rem;
+        }
+        .phase-description {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .flow-connector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0.25rem 0 1.25rem 0;
+        }
+        .flow-arrow {
+            width: 2rem;
+            height: 2rem;
+            color: #60a5fa;
+        }
+        .phase-step.final-phase .phase-icon {
+            background-color: #10b981;
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        .loop-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #e0e7ff;
+            border-radius: 0.5rem;
+            border: 1px dashed #a5b4fc;
+        }
+        .loop-arrow-up {
+            width: 2.5rem;
+            height: 2.5rem;
+            color: #6366f1;
+            margin-bottom: 0.5rem;
+        }
+        .loop-text {
+            font-size: 0.9rem;
+            color: #4338ca;
+            text-align: center;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) { /* Tailwind 'md' breakpoint for stacking header items */
+            .header-content-inner { 
+                flex-direction: column; 
+                align-items: center; 
+            }
+            .header-logo, .header-profile-pic {
+                margin-left: 0; 
+                margin-right: 0;
+                margin-bottom: 1rem; 
+            }
+            .header-profile-pic {
+                order: 3; 
+            }
+            .header-text-block {
+                order: 2; 
+                margin-bottom: 1rem;
+            }
+            .header-logo{
+                order: 1;
+            }
+            
+            .phase-step { /* Lifecycle diagram stacking on mobile */
+                flex-direction: column; 
+                align-items: center; 
+                text-align: center;
+            }
+            .phase-indicator {
+                margin-right: 0;
+                margin-bottom: 1rem; 
+            }
+            .phase-title {
+                font-size: 1.1rem;
+            }
+            .phase-description {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <a href="index.html" class="fixed top-3 left-3 z-[380] bg-white/95 backdrop-blur border border-gray-300 rounded-full px-4 py-1.5 text-xs font-semibold text-gray-700 shadow hover:bg-gray-100 transition-colors flex items-center gap-1.5" title="Volver al Portal de Herramientas IE">← Portal IE</a> <div> 
+        <header class="mb-8 header-custom shadow-lg">
+            <div class="header-content-inner">
+                <img src="https://www.inteligenciaenergetica.com.ar/inteligencia_energetica/img/LOGOIEWEB_blanco.png" 
+                     alt="Logo Inteligencia Energética" 
+                     class="header-logo"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block'">
+                <span class="header-image-fallback" style="display:none;">Logo IE</span> 
+                
+                <div class="header-text-block">
+                    <h1 class="text-xl md:text-2xl font-bold">Mantenimiento Centrado en la Confiabilidad (RCM)</h1>
+                    <p class="text-base text-blue-200 mt-2">Guía interactiva por Ing. Mariano Almada</p>
+                </div>
+
+                <img src="https://lh3.googleusercontent.com/ogw/AF2bZyiKoo3uuZdvMkgU5yKhhP9TPdKYQcuTJwXc10f1XdbbkrhI=s64-c-mo" 
+                     alt="Imagen de perfil del usuario" 
+                     class="header-profile-pic"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block'">
+                <span class="header-image-fallback" style="display:none;">Perfil</span>
+            </div>
+        </header>
+
+        <div id="accordionContainer" class="space-y-3 px-4 md:px-8"> <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-info-circle mr-2"></i>¿Qué es el RCM? Fundamentos</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content"> 
+                    <div class="accordion-content-inner"> 
+                        <p class="mb-3">El <strong>Mantenimiento Centrado en la Confiabilidad (RCM)</strong> es una metodología sistemática y estructurada que se utiliza para desarrollar estrategias de mantenimiento óptimas para activos físicos. Su objetivo principal es asegurar que cualquier activo físico continúe desempeñando las funciones deseadas por sus usuarios en su contexto operacional actual.</p>
+                        <p class="mb-3">RCM busca optimizar los programas de mantenimiento. <strong>No se trata simplemente de hacer más mantenimiento, sino de hacer el mantenimiento correcto, en el momento correcto.</strong></p>
+                        <h3 class="font-semibold text-lg text-blue-600 mt-4 mb-2">Enfoques Fundamentales del RCM:</h3>
+                        <ul class="list-disc list-inside space-y-2 mb-3">
+                            <li><strong>Preservar la función del sistema:</strong> Se centra en mantener la funcionalidad del equipo o sistema, en lugar de simplemente intentar prevenir todos los fallos de los componentes individuales.</li>
+                            <li><strong>Identificar modos de fallo:</strong> Analiza las diferentes maneras en que un equipo puede fallar en cumplir sus funciones.</li>
+                            <li><strong>Priorizar los modos de fallo:</strong> Evalúa la criticidad de cada modo de fallo basándose en sus consecuencias (seguridad, impacto ambiental, afectación a la producción, costos de reparación, etc.).</li>
+                            <li><strong>Seleccionar las tareas de mantenimiento más efectivas y aplicables:</strong> Para cada modo de fallo significativo, se busca la tarea de mantenimiento más adecuada (predictiva, preventiva, detectiva/búsqueda de fallos, o incluso decidir no realizar ninguna tarea proactiva si no es rentable o factible).</li>
+                        </ul>
+                        <div class="example-box">
+                            <h4>Ejemplo Práctico: Enfoque en la Función</h4>
+                            <p>Imagina una planta de tratamiento de agua. Un enfoque RCM no se obsesionaría con prevenir que cada tornillo de una bomba falle. En cambio, se enfocaría en asegurar que la función "suministrar X litros de agua tratada por hora" se mantenga. Si un tornillo falla pero no afecta esa función (quizás hay redundancia o el impacto es mínimo), su prioridad de mantenimiento será baja. Si el desgaste de un rodamiento amenaza directamente esa función, se le dará alta prioridad.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-question-circle mr-2"></i>Las 7 Preguntas Clave del Proceso RCM</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <p class="mb-3">El proceso RCM típicamente responde a siete preguntas clave sobre el activo y su contexto operativo. Estas preguntas guían el análisis para asegurar una comprensión profunda y una toma de decisiones informada:</p>
+                        <ol class="list-decimal list-inside space-y-3">
+                            <li><strong>Función:</strong> ¿Cuáles son las funciones y los estándares de desempeño asociados del activo en su contexto operativo actual? (Ej: La bomba debe trasvasar 1000 L/min de producto X a 5 bar de presión).</li>
+                            <li><strong>Fallas Funcionales:</strong> ¿De qué manera falla en cumplir sus funciones? (Ej: La bomba no entrega el caudal, no alcanza la presión, o presenta fugas).</li>
+                            <li><strong>Modos de Falla:</strong> ¿Qué causa cada falla funcional? (Ej: Desgaste del impulsor, sello dañado, motor quemado, filtro obstruido).</li>
+                            <li><strong>Efectos de la Falla:</strong> ¿Qué sucede cuando ocurre cada falla? (Ej: Parada de producción, derrame de producto, daño secundario a otros equipos).</li>
+                            <li><strong>Consecuencias de la Falla:</strong> ¿De qué manera importa cada falla? (Clasificadas en: seguridad, ambientales, operacionales, no operacionales. Ej: Riesgo para el personal, contaminación ambiental, pérdida de producción de $Y/hora, costo de reparación de $Z).</li>
+                            <li><strong>Tareas Proactivas e Intervalos:</strong> ¿Qué se puede hacer para predecir o prevenir cada falla? (Ej: Inspección por vibraciones cada mes, cambio de aceite cada 6 meses, termografía trimestral).</li>
+                            <li><strong>Acciones por Defecto:</strong> ¿Qué se debe hacer si no se puede encontrar una tarea proactiva adecuada? (Ej: Rediseño del componente, búsqueda de fallos periódica para fallos ocultos, o ningún mantenimiento programado y planificar la reparación tras el fallo si las consecuencias son aceptables).</li>
+                        </ol>
+                        <div class="example-box">
+                            <h4>Ejemplo Práctico: Pregunta 3 - Modos de Falla de un Motor Eléctrico</h4>
+                            <p><strong>Activo:</strong> Motor eléctrico trifásico de 50 HP que acciona un ventilador crítico.</p>
+                            <p><strong>Función:</strong> Proveer torque para girar el ventilador a 1500 RPM.</p>
+                            <p><strong>Falla Funcional:</strong> El motor no arranca, o se detiene inesperadamente.</p>
+                            <p><strong>Posibles Modos de Falla (Causas):</strong></p>
+                            <ul class="list-disc list-inside ml-4">
+                                <li>Falla de rodamiento (por contaminación, falta de lubricación).</li>
+                                <li>Bobinado quemado (por sobrecarga, desbalance de fases).</li>
+                                <li>Falla en el contactor de arranque.</li>
+                                <li>Conexiones eléctricas flojas o corroídas.</li>
+                            </ul>
+                            <p>Entender estos modos de falla es crucial para definir tareas preventivas (lubricación, inspección termográfica) o predictivas (análisis de vibraciones).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-thumbs-up mr-2"></i>Beneficios Clave del RCM</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <p class="mb-3">La implementación efectiva del RCM conlleva múltiples beneficios que impactan directamente la eficiencia operativa y la rentabilidad:</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Optimiza los recursos de mantenimiento:</strong> Asegura que los esfuerzos se centren en prevenir los fallos más críticos y que las tareas de mantenimiento sean técnicamente factibles y económicamente justificables. Se evita el "sobre-mantenimiento".</li>
+                            <li><strong>Mejora la confiabilidad y disponibilidad de los activos:</strong> Al enfocarse en las funciones críticas y en las causas raíz de los fallos, se incrementa el tiempo productivo de los equipos.</li>
+                            <li><strong>Aumenta la seguridad y la protección ambiental:</strong> Al identificar y gestionar proactivamente los modos de fallo con consecuencias significativas en estas áreas.</li>
+                            <li><strong>Reduce los costos totales de mantenimiento:</strong> A largo plazo, al disminuir las paradas no planificadas, optimizar la frecuencia de las tareas preventivas y evitar el mantenimiento innecesario y sus costos asociados (mano de obra, repuestos, lucro cesante).</li>
+                            <li><strong>Genera un conocimiento profundo de los activos:</strong> El proceso de análisis RCM documenta cómo funcionan los equipos, cómo pueden fallar y cuáles son las mejores estrategias para mantenerlos. Esta base de conocimiento es invaluable.</li>
+                            <li><strong>Mejora la toma de decisiones:</strong> Proporciona una base lógica, documentada y auditable para las decisiones de mantenimiento, alejándose de decisiones basadas en la costumbre o intuición.</li>
+                            <li><strong>Mejora la moral del equipo de mantenimiento:</strong> Al trabajar en tareas que realmente aportan valor y ver la reducción de fallos imprevistos, el personal se siente más efectivo y motivado.</li>
+                        </ul>
+                         <div class="example-box">
+                            <h4>Ejemplo Práctico: Reducción de Costos</h4>
+                            <p>Una empresa de manufactura aplicó RCM a su línea de envasado principal. Antes, realizaban cambios preventivos de ciertos componentes cada 3 meses "por si acaso". El análisis RCM reveló que muchos de estos componentes podían monitorearse con técnicas predictivas (ultrasonido, análisis de aceite) y solo cambiarse cuando mostraban signos reales de degradación. Esto extendió la vida útil de los componentes, redujo las paradas programadas y disminuyó el gasto en repuestos en un 20% para esa línea, sin comprometer la confiabilidad.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-tools mr-2"></i>Herramientas Metodológicas y Analíticas</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <p class="mb-3 text-gray-700">El RCM se apoya en diversas herramientas analíticas para asegurar un proceso riguroso y efectivo. Las más comunes incluyen:</p>
+                        
+                        <div class="content-block">
+                            <h4>Análisis de Modos de Fallo y Efectos (FMEA)</h4>
+                            <p><strong>Descripción:</strong> Es una técnica sistemática para identificar los modos de fallo potenciales de un activo o proceso, y los efectos que dichos fallos tendrían sobre el sistema. Es fundamental en RCM para responder a las preguntas "¿De qué manera falla?" y "¿Qué sucede cuando falla?".</p>
+                            <p><strong>Uso en RCM:</strong> Ayuda a detallar cómo pueden fallar los componentes y cuáles serían las consecuencias a nivel local y del sistema.</p>
+                            <div class="visual-representation">
+                                <h5>Ejemplo Práctico de FMEA (Bomba de Agua)</h5>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Componente</th>
+                                                <th>Función</th>
+                                                <th>Modo de Fallo Potencial</th>
+                                                <th>Efecto Local del Fallo</th>
+                                                <th>Efecto en el Sistema</th>
+                                                <th>Causa Potencial</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Motor Eléctrico</td>
+                                                <td>Proveer energía mecánica a la bomba</td>
+                                                <td>No arranca</td>
+                                                <td>El motor no gira</td>
+                                                <td>La bomba no suministra agua, interrupción del proceso</td>
+                                                <td>Falla de alimentación eléctrica, bobinado quemado</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Rodamientos</td>
+                                                <td>Permitir giro suave del eje</td>
+                                                <td>Desgastados / Agripados</td>
+                                                <td>Ruido excesivo, vibración, eje bloqueado</td>
+                                                <td>Falla de la bomba, daño al motor</td>
+                                                <td>Falta de lubricación, contaminación</td>
+                                            </tr>
+                                             <tr>
+                                                <td>Sello Mecánico</td>
+                                                <td>Prevenir fugas de agua</td>
+                                                <td>Fuga</td>
+                                                <td>Pérdida de agua por el eje</td>
+                                                <td>Pérdida de eficiencia, posible daño al motor por humedad</td>
+                                                <td>Desgaste normal, instalación incorrecta</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-block">
+                            <h4>Análisis de Modos de Fallo, Efectos y Criticidad (FMECA)</h4>
+                            <p><strong>Descripción:</strong> Es una extensión del FMEA que añade un componente de criticidad. La criticidad evalúa la gravedad del efecto del fallo combinada con su probabilidad de ocurrencia (y a veces la detectabilidad), permitiendo priorizar los modos de fallo.</p>
+                            <p><strong>Uso en RCM:</strong> Ayuda a enfocar los esfuerzos en los modos de fallo más significativos, respondiendo a "¿De qué manera importa cada falla?".</p>
+                            <div class="visual-representation">
+                                <h5>Ejemplo Práctico de FMECA (Continuación Bomba de Agua)</h5>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Modo de Fallo</th>
+                                                <th>Efecto en el Sistema</th>
+                                                <th>Severidad (S) (1-10)</th>
+                                                <th>Ocurrencia (O) (1-10)</th>
+                                                <th>Detección (D) (1-10)</th>
+                                                <th>NPR (S*O*D)</th>
+                                                <th>Acción Recomendada</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Motor no arranca</td>
+                                                <td>Interrupción del proceso</td>
+                                                <td>8</td>
+                                                <td>3</td>
+                                                <td>4</td>
+                                                <td>96</td>
+                                                <td>Revisar plan de mantenimiento eléctrico preventivo.</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Rodamientos desgastados</td>
+                                                <td>Falla de la bomba</td>
+                                                <td>7</td>
+                                                <td>5</td>
+                                                <td>3 (detectable por ruido/vibración)</td>
+                                                <td>105</td>
+                                                <td>Implementar monitoreo de vibraciones y lubricación programada.</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Fuga en sello mecánico</td>
+                                                <td>Pérdida de eficiencia</td>
+                                                <td>5</td>
+                                                <td>6</td>
+                                                <td>2 (detectable por inspección visual)</td>
+                                                <td>60</td>
+                                                <td>Planificar reemplazo preventivo del sello.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <p class="text-xs mt-2 text-gray-600">Nota: S (Severidad): 1=Baja, 10=Muy Alta. O (Ocurrencia): 1=Muy Improbable, 10=Muy Probable. D (Detección): 1=Fácil de Detectar, 10=Muy Difícil de Detectar. NPR alto indica mayor criticidad.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-block">
+                            <h4>Análisis de Causa Raíz (RCA)</h4>
+                            <p><strong>Descripción:</strong> Es un conjunto de métodos utilizados para identificar las causas fundamentales de los fallos o problemas. En lugar de tratar solo los síntomas, busca el origen para evitar la recurrencia.</p>
+                            <p><strong>Uso en RCM:</strong> Se emplea para entender profundamente por qué ocurren ciertos modos de fallo, lo que es crucial para seleccionar tareas proactivas efectivas.</p>
+                            <div class="visual-representation">
+                                <h5>Ejemplo Práctico de RCA (Usando los "5 Porqués")</h5>
+                                <p class="text-gray-700 mb-2"><strong>Problema:</strong> La máquina X se detiene inesperadamente de forma recurrente.</p>
+                                <div class="space-y-1">
+                                    <div class="rca-item"><strong>1. ¿Por qué se detuvo la máquina?</strong> Respuesta: El motor principal se sobrecalentó y activó la protección térmica.</div>
+                                    <div class="rca-item"><strong>2. ¿Por qué se sobrecalentó el motor?</strong> Respuesta: El motor estaba trabajando con sobrecarga.</div>
+                                    <div class="rca-item"><strong>3. ¿Por qué estaba trabajando con sobrecarga?</strong> Respuesta: Uno de los rodamientos del eje conducido presentaba alta fricción.</div>
+                                    <div class="rca-item"><strong>4. ¿Por qué el rodamiento presentaba alta fricción?</strong> Respuesta: Por falta de lubricación adecuada.</div>
+                                    <div class="rca-item"><strong>5. ¿Por qué faltó lubricación adecuada?</strong> Respuesta: El plan de lubricación no se estaba siguiendo correctamente y el tipo de lubricante usado no era el óptimo para las condiciones de operación. <strong>(Causa Raíz Potencial)</strong></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-block">
+                            <h4>Diagramas de Lógica RCM (RCM Logic Diagrams o Decision Diagrams)</h4>
+                            <p><strong>Descripción:</strong> Son árboles de decisión estructurados (basados en estándares como SAE JA1012) que guían al equipo de análisis a través de una serie de preguntas para seleccionar la estrategia de mantenimiento más apropiada (predictiva, preventiva basada en tiempo, búsqueda de fallos, o rediseño/ninguna acción) para un modo de fallo específico, considerando sus consecuencias.</p>
+                            <p><strong>Uso en RCM:</strong> Son el núcleo para determinar "¿Qué se puede hacer para predecir o prevenir cada falla?" y "¿Qué se debe hacer si no se puede encontrar una tarea proactiva adecuada?".</p>
+                             <div class="visual-representation">
+                                <h5>Ejemplo Simplificado de Diagrama de Decisión RCM (para un modo de fallo)</h5>
+                                <div class="space-y-1">
+                                    <div class="logic-item"><strong>P1: ¿Es evidente la falla para el personal operativo durante sus tareas normales?</strong></div>
+                                    <div class="logic-item ml-4"><strong>SI → Ir a P2 (Consecuencias de Falla Evidente)</strong></div>
+                                    <div class="logic-item ml-8"><strong>P2.1: ¿La pérdida de función causada por este modo de fallo tiene consecuencias adversas para la seguridad o el medio ambiente?</strong></div>
+                                    <div class="logic-item ml-12">SI → Tarea proactiva obligatoria o rediseño.</div>
+                                    <div class="logic-item ml-12">NO → Ir a P2.2</div>
+                                    <div class="logic-item ml-8"><strong>P2.2: ¿La pérdida de función tiene consecuencias operacionales (producción, costos, calidad)?</strong></div>
+                                    <div class="logic-item ml-12">SI → ¿Es técnicamente factible y costo-efectiva una tarea proactiva (PdM o PM)?</div>
+                                    <div class="logic-item ml-16">SI → Implementar tarea.</div>
+                                    <div class="logic-item ml-16">NO → Considerar rediseño o permitir fallo (si las consecuencias son tolerables).</div>
+                                    <div class="logic-item ml-12">NO → Permitir fallo (si no hay otras consecuencias).</div>
+                                    <div class="logic-item ml-4"><strong>NO (Falla Oculta) → Ir a P3 (Consecuencias de Falla Oculta)</strong></div>
+                                    <div class="logic-item ml-8"><strong>P3.1: ¿La falla oculta, combinada con una segunda falla, tiene consecuencias para la seguridad o el medio ambiente?</strong></div>
+                                    <div class="logic-item ml-12">SI → Tarea de búsqueda de fallos obligatoria.</div>
+                                    <div class="logic-item ml-12">NO → ¿Tiene consecuencias económicas significativas?</div>
+                                    <div class="logic-item ml-16">SI → ¿Tarea de búsqueda de fallos costo-efectiva?</div>
+                                     <div class="logic-item ml-20">SI → Implementar.</div>
+                                     <div class="logic-item ml-20">NO → Permitir fallo oculto.</div>
+                                    <div class="logic-item ml-16">NO → No se requiere tarea proactiva.</div>
+                                </div>
+                                 <p class="text-xs mt-2 text-gray-600">Nota: Este es un flujo muy simplificado. Los diagramas reales son más detallados.</p>
+                            </div>
+                        </div>
+
+                        <div class="content-block">
+                            <h4>Análisis de Criticidad de Activos</h4>
+                            <p><strong>Descripción:</strong> Es un proceso para evaluar y clasificar los activos según su importancia para la operación, seguridad, medio ambiente, etc. Esto ayuda a decidir dónde enfocar los esfuerzos de análisis RCM.</p>
+                            <p><strong>Uso en RCM:</strong> Permite priorizar los sistemas y equipos que serán sometidos al análisis RCM detallado, optimizando los recursos.</p>
+                            <div class="visual-representation">
+                                <h5>Ejemplo de Matriz de Criticidad de Activos</h5>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="2" class="text-center align-middle">Probabilidad de Falla</th>
+                                                <th colspan="3" class="text-center">Impacto del Fallo (Consecuencia)</th>
+                                            </tr>
+                                            <tr>
+                                                <th class="text-center bg-green-200">Bajo (B)</th>
+                                                <th class="text-center bg-yellow-200">Medio (M)</th>
+                                                <th class="text-center bg-red-200">Alto (A)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="bg-red-200">Alta (A)</td>
+                                                <td class="bg-yellow-300 text-center">Media</td>
+                                                <td class="bg-red-400 text-center font-bold">Crítica</td>
+                                                <td class="bg-red-500 text-center font-bold">Muy Crítica</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="bg-yellow-200">Media (M)</td>
+                                                <td class="bg-green-300 text-center">Baja</td>
+                                                <td class="bg-yellow-400 text-center">Media</td>
+                                                <td class="bg-red-400 text-center font-bold">Crítica</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="bg-green-200">Baja (B)</td>
+                                                <td class="bg-green-400 text-center">Muy Baja</td>
+                                                <td class="bg-green-300 text-center">Baja</td>
+                                                <td class="bg-yellow-300 text-center">Media</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <p class="text-xs mt-2 text-gray-600">Ejemplo: Un activo con Alta probabilidad de falla y Alto impacto es "Muy Crítico" y debe ser priorizado para RCM.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-block">
+                            <h4>Análisis del Árbol de Fallos (FTA)</h4>
+                            <p><strong>Descripción:</strong> Es un método deductivo de análisis de fiabilidad que comienza con un evento no deseado (fallo del sistema) y trabaja hacia atrás para identificar todas las posibles combinaciones de fallos de componentes o eventos que podrían causarlo.</p>
+                            <p><strong>Uso en RCM:</strong> Aunque no siempre es parte central del RCM como el FMEA, puede ser útil para comprender sistemas complejos y las interacciones que llevan a fallos funcionales.</p>
+                             <div class="visual-representation">
+                                <h5>Ejemplo Simplificado de Árbol de Fallos (Sistema de Iluminación Falla)</h5>
+                                <ul class="list-none p-0">
+                                    <li class="fta-item"><strong>Evento Tope: Sistema de Iluminación No Funciona</strong>
+                                        <ul class="list-none">
+                                            <li class="fta-item"><strong>[O] Compuerta OR</strong> (Falla si ocurre CUALQUIERA de los siguientes)
+                                                <ul class="list-none">
+                                                    <li class="fta-item">Falla de Suministro Eléctrico General</li>
+                                                    <li class="fta-item">Falla en el Circuito de Iluminación
+                                                        <ul class="list-none">
+                                                            <li class="fta-item"><strong>[Y] Compuerta AND</strong> (Falla si ocurren TODOS los siguientes en un sistema redundante simple)
+                                                                 <ul class="list-none">
+                                                                    <li class="fta-item">Falla Bombilla Principal</li>
+                                                                    <li class="fta-item">Falla Bombilla de Respaldo</li>
+                                                                 </ul>
+                                                            </li>
+                                                            <li class="fta-item"><strong>[O] Compuerta OR</strong>
+                                                                <ul class="list-none">
+                                                                    <li class="fta-item">Interruptor Defectuoso</li>
+                                                                    <li class="fta-item">Cableado Abierto</li>
+                                                                </ul>
+                                                            </li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                                <p class="text-xs mt-2 text-gray-600">Nota: [O] = Compuerta OR (sucede si alguna entrada ocurre). [Y] = Compuerta AND (sucede si todas las entradas ocurren).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-laptop-code mr-2"></i>Herramientas de Software para RCM</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <p class="mb-3">El software especializado puede facilitar significativamente el proceso RCM, la gestión de datos y la implementación de planes.</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Software RCM Dedicado:</strong> (Ej: ReliaSoft RCM++, IMS RCM, RCM-S). Aplicaciones diseñadas para guiar el análisis RCM, con plantillas FMEA, diagramas de lógica, gestión de datos y generación de informes. <em>Agilizan el análisis y aseguran consistencia.</em></li>
+                            <li><strong>Sistemas de Gestión de Mantenimiento Computarizado (CMMS/GMAO):</strong> (Ej: SAP PM, IBM Maximo, Infor EAM). Cruciales para implementar tareas definidas por RCM, recopilar datos históricos (que retroalimentan análisis futuros) y monitorear efectividad. <em>Tu experiencia con SAP PM es directamente aplicable aquí para la ejecución y seguimiento.</em></li>
+                            <li><strong>Software de Análisis de Datos y Confiabilidad:</strong> Herramientas estadísticas para analizar datos de fallos (MTBF, MTTR), identificar tendencias y realizar análisis de Weibull. <em>Proporcionan base cuantitativa para decisiones, como intervalos óptimos.</em></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-book-open mr-2"></i>Fuentes de Información y Documentación</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <p class="mb-3">Un análisis RCM robusto se basa en información precisa y completa.</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Registros Históricos de Mantenimiento y Fallas:</strong> Datos sobre mantenimientos previos, fallos, reparaciones, costos. <em>Esenciales para entender comportamiento pasado y frecuencia de fallos.</em></li>
+                            <li><strong>Manuales de Equipos, Planos y Especificaciones de Diseño:</strong> Documentación del fabricante y de ingeniería. <em>Ayudan a definir funciones, estándares y modos de fallo.</em></li>
+                            <li><strong>Estándares RCM:</strong> (Ej: SAE JA1011, SAE JA1012, ATA MSG-3). Documentos que definen criterios y procesos para análisis RCM. <em>Proveen marco metodológico y mejores prácticas.</em></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-users-cog mr-2"></i>Recursos Humanos y Organizacionales</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <p class="mb-3">El éxito del RCM depende críticamente de las personas involucradas.</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Facilitadores RCM:</strong> Individuos capacitados y con experiencia en RCM, responsables de guiar al equipo. <em>Rol crítico para el éxito.</em></li>
+                            <li><strong>Equipos Multidisciplinarios:</strong> Grupos con diversos conocimientos (operadores, mantenedores, ingenieros, especialistas en seguridad, etc.). <em>La diversidad de perspectivas asegura un análisis completo. Tu experiencia en ingeniería, mantenimiento y gestión es clave para participar o liderar estos equipos.</em></li>
+                            <li><strong>Compromiso Gerencial:</strong> El apoyo de la alta dirección es fundamental para asignar recursos, tiempo y dar la importancia necesaria al proceso RCM.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item bg-white shadow-lg rounded-lg">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-xl text-blue-700 bg-blue-50 rounded-t-lg focus:outline-none flex justify-between items-center">
+                    <span><i class="fas fa-check-circle mr-2"></i>Conclusión y Aplicación Práctica del RCM</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-content-inner">
+                        <p class="mb-3">En resumen, el RCM es una metodología poderosa que transforma el mantenimiento de una actividad reactiva o basada en calendarios genéricos, a una <strong>estrategia proactiva, basada en el riesgo y enfocada en la preservación de las funciones</strong> de los activos críticos.</p>
+                        <p class="mb-3">Busca un equilibrio óptimo entre el costo del mantenimiento y el riesgo de fallo, adaptando las estrategias a la importancia y al comportamiento específico de cada activo dentro de su entorno operativo. Para un profesional como tú, con experiencia en gestión de eficiencia energética y mantenimiento, el RCM ofrece un marco estructurado para:</p>
+                        <ul class="list-disc list-inside space-y-2 mb-3">
+                            <li><strong>Identificar oportunidades de ahorro energético:</strong> Un equipo que funciona de manera confiable y según sus parámetros de diseño suele ser más eficiente energéticamente. Fallos incipientes a menudo causan un mayor consumo de energía antes de que el fallo sea catastrófico.</li>
+                            <li><strong>Justificar inversiones en tecnologías predictivas:</strong> El análisis RCM puede demostrar el ROI de implementar sensores IoT, termografía, análisis de vibraciones, etc., al cuantificar los riesgos evitados.</li>
+                            <li><strong>Optimizar el uso de sistemas como SAP PM:</strong> El RCM define QUÉ mantenimiento hacer y CON QUÉ FRECUENCIA, información que luego se programa y gestiona eficientemente en un CMMS.</li>
+                            <li><strong>Liderar iniciativas de mejora continua:</strong> El RCM no es un proyecto único, sino un proceso cíclico que se retroalimenta con nueva información y experiencia.</li>
+                        </ul>
+                        <p class="mb-4">Implementar RCM requiere dedicación, conocimiento y un enfoque colaborativo, pero los beneficios en términos de confiabilidad, seguridad, costos y eficiencia son sustanciales y duraderos.</p>
+                        
+                        <h4 class="text-xl font-semibold text-blue-600 mb-4 text-center">Ciclo de Vida del RCM</h4>
+                        <div class="lifecycle-container my-6">
+                            <div class="phase-step">
+                                <div class="phase-indicator">
+                                    <div class="phase-icon">1</div>
+                                </div>
+                                <div class="phase-content">
+                                    <h3 class="phase-title">Identificación de las Funciones</h3>
+                                    <p class="phase-description">
+                                        Se define qué es lo que el equipo o sistema debe hacer en su entorno operativo actual, considerando las funciones que son esenciales para el funcionamiento del sistema.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flow-connector">
+                                <svg class="flow-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+                                </svg>
+                            </div>
+                            <div class="phase-step">
+                                <div class="phase-indicator">
+                                    <div class="phase-icon">2</div>
+                                </div>
+                                <div class="phase-content">
+                                    <h3 class="phase-title">Análisis de Modos de Falla</h3>
+                                    <p class="phase-description">
+                                        Se identifica cómo el equipo o sistema puede dejar de funcionar de acuerdo con sus funciones, es decir, se identifican los posibles modos de falla que podrían ocurrir.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flow-connector">
+                                 <svg class="flow-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+                                </svg>
+                            </div>
+                            <div class="phase-step">
+                                <div class="phase-indicator">
+                                    <div class="phase-icon">3</div>
+                                </div>
+                                <div class="phase-content">
+                                    <h3 class="phase-title">Análisis de Efectos</h3>
+                                    <p class="phase-description">
+                                        Se determina qué consecuencias tendría cada modo de falla para el equipo, el sistema y el negocio en general.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flow-connector">
+                                 <svg class="flow-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+                                </svg>
+                            </div>
+                            <div class="phase-step">
+                                <div class="phase-indicator">
+                                    <div class="phase-icon">4</div>
+                                </div>
+                                <div class="phase-content">
+                                    <h3 class="phase-title">Determinación de la Estrategia de Mantenimiento</h3>
+                                    <p class="phase-description">
+                                        Se decide qué tipo de mantenimiento es más adecuado para cada modo de falla, considerando factores como la criticidad del fallo, la frecuencia de ocurrencia y el costo de las tareas de mantenimiento.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flow-connector">
+                                <svg class="flow-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+                                </svg>
+                            </div>
+                            <div class="phase-step">
+                                <div class="phase-indicator">
+                                    <div class="phase-icon">5</div>
+                                </div>
+                                <div class="phase-content">
+                                    <h3 class="phase-title">Implementación del Plan de Mantenimiento</h3>
+                                    <p class="phase-description">
+                                        Se establece un plan de mantenimiento detallado, que incluye las tareas a realizar, la frecuencia de las mismas y los recursos necesarios.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flow-connector">
+                                <svg class="flow-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+                                </svg>
+                            </div>
+                            <div class="phase-step final-phase">
+                                <div class="phase-indicator">
+                                    <div class="phase-icon">6</div>
+                                </div>
+                                <div class="phase-content">
+                                    <h3 class="phase-title">Monitoreo y Mejora Continua</h3>
+                                    <p class="phase-description">
+                                        Se evalúa la efectividad del plan de mantenimiento, identificando oportunidades de mejora para optimizar la confiabilidad del equipo y reducir los costos de mantenimiento.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="loop-connector">
+                                <svg class="loop-arrow-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                                </svg>
+                                <p class="loop-text">El ciclo se revisa y refina continuamente, volviendo a la Fase 1.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="mt-12 text-center text-sm text-gray-500 px-4 md:px-8"> <p>© <span id="currentYear"></span> Guía Interactiva RCM. Contenido adaptado y mejorado para fines pedagógicos.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            const yearSpan = document.getElementById('currentYear');
+            if(yearSpan) {
+                yearSpan.textContent = new Date().getFullYear();
+            }
+
+            accordionItems.forEach(item => {
+                const button = item.querySelector('.accordion-button');
+                const content = item.querySelector('.accordion-content');
+
+                button.addEventListener('click', () => {
+                    const isActive = button.classList.contains('active');
+
+                    // Close all other items first
+                    accordionItems.forEach(otherItem => {
+                        if (otherItem !== item) {
+                            otherItem.querySelector('.accordion-button').classList.remove('active');
+                            const otherContent = otherItem.querySelector('.accordion-content');
+                            otherContent.style.maxHeight = '0px'; // Collapse
+                            otherContent.classList.remove('active'); // Remove padding and overflow behavior
+                        }
+                    });
+
+                    // Then, toggle the current item
+                    if (isActive) { // If it was active, now close it
+                        button.classList.remove('active');
+                        content.style.maxHeight = '0px'; // Collapse
+                        content.classList.remove('active'); // Remove padding and overflow behavior
+                    } else { // If it was not active, now open it
+                        button.classList.add('active');
+                        content.classList.add('active'); // Add padding and overflow-y: auto from CSS
+
+                        const maxHeightBeforeScroll = window.innerHeight * 0.7; // 70vh
+                        // Ensure content inner div exists before accessing scrollHeight
+                        const contentInner = content.querySelector('.accordion-content-inner');
+                        const scrollHeight = contentInner ? contentInner.scrollHeight : 0; 
+                        
+                        // Add padding height to scrollHeight calculation if needed
+                        const paddingTop = parseFloat(window.getComputedStyle(content).paddingTop);
+                        const paddingBottom = parseFloat(window.getComputedStyle(content).paddingBottom);
+                        const totalHeight = scrollHeight + paddingTop + paddingBottom;
+
+                        if (totalHeight > maxHeightBeforeScroll) {
+                            content.style.maxHeight = maxHeightBeforeScroll + "px";
+                        } else {
+                            content.style.maxHeight = totalHeight + "px";
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+<script src="auth.js"></script>
+<footer style="text-align:center;padding:20px 10px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:auto;">
+  © 2026 Inteligencia Energética (IE) — Todos los derechos reservados. Uso exclusivo bajo licencia.
+</footer>
+</body>
+</html>

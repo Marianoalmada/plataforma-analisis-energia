@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramientas Metodológicas y Analíticas para RCM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Fondo gris azulado claro */
+        }
+        .content-section {
+            display: none;
+            border-left: 4px solid #3b82f6; /* Borde de acento azul */
+        }
+        .active .content-section {
+            display: block;
+        }
+        .title-button {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            text-align: left;
+            background-color: #60a5fa; /* Azul más claro para los títulos */
+            color: white;
+            padding: 0.75rem 1rem; /* 12px 16px */
+            border-radius: 0.375rem; /* 6px */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .title-button:hover {
+            background-color: #3b82f6; /* Azul más oscuro al pasar el cursor */
+        }
+        .title-button .arrow {
+            transition: transform 0.3s ease; 
+        }
+        .active .title-button .arrow {
+            transform: rotate(90deg);
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 0.5rem; /* 8px */
+            background-color: white;
+            padding: 1rem; /* 16px */
+            border-radius: 0.375rem; /* 6px */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #e5e7eb; /* Borde gris claro para celdas de tabla */
+            padding: 0.5rem; /* 8px */
+            text-align: left;
+            font-size: 0.875rem; /* 14px */
+        }
+        th {
+            background-color: #eff6ff; /* Azul muy claro para encabezados de tabla */
+        }
+        .visual-representation {
+            background-color: #ffffff;
+            padding: 1rem; /* 16px */
+            margin-top: 0.75rem; /* 12px */
+            border-radius: 0.375rem; /* 6px */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .visual-representation h5 {
+            font-weight: 600;
+            color: #1e40af; /* Azul oscuro para títulos visuales */
+            margin-bottom: 0.5rem; /* 8px */
+        }
+        .rca-item, .fta-item, .logic-item {
+            margin-left: 1rem; /* 16px */
+            padding-left: 0.5rem; /* 8px */
+            border-left: 2px solid #93c5fd; /* Azul más claro para bordes de lista */
+            margin-bottom: 0.25rem; /* 4px */
+        }
+        .card {
+            background-color: #eff6ff; /* Azul muy claro para tarjetas */
+            border: 1px solid #bfdbfe; /* Borde azul claro para tarjetas */
+            padding: 1rem; /* 16px */
+            border-radius: 0.375rem; /* 6px */
+            margin-top: 0.5rem; /* 8px */
+        }
+        .card-title {
+            font-weight: 600;
+            color: #1d4ed8; /* Azul medio para títulos de tarjeta */
+            margin-bottom: 0.5rem; /* 8px */
+        }
+        .card ul {
+            list-style-type: disc;
+            margin-left: 1.25rem; /* 20px */
+        }
+    </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+</head>
+<body class="p-4 md:p-8">
+    <a href="index.html" class="fixed top-3 left-3 z-[380] bg-white/95 backdrop-blur border border-gray-300 rounded-full px-4 py-1.5 text-xs font-semibold text-gray-700 shadow hover:bg-gray-100 transition-colors flex items-center gap-1.5" title="Volver al Portal de Herramientas IE">← Portal IE</a>
+
+    <header class="mb-8 p-4 md:p-6 bg-blue-900 rounded-lg shadow-lg text-white">
+        <div class="container mx-auto flex flex-col md:flex-row items-center justify-between">
+            <img src="https://www.inteligenciaenergetica.com.ar/inteligencia_energetica/img/LOGOIEWEB_blanco.png" 
+                 alt="Logo Inteligencia Energética" 
+                 class="h-12 md:h-16 mb-4 md:mb-0 flex-shrink-0" onerror="this.onerror=null; this.src='https://placehold.co/200x60/1e3a8a/ffffff?text=Logo+IE'; this.alt='Logo IE Placeholder';">
+            
+            <div class="text-center flex-grow order-first md:order-none mb-4 md:mb-0 md:mx-4"> <h1 class="text-2xl md:text-3xl font-bold">Herramientas Metodológicas y Analíticas para RCM</h1>
+                <p class="text-blue-200 mt-1 text-sm md:text-base">Una guía interactiva para entender las herramientas clave, por Ing. Mariano Almada.</p>
+            </div>
+
+            <img src="https://lh3.googleusercontent.com/ogw/AF2bZyiKoo3uuZdvMkgU5yKhhP9TPdKYQcuTJwXc10f1XdbbkrhI=s64-c-mo" 
+                 alt="Imagen de perfil" 
+                 class="h-12 w-12 md:h-16 md:w-16 rounded-full object-cover flex-shrink-0 mb-4 md:mb-0" onerror="this.onerror=null; this.src='https://placehold.co/64x64/cccccc/969696?text=Perfil'; this.alt='Imagen de Perfil Placeholder';">
+        </div>
+    </header>
+
+    <div id="accordionContainer" class="space-y-3">
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Análisis de Modos de Fallo y Efectos (FMEA)</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Análisis de Modos de Fallo y Efectos (FMEA)</h4>
+                <p class="text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Es una técnica sistemática para identificar los modos de fallo potenciales de un activo o proceso, y los efectos que dichos fallos tendrían sobre el sistema. Es fundamental en RCM para responder a las preguntas "¿De qué manera falla?" y "¿Qué sucede cuando falla?".</p>
+                <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Ayuda a detallar cómo pueden fallar los componentes y cuáles serían las consecuencias a nivel local y del sistema.</p>
+                <div class="visual-representation">
+                    <h5>Ejemplo Práctico de FMEA (Bomba de Agua)</h5>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Componente</th>
+                                    <th>Función</th>
+                                    <th>Modo de Fallo Potencial</th>
+                                    <th>Efecto Local del Fallo</th>
+                                    <th>Efecto en el Sistema</th>
+                                    <th>Causa Potencial</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Motor Eléctrico</td>
+                                    <td>Proveer energía mecánica a la bomba</td>
+                                    <td>No arranca</td>
+                                    <td>El motor no gira</td>
+                                    <td>La bomba no suministra agua, interrupción del proceso</td>
+                                    <td>Falla de alimentación eléctrica, bobinado quemado</td>
+                                </tr>
+                                <tr>
+                                    <td>Rodamientos</td>
+                                    <td>Permitir giro suave del eje</td>
+                                    <td>Desgastados / Agripados</td>
+                                    <td>Ruido excesivo, vibración, eje bloqueado</td>
+                                    <td>Falla de la bomba, daño al motor</td>
+                                    <td>Falta de lubricación, contaminación</td>
+                                </tr>
+                                 <tr>
+                                    <td>Sello Mecánico</td>
+                                    <td>Prevenir fugas de agua</td>
+                                    <td>Fuga</td>
+                                    <td>Pérdida de agua por el eje</td>
+                                    <td>Pérdida de eficiencia, posible daño al motor por humedad</td>
+                                    <td>Desgaste normal, instalación incorrecta</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Análisis de Modos de Fallo, Efectos y Criticidad (FMECA)</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Análisis de Modos de Fallo, Efectos y Criticidad (FMECA)</h4>
+                <p class="text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Es una extensión del FMEA que añade un componente de criticidad. La criticidad evalúa la gravedad del efecto del fallo combinada con su probabilidad de ocurrencia (y a veces la detectabilidad), permitiendo priorizar los modos de fallo.</p>
+                <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Ayuda a enfocar los esfuerzos en los modos de fallo más significativos, respondiendo a "¿De qué manera importa cada falla?".</p>
+                <div class="visual-representation">
+                    <h5>Ejemplo Práctico de FMECA (Continuación Bomba de Agua)</h5>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Modo de Fallo</th>
+                                    <th>Efecto en el Sistema</th>
+                                    <th>Severidad (S) (1-10)</th>
+                                    <th>Ocurrencia (O) (1-10)</th>
+                                    <th>Detección (D) (1-10)</th>
+                                    <th>NPR (S*O*D)</th>
+                                    <th>Acción Recomendada</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Motor no arranca</td>
+                                    <td>Interrupción del proceso</td>
+                                    <td>8</td>
+                                    <td>3</td>
+                                    <td>4</td>
+                                    <td>96</td>
+                                    <td>Revisar plan de mantenimiento eléctrico preventivo.</td>
+                                </tr>
+                                <tr>
+                                    <td>Rodamientos desgastados</td>
+                                    <td>Falla de la bomba</td>
+                                    <td>7</td>
+                                    <td>5</td>
+                                    <td>3 (detectable por ruido/vibración)</td>
+                                    <td>105</td>
+                                    <td>Implementar monitoreo de vibraciones y lubricación programada.</td>
+                                </tr>
+                                <tr>
+                                    <td>Fuga en sello mecánico</td>
+                                    <td>Pérdida de eficiencia</td>
+                                    <td>5</td>
+                                    <td>6</td>
+                                    <td>2 (detectable por inspección visual)</td>
+                                    <td>60</td>
+                                    <td>Planificar reemplazo preventivo del sello.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="text-xs mt-2 text-gray-600">Nota: S (Severidad): 1=Baja, 10=Muy Alta. O (Ocurrencia): 1=Muy Improbable, 10=Muy Probable. D (Detección): 1=Fácil de Detectar, 10=Muy Difícil de Detectar. NPR alto indica mayor criticidad.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Análisis de Causa Raíz (RCA)</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Análisis de Causa Raíz (RCA)</h4>
+                <p class="text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Es un conjunto de métodos utilizados para identificar las causas fundamentales de los fallos o problemas. En lugar de tratar solo los síntomas, busca el origen para evitar la recurrencia.</p>
+                <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Se emplea para entender profundamente por qué ocurren ciertos modos de fallo, lo que es crucial para seleccionar tareas proactivas efectivas.</p>
+                <div class="visual-representation">
+                    <h5>Ejemplo Práctico de RCA (Usando los "5 Porqués")</h5>
+                    <p class="text-gray-700 mb-2"><strong>Problema:</strong> La máquina X se detiene inesperadamente de forma recurrente.</p>
+                    <div class="space-y-1">
+                        <div class="rca-item"><strong>1. ¿Por qué se detuvo la máquina?</strong> Respuesta: El motor principal se sobrecalentó y activó la protección térmica.</div>
+                        <div class="rca-item"><strong>2. ¿Por qué se sobrecalentó el motor?</strong> Respuesta: El motor estaba trabajando con sobrecarga.</div>
+                        <div class="rca-item"><strong>3. ¿Por qué estaba trabajando con sobrecarga?</strong> Respuesta: Uno de los rodamientos del eje conducido presentaba alta fricción.</div>
+                        <div class="rca-item"><strong>4. ¿Por qué el rodamiento presentaba alta fricción?</strong> Respuesta: Por falta de lubricación adecuada.</div>
+                        <div class="rca-item"><strong>5. ¿Por qué faltó lubricación adecuada?</strong> Respuesta: El plan de lubricación no se estaba siguiendo correctamente y el tipo de lubricante usado no era el óptimo para las condiciones de operación. <strong>(Causa Raíz Potencial)</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Diagramas de Lógica RCM</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Diagramas de Lógica RCM (RCM Logic Diagrams o Decision Diagrams)</h4>
+                <p class="text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Son árboles de decisión estructurados (basados en estándares como SAE JA1012) que guían al equipo de análisis a través de una serie de preguntas para seleccionar la estrategia de mantenimiento más apropiada (predictiva, preventiva basada en tiempo, búsqueda de fallos, o rediseño/ninguna acción) para un modo de fallo específico, considerando sus consecuencias.</p>
+                <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Son el núcleo para determinar "¿Qué se puede hacer para predecir o prevenir cada falla?" y "¿Qué se debe hacer si no se puede encontrar una tarea proactiva adecuada?".</p>
+                <div class="visual-representation">
+                    <h5>Ejemplo Simplificado de Diagrama de Decisión RCM (para un modo de fallo)</h5>
+                    <div class="space-y-1">
+                        <div class="logic-item"><strong>P1: ¿Es evidente la falla para el personal operativo durante sus tareas normales?</strong></div>
+                        <div class="logic-item ml-4"><strong>SI → Ir a P2 (Consecuencias de Falla Evidente)</strong></div>
+                        <div class="logic-item ml-8"><strong>P2.1: ¿La pérdida de función causada por este modo de fallo tiene consecuencias adversas para la seguridad o el medio ambiente?</strong></div>
+                        <div class="logic-item ml-12">SI → Tarea proactiva obligatoria o rediseño.</div>
+                        <div class="logic-item ml-12">NO → Ir a P2.2</div>
+                        <div class="logic-item ml-8"><strong>P2.2: ¿La pérdida de función tiene consecuencias operacionales (producción, costos, calidad)?</strong></div>
+                        <div class="logic-item ml-12">SI → ¿Es técnicamente factible y costo-efectiva una tarea proactiva (PdM o PM)?</div>
+                        <div class="logic-item ml-16">SI → Implementar tarea.</div>
+                        <div class="logic-item ml-16">NO → Considerar rediseño o permitir fallo (si las consecuencias son tolerables).</div>
+                        <div class="logic-item ml-12">NO → Permitir fallo (si no hay otras consecuencias).</div>
+                        <div class="logic-item ml-4"><strong>NO (Falla Oculta) → Ir a P3 (Consecuencias de Falla Oculta)</strong></div>
+                        <div class="logic-item ml-8"><strong>P3.1: ¿La falla oculta, combinada con una segunda falla, tiene consecuencias para la seguridad o el medio ambiente?</strong></div>
+                        <div class="logic-item ml-12">SI → Tarea de búsqueda de fallos obligatoria.</div>
+                        <div class="logic-item ml-12">NO → ¿Tiene consecuencias económicas significativas?</div>
+                        <div class="logic-item ml-16">SI → ¿Tarea de búsqueda de fallos costo-efectiva?</div>
+                         <div class="logic-item ml-20">SI → Implementar.</div>
+                         <div class="logic-item ml-20">NO → Permitir fallo oculto.</div>
+                        <div class="logic-item ml-16">NO → No se requiere tarea proactiva.</div>
+                    </div>
+                     <p class="text-xs mt-2 text-gray-600">Nota: Este es un flujo muy simplificado. Los diagramas reales son más detallados.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Análisis de Criticidad de Activos</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Análisis de Criticidad de Activos</h4>
+                <p class="text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Es un proceso para evaluar y clasificar los activos según su importancia para la operación, seguridad, medio ambiente, etc. Esto ayuda a decidir dónde enfocar los esfuerzos de análisis RCM.</p>
+                <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Permite priorizar los sistemas y equipos que serán sometidos al análisis RCM detallado, optimizando los recursos.</p>
+                <div class="visual-representation">
+                    <h5>Ejemplo de Matriz de Criticidad de Activos</h5>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="text-center align-middle">Probabilidad de Falla</th>
+                                    <th colspan="3" class="text-center">Impacto del Fallo (Consecuencia)</th>
+                                </tr>
+                                <tr>
+                                    <th class="text-center bg-green-200">Bajo (B)</th>
+                                    <th class="text-center bg-yellow-200">Medio (M)</th>
+                                    <th class="text-center bg-red-200">Alto (A)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="bg-red-200">Alta (A)</td>
+                                    <td class="bg-yellow-300 text-center">Media</td>
+                                    <td class="bg-red-400 text-center font-bold">Crítica</td>
+                                    <td class="bg-red-500 text-center font-bold">Muy Crítica</td>
+                                </tr>
+                                <tr>
+                                    <td class="bg-yellow-200">Media (M)</td>
+                                    <td class="bg-green-300 text-center">Baja</td>
+                                    <td class="bg-yellow-400 text-center">Media</td>
+                                    <td class="bg-red-400 text-center font-bold">Crítica</td>
+                                </tr>
+                                <tr>
+                                    <td class="bg-green-200">Baja (B)</td>
+                                    <td class="bg-green-400 text-center">Muy Baja</td>
+                                    <td class="bg-green-300 text-center">Baja</td>
+                                    <td class="bg-yellow-300 text-center">Media</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="text-xs mt-2 text-gray-600">Ejemplo: Un activo con Alta probabilidad de falla y Alto impacto es "Muy Crítico" y debe ser priorizado para RCM.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Análisis del Árbol de Fallos (FTA)</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Análisis del Árbol de Fallos (FTA)</h4>
+                <p class="text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Es un método deductivo de análisis de fiabilidad que comienza con un evento no deseado (fallo del sistema) y trabaja hacia atrás para identificar todas las posibles combinaciones de fallos de componentes o eventos que podrían causarlo.</p>
+                <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Aunque no siempre es parte central del RCM como el FMEA, puede ser útil para comprender sistemas complejos y las interacciones que llevan a fallos funcionales.</p>
+                 <div class="visual-representation">
+                    <h5>Ejemplo Simplificado de Árbol de Fallos (Sistema de Iluminación Falla)</h5>
+                    <ul class="list-none p-0">
+                        <li class="fta-item"><strong>Evento Tope: Sistema de Iluminación No Funciona</strong>
+                            <ul class="list-none">
+                                <li class="fta-item"><strong>[O] Compuerta OR</strong> (Falla si ocurre CUALQUIERA de los siguientes)
+                                    <ul class="list-none">
+                                        <li class="fta-item">Falla de Suministro Eléctrico General</li>
+                                        <li class="fta-item">Falla en el Circuito de Iluminación
+                                            <ul class="list-none">
+                                                <li class="fta-item"><strong>[Y] Compuerta AND</strong> (Falla si ocurren TODOS los siguientes en un sistema redundante simple)
+                                                     <ul class="list-none">
+                                                        <li class="fta-item">Falla Bombilla Principal</li>
+                                                        <li class="fta-item">Falla Bombilla de Respaldo</li>
+                                                     </ul>
+                                                </li>
+                                                <li class="fta-item"><strong>[O] Compuerta OR</strong>
+                                                    <ul class="list-none">
+                                                        <li class="fta-item">Interruptor Defectuoso</li>
+                                                        <li class="fta-item">Cableado Abierto</li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <p class="text-xs mt-2 text-gray-600">Nota: [O] = Compuerta OR (sucede si alguna entrada ocurre). [Y] = Compuerta AND (sucede si todas las entradas ocurren).</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Herramientas de Software</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Herramientas de Software</h4>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="card">
+                        <h5 class="card-title">Software RCM Dedicado</h5>
+                        <p class="text-sm text-gray-600 mb-2">Ej: ReliaSoft RCM++, IMS RCM de Cenosco, RCM-S de Predictiva21</p>
+                        <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Aplicaciones especializadas para facilitar el proceso RCM.</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Agilizan análisis, aseguran consistencia, gestionan documentación y facilitan colaboración. Incluyen plantillas FMEA, diagramas de lógica, etc.</p>
+                        <div class="mt-2">
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">FMEA/FMECA</span>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Diagramas Lógicos</span>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Informes</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h5 class="card-title">Sistemas CMMS/GMAO</h5>
+                        <p class="text-sm text-gray-600 mb-2">Ej: SAP PM, IBM Maximo, Infor EAM</p>
+                        <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Software para gestionar actividades de mantenimiento.</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Cruciales para implementar tareas RCM, recopilar datos históricos y monitorear efectividad.</p>
+                         <div class="mt-2">
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Órdenes de Trabajo</span>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Historial Activos</span>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Programación</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h5 class="card-title">Software de Análisis de Datos y Confiabilidad</h5>
+                        <p class="text-sm text-gray-600 mb-2">Ej: Minitab, JMP, Python (con librerías como reliability)</p>
+                        <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Herramientas estadísticas para analizar datos de fallos.</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Base cuantitativa para decisiones, como intervalos óptimos de mantenimiento (MTBF, MTTR, Weibull).</p>
+                         <div class="mt-2">
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Análisis Weibull</span>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">MTBF/MTTR</span>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Tendencias</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Fuentes de Información y Documentación</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Fuentes de Información y Documentación</h4>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="card">
+                        <h5 class="card-title">Registros Históricos de Mantenimiento y Fallas</h5>
+                         <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Datos sobre mantenimientos previos, fallos, reparaciones, costos.</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Esenciales para entender comportamiento pasado, frecuencia de fallos y efectividad de tareas previas.</p>
+                        <p class="text-xs mt-2 text-gray-500">Ejemplo: "Bomba P-101: Fallo de rodamiento cada 6 meses. Costo reparación: $500."</p>
+                    </div>
+                     <div class="card">
+                        <h5 class="card-title">Manuales de Equipos, Planos y Especificaciones</h5>
+                         <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Documentación del fabricante y de ingeniería.</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Ayudan a definir funciones, estándares de desempeño y entender modos de fallo.</p>
+                        <p class="text-xs mt-2 text-gray-500">Ejemplo: "Manual Bomba X: Lubricar con aceite ISO VG 32 cada 500 horas."</p>
+                    </div>
+                     <div class="card">
+                        <h5 class="card-title">Estándares RCM</h5>
+                        <p class="text-sm text-gray-600 mb-2">Ej: SAE JA1011, SAE JA1012, ATA MSG-3</p>
+                         <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Documentos que definen criterios y procesos para RCM.</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Proveen marco metodológico y aseguran cumplimiento de mejores prácticas.</p>
+                         <p class="text-xs mt-2 text-gray-500">Ejemplo: "SAE JA1011: Define los 7 pasos del proceso RCM."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <button class="title-button">
+                <span>Recursos Humanos y Organizacionales</span>
+                <span class="arrow">▶</span>
+            </button>
+            <div class="content-section bg-white p-4 mt-1 rounded-md shadow">
+                <h4 class="font-semibold text-lg text-blue-700 mb-2">Recursos Humanos y Organizacionales</h4>
+                 <div class="grid md:grid-cols-2 gap-4">
+                    <div class="card">
+                        <h5 class="card-title">Facilitadores RCM</h5>
+                         <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Individuos capacitados y con experiencia en metodología RCM.</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Rol crítico para guiar al equipo, asegurar calidad y mantener enfoque.</p>
+                        <p class="text-xs mt-2 text-gray-500">Responsabilidades: Preparar análisis, moderar sesiones, asegurar documentación.</p>
+                    </div>
+                     <div class="card">
+                        <h5 class="card-title">Equipos Multidisciplinarios</h5>
+                         <p class="text-sm text-gray-700 mb-1"><strong class="text-gray-900">Descripción:</strong> Grupos con diferentes conocimientos (operadores, mantenedores, ingenieros).</p>
+                        <p class="text-sm text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> La diversidad de perspectivas asegura un análisis más completo y preciso.</p>
+                        <p class="text-xs mt-2 text-gray-500">Composición típica: Ing. Mantenimiento, Ing. Procesos, Técnico Eléctrico, Técnico Mecánico, Operador Líder.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center text-sm text-gray-500">
+        <p>Este documento es una representación simplificada de las herramientas RCM con fines educativos.</p>
+    </footer>
+
+    <script>
+        // Script para la funcionalidad del acordeón
+        document.addEventListener('DOMContentLoaded', function () {
+            const accordionItems = document.querySelectorAll('.accordion-item');
+
+            accordionItems.forEach(item => {
+                const button = item.querySelector('.title-button');
+                const arrow = button.querySelector('.arrow');
+
+                button.addEventListener('click', () => {
+                    accordionItems.forEach(otherItem => {
+                        if (otherItem !== item && otherItem.classList.contains('active')) {
+                            otherItem.classList.remove('active');
+                            otherItem.querySelector('.arrow').innerHTML = '▶'; 
+                        }
+                    });
+
+                    const isActive = item.classList.toggle('active');
+                    if (isActive) {
+                        arrow.innerHTML = '▼'; 
+                    } else {
+                        arrow.innerHTML = '▶'; 
+                    }
+                });
+            });
+        });
+    </script>
+
+<script src="auth.js"></script>
+<footer style="text-align:center;padding:20px 10px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:auto;">
+  © 2026 Inteligencia Energética (IE) — Todos los derechos reservados. Uso exclusivo bajo licencia.
+</footer>
+</body>
+</html>
