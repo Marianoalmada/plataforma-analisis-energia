@@ -8,20 +8,20 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* TEMA INDUSTRIAL SCADA / HMI (IE / Certex) */
+        /* TEMA CLARO — Plataforma de Análisis de Energía (IE / Certex) */
         :root {
-            --bg-body: #1e293b;      /* Fondo oscuro HMI */
-            --bg-panel: #0f172a;     /* Paneles más oscuros */
-            --primary: #cbd5e1;      /* Texto principal claro */
-            --accent: #4f46e5;       /* Índigo IE (Fluido/H) */
-            --success: #34d399;      /* Verde (BEP/Eficiencia) */
-            --warning: #fbbf24;      /* Amarillo (Alerta Radial) */
-            --danger: #f87171;       /* Rojo (Cavitación/Runout) */
-            --power: #c084fc;        /* Violeta (Potencia) */
-            --npsh: #f472b6;         /* Rosa (NPSHr) */
-            --text-light: #94a3b8;
-            --border-color: #334155;
-            --input-bg: #1e293b;
+            --bg-body: #f3f4f6;
+            --bg-panel: #ffffff;
+            --primary: #374151;
+            --accent: #4f46e5;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --power: #7c3aed;
+            --npsh: #db2777;
+            --text-light: #6b7280;
+            --border-color: #e5e7eb;
+            --input-bg: #ffffff;
         }
 
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -32,39 +32,45 @@
             margin: 0;
             padding: 15px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
         }
 
         .dashboard-container {
             width: 100%;
             max-width: 1400px;
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 1fr; /* UNA columna: sin sidebar lateral */
             gap: 15px;
         }
 
         /* HEADER */
         .header {
             grid-column: 1 / -1;
-            background-color: var(--bg-panel);
-            padding: 15px 24px;
-            border-radius: 6px;
+            background: linear-gradient(135deg, #1e3a8a, #312e81);
+            color: white;
+            padding: 20px 24px;
+            border: none;
+            border-left: none;
+            border-radius: 12px;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid var(--border-color);
-            border-left: 5px solid var(--accent);
+            gap: 12px;
+            flex-wrap: wrap;
         }
-        .header h1 { margin: 0; font-size: 20px; font-weight: 600; color: #f8fafc; }
-        .header p { margin: 4px 0 0 0; color: var(--text-light); font-size: 13px; }
-        .ie-logo { font-weight: 900; font-size: 22px; color: var(--success); letter-spacing: 1px; }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 600; color: #ffffff; }
+        .header p { margin: 4px 0 0 0; color: #c7d2fe; font-size: 13px; }
+        .ie-logo { font-weight: 900; font-size: 22px; color: #6ee7b7; letter-spacing: 1px; }
 
         /* PANELES GENERALES */
         .panel {
-            background: var(--bg-panel);
+            background: #ffffff;
             padding: 20px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .panel-title {
             font-weight: 600; font-size: 13px; color: var(--text-light); text-transform: uppercase;
@@ -72,16 +78,16 @@
             display: flex; align-items: center; gap: 8px;
         }
 
-        /* SIDEBAR (Controles y Configuración) */
-        .sidebar { display: flex; flex-direction: column; gap: 15px; }
-        
+        /* FILA DE CONFIGURACIÓN (antes sidebar) — 3 columnas en desktop */
+        .config-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+
         .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
         .input-group label { font-size: 11px; font-weight: 600; color: var(--text-light); }
         .input-group input {
-            padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 4px;
-            background-color: var(--input-bg); color: var(--accent); font-weight: 600; font-size: 13px; outline: none;
+            padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px;
+            background-color: #ffffff; color: #374151; font-weight: 600; font-size: 13px; outline: none;
         }
-        .input-group input:focus { border-color: var(--accent); }
+        .input-group input:focus { border-color: #4f46e5; }
 
         .slider-wrapper { margin-bottom: 15px; }
         .slider-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: var(--primary); font-weight: 600; }
@@ -97,17 +103,18 @@
         /* BANNERS */
         .banner-container { display: flex; gap: 15px; }
         .status-banner {
-            padding: 12px 20px; border-radius: 6px; font-size: 14px; font-weight: 600;
+            padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
             display: flex; align-items: center; gap: 12px; transition: all 0.2s;
-            background-color: rgba(30, 41, 59, 0.8); border-left: 4px solid transparent; flex: 2;
+            background-color: #ffffff; border: 1px solid var(--border-color); border-left: 4px solid transparent; flex: 2;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .status-optimal { color: var(--success); border-left-color: var(--success); }
         .status-warning { color: var(--warning); border-left-color: var(--warning); }
         .status-critical { color: var(--danger); border-left-color: var(--danger); animation: pulse 2s infinite; }
-        
+
         .safe-zone-banner {
             flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
-            background-color: rgba(52, 211, 153, 0.1); border: 1px solid var(--success); border-radius: 6px;
+            background-color: rgba(5, 150, 105, 0.08); border: 1px solid var(--success); border-radius: 12px;
             color: var(--success); font-weight: 700; font-size: 14px; padding: 12px;
         }
         
@@ -116,11 +123,12 @@
         /* KPIs SUPERIORES */
         .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
         .kpi-card {
-            background: var(--bg-body); padding: 12px; border-radius: 4px; border: 1px solid var(--border-color); text-align: center;
+            background: #ffffff; padding: 12px; border-radius: 12px; border: 1px solid #e5e7eb;
+            border-top: 3px solid transparent; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .kpi-title { font-size: 10px; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; }
-        .kpi-value { font-size: 20px; font-weight: 700; color: #f8fafc; }
-        .kpi-card.econ { border-color: var(--danger); background: rgba(220, 38, 38, 0.1); }
+        .kpi-value { font-size: 20px; font-weight: 700; color: #111827; }
+        .kpi-card.econ { border-top: 3px solid var(--danger); }
         .kpi-card.econ .kpi-value { color: var(--danger); }
 
         /* GRÁFICO */
@@ -133,6 +141,16 @@
         .nomenclatura-item span { font-weight: 700; color: var(--accent); }
         .nomenclatura-item .danger { color: var(--danger); }
         .nomenclatura-item .success { color: var(--success); }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .config-grid { grid-template-columns: 1fr; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .banner-container { flex-direction: column; }
+            .status-banner, .safe-zone-banner { flex: none; }
+            .nomenclatura-grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; align-items: flex-start; }
+        }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -152,8 +170,8 @@
         <div class="ie-logo"><i class="fa-solid fa-bolt"></i> IE</div>
     </div>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+    <!-- FILA DE CONFIGURACIÓN (antes sidebar) -->
+    <div class="config-grid">
         <!-- OPERACIÓN EN TIEMPO REAL -->
         <div class="panel" style="border-color: var(--accent);">
             <h2 class="panel-title" style="color: var(--accent);"><i class="fa-solid fa-gamepad"></i> Controladores de Proceso</h2>
@@ -421,7 +439,7 @@
     /* =========================================
        5. INICIALIZACIÓN DE CHART.JS
        ========================================= */
-    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.color = '#6b7280';
     Chart.defaults.font.family = "'Inter', sans-serif";
 
     const ctx = document.getElementById('mainChart').getContext('2d');
@@ -442,17 +460,17 @@
                 { label: 'Potencia (kW)', data: datasetPow, borderColor: '#c084fc', borderWidth: 2, showLine: true, pointRadius: 0, yAxisID: 'y2', segment: runoutLineSegment },
                 { label: 'NPSHr (m)', data: datasetNpsh, borderColor: '#f472b6', borderWidth: 2, showLine: true, pointRadius: 0, yAxisID: 'y', segment: runoutLineSegment },
                 
-                { label: 'OP H', data: [{ x: currentQ, y: 0 }], backgroundColor: '#1e293b', borderColor: '#4f46e5', borderWidth: 2, pointRadius: 6, yAxisID: 'y' },
-                { label: 'OP η', data: [{ x: currentQ, y: 0 }], backgroundColor: '#1e293b', borderColor: '#34d399', borderWidth: 2, pointRadius: 6, yAxisID: 'y1' },
-                { label: 'OP kW', data: [{ x: currentQ, y: 0 }], backgroundColor: '#1e293b', borderColor: '#c084fc', borderWidth: 2, pointRadius: 6, yAxisID: 'y2' }
+                { label: 'OP H', data: [{ x: currentQ, y: 0 }], backgroundColor: '#ffffff', borderColor: '#4f46e5', borderWidth: 2, pointRadius: 6, yAxisID: 'y' },
+                { label: 'OP η', data: [{ x: currentQ, y: 0 }], backgroundColor: '#ffffff', borderColor: '#34d399', borderWidth: 2, pointRadius: 6, yAxisID: 'y1' },
+                { label: 'OP kW', data: [{ x: currentQ, y: 0 }], backgroundColor: '#ffffff', borderColor: '#c084fc', borderWidth: 2, pointRadius: 6, yAxisID: 'y2' }
             ]
         },
         options: {
             animation: false, responsive: true, maintainAspectRatio: false, interaction: { mode: null }, 
             plugins: { tooltip: { enabled: false }, legend: { position: 'top', labels: { boxWidth: 12, font: {size: 11}, filter: (item) => !item.text.startsWith('OP ') } } },
             scales: {
-                x: { type: 'linear', min: 0, max: BOMBA.Q_MAX * 1.25, title: { display: true, text: 'CAUDAL (m³/h)' }, grid: { color: '#334155' } },
-                y: { type: 'linear', position: 'left', min: 0, max: 120, title: { display: true, text: 'ALTURA / NPSHr (m)', color: '#4f46e5' }, grid: { color: '#334155' } },
+                x: { type: 'linear', min: 0, max: BOMBA.Q_MAX * 1.25, title: { display: true, text: 'CAUDAL (m³/h)' }, grid: { color: '#e5e7eb' } },
+                y: { type: 'linear', position: 'left', min: 0, max: 120, title: { display: true, text: 'ALTURA / NPSHr (m)', color: '#4f46e5' }, grid: { color: '#e5e7eb' } },
                 y1: { type: 'linear', position: 'right', min: 0, max: 100, title: { display: true, text: 'EFICIENCIA (%)', color: '#34d399' }, grid: { drawOnChartArea: false } },
                 y2: { type: 'linear', position: 'right', min: 0, max: 150, title: { display: true, text: 'POTENCIA (kW)', color: '#c084fc' }, grid: { drawOnChartArea: false } }
             }

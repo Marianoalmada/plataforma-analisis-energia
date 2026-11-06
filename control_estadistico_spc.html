@@ -17,7 +17,7 @@
 
         /* Estilos para el "wizard" de selección */
         .wizard-box {
-            border: 2px solid transparent;
+            border: 2px solid #e5e7eb; /* gray-200 */
             transition: all 0.3s ease;
         }
         .wizard-box:hover {
@@ -26,7 +26,7 @@
         }
         .wizard-box.selected {
             border-color: #4f46e5;
-            background-color: #3730a3; /* indigo-800 */
+            background-color: #e0e7ff; /* indigo-100 */
         }
         .chart-section {
             display: none; /* Ocultos por defecto */
@@ -36,14 +36,17 @@
         }
         /* Estilo para la tabla de patrones */
         .pattern-table th, .pattern-table td {
-            border: 1px solid #4b5563; /* gray-600 */
+            border: 1px solid #d1d5db; /* gray-300 */
             padding: 12px;
             text-align: left;
             vertical-align: top;
         }
         .pattern-table th {
-            background-color: #1f2937; /* gray-800 */
-            color: #818cf8; /* indigo-400 */
+            background-color: #1e3a8a; /* blue-900 */
+            color: #ffffff;
+        }
+        .pattern-table td {
+            color: #374151; /* gray-700 */
         }
         /* Estilos para Zonas Sigma */
         .sigma-band {
@@ -56,8 +59,8 @@
         /* Estilo para la calculadora Cpk */
         .cpk-calculator {
             display: none; /* Oculto por defecto */
-            background-color: #1f2937; /* gray-800 */
-            border: 1px solid #4f46e5; /* indigo-600 */
+            background-color: #ffffff; /* white */
+            border: 1px solid #818cf8; /* indigo-400 */
             border-radius: 8px;
             padding: 16px;
             margin-top: 20px;
@@ -71,17 +74,17 @@
             transition: color 0.2s;
         }
         details summary:hover {
-            color: #818cf8; /* indigo-400 */
+            color: #4f46e5; /* indigo-600 */
         }
         details[open] summary {
-            color: #818cf8; /* indigo-400 */
+            color: #4f46e5; /* indigo-600 */
         }
         .formula {
             font-family: 'Courier New', Courier, monospace;
-            background-color: #111827;
+            background-color: #f3f4f6;
             padding: 4px 8px;
             border-radius: 4px;
-            color: #f3f4f6;
+            color: #1f2937;
         }
         /* Estilos para los 4 cuadrantes */
         .quadrant-grid {
@@ -89,11 +92,11 @@
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 1px;
-            background-color: #818cf8; /* indigo-400 */
-            border: 1px solid #818cf8;
+            background-color: #c7d2fe; /* indigo-200 */
+            border: 1px solid #c7d2fe;
         }
         .quadrant-box {
-            background-color: #1f2937; /* gray-800 */
+            background-color: #ffffff; /* white */
             padding: 16px;
         }
         .quadrant-title {
@@ -106,52 +109,52 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
 </head>
-<body class="bg-gray-900 text-gray-200 font-sans p-4 md:p-8">
+<body class="bg-gray-100 text-gray-800 font-sans p-4 md:p-8">
     <a href="index.html" class="fixed top-3 left-3 z-[380] bg-white/95 backdrop-blur border border-gray-300 rounded-full px-4 py-1.5 text-xs font-semibold text-gray-700 shadow hover:bg-gray-100 transition-colors flex items-center gap-1.5" title="Volver al Portal de Herramientas IE">← Portal IE</a>
 
     <div class="max-w-7xl mx-auto">
         
         <!-- Encabezado -->
         <header class="text-center mb-12">
-            <h1 class="text-3xl md:text-5xl font-bold text-white mb-3">Módulo Didáctico: Control Estadístico de Procesos (SPC)</h1>
-            <p class="text-lg text-blue-300">Una guía interactiva y herramienta práctica para el Gemba (v7).</p>
+            <h1 class="text-3xl md:text-5xl font-bold text-indigo-900 mb-3">Módulo Didáctico: Control Estadístico de Procesos (SPC)</h1>
+            <p class="text-lg text-indigo-600">Una guía interactiva y herramienta práctica para el Gemba (v7).</p>
         </header>
 
         <!-- Sección 1: Introducción y Tipos de Variación -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">1. ¿Qué es el SPC y Por Qué Usarlo?</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">1. ¿Qué es el SPC y Por Qué Usarlo?</h2>
             
             <p class="mb-4 text-lg">El Control Estadístico de Procesos (SPC) es un método <strong>proactivo</strong> para el control de calidad. A diferencia de herramientas reactivas (Histogramas, Pareto) que analizan problemas *después* de que ocurren, el SPC monitorea el proceso en tiempo real para <strong>detectar la inestabilidad *antes*</strong> de que se produzcan defectos.</p>
             
             <div class="grid md:grid-cols-2 gap-6 mt-6">
-                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
-                    <h3 class="text-xl font-semibold text-blue-300 mb-2">Variación por Causas Comunes</h3>
+                <div class="bg-gray-50 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-indigo-600 mb-2">Variación por Causas Comunes</h3>
                     <p>Es la variación "natural" o inherente al proceso, aportada por las <strong>6M</strong> (Mano de obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente). Es pequeña, aleatoria y predecible. Un proceso que *solo* tiene causas comunes está <strong>"bajo control estadístico"</strong>. No se debe reaccionar a cada punto.</p>
                 </div>
-                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
-                    <h3 class="text-xl font-semibold text-red-300 mb-2">Variación por Causas Especiales</h3>
+                <div class="bg-gray-50 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-red-600 mb-2">Variación por Causas Especiales</h3>
                     <p>Son eventos inesperados, no predecibles (ej. lote defectuoso, máquina descalibrada, operario nuevo). El gráfico de control nos alerta de esto. <strong>Se debe investigar y eliminar la causa raíz</strong> para devolver el proceso a su estado de control.</p>
                 </div>
             </div>
 
-            <h3 class="text-2xl font-semibold text-white mt-8 mb-3">Los Dos Errores Comunes (Deming)</h3>
+            <h3 class="text-2xl font-semibold text-gray-900 mt-8 mb-3">Los Dos Errores Comunes (Deming)</h3>
             <ul class="list-decimal list-inside space-y-2 text-lg">
-                <li><strong>Error 1 (Sobre-ajuste):</strong> Reaccionar a una causa <span class="text-blue-300">común</span> como si fuera <span class="text-red-300">especial</span>. (Solo se empeora la variación).</li>
-                <li><strong>Error 2 (Negligencia):</strong> Tratar una causa <span class="text-red-300">especial</span> como si fuera <span class="text-blue-300">común</span>. (Se permite que el problema continúe y genere defectos).</li>
+                <li><strong>Error 1 (Sobre-ajuste):</strong> Reaccionar a una causa <span class="text-indigo-600">común</span> como si fuera <span class="text-red-600">especial</span>. (Solo se empeora la variación).</li>
+                <li><strong>Error 2 (Negligencia):</strong> Tratar una causa <span class="text-red-600">especial</span> como si fuera <span class="text-indigo-600">común</span>. (Se permite que el problema continúe y genere defectos).</li>
             </ul>
         </section>
 
         <!-- SECCIÓN 2: Herramientas de Diagnóstico (Pareto e Histograma) -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">2. Herramientas de Diagnóstico (Pareto e Histograma)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">2. Herramientas de Diagnóstico (Pareto e Histograma)</h2>
             <p class="mb-6 text-lg">Antes de implementar gráficos de control, solemos usar dos herramientas clave: Pareto para **priorizar** problemas e Histogramas para **entender** la variación.</p>
 
             <div class="grid md:grid-cols-2 gap-8">
                 <!-- Demo Pareto -->
                 <div>
-                    <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico de Pareto (Interactivo)</h3>
-                    <p class="mb-4 text-sm text-gray-300">Herramienta de priorización (80/20). Ingrese sus causas de falla (ej. para gestión de mantenimiento) en formato: `Causa, Frecuencia`.</p>
-                    <textarea id="pareto-data-input" class="w-full h-32 p-3 bg-gray-700 text-white rounded-md font-mono text-sm" placeholder="Ejemplo:
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Demo: Gráfico de Pareto (Interactivo)</h3>
+                    <p class="mb-4 text-sm text-gray-600">Herramienta de priorización (80/20). Ingrese sus causas de falla (ej. para gestión de mantenimiento) en formato: `Causa, Frecuencia`.</p>
+                    <textarea id="pareto-data-input" class="w-full h-32 p-3 bg-white text-gray-800 border border-gray-300 rounded-md font-mono text-sm" placeholder="Ejemplo:
 Falla de Motor, 25
 Parada Eléctrica, 18
 Falla de Sensor, 10
@@ -166,9 +169,9 @@ Otro, 2"></textarea>
 
                 <!-- Demo Histograma -->
                 <div>
-                    <h3 class="text-2xl font-semibold text-white mb-4">Demo: Histograma (Interactivo)</h3>
-                    <p class="mb-4 text-sm text-gray-300">Permite "ver" la forma, centro y dispersión de sus datos. Pegue sus datos (uno por línea) o genere un ejemplo.</p>
-                    <textarea id="histogram-data-input" class="w-full h-32 p-3 bg-gray-700 text-white rounded-md font-mono text-sm" placeholder="Ejemplo:
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Demo: Histograma (Interactivo)</h3>
+                    <p class="mb-4 text-sm text-gray-600">Permite "ver" la forma, centro y dispersión de sus datos. Pegue sus datos (uno por línea) o genere un ejemplo.</p>
+                    <textarea id="histogram-data-input" class="w-full h-32 p-3 bg-white text-gray-800 border border-gray-300 rounded-md font-mono text-sm" placeholder="Ejemplo:
 50.1
 49.8
 50.3
@@ -186,11 +189,11 @@ Otro, 2"></textarea>
         </section>
         
         <!-- SECCIÓN 3: La Distribución Normal y Niveles Sigma -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">3. La Distribución Normal (Campana de Gauss) y 1-2-3 Sigma</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">3. La Distribución Normal (Campana de Gauss) y 1-2-3 Sigma</h2>
             <p class="mb-4 text-lg">La base teórica de las "causas comunes" es la Distribución Normal. Nos dice qué esperar de un proceso estable.</p>
             
-            <div class="text-center p-4 bg-gray-700 rounded-lg">
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
                 <svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-lg mx-auto rounded-md bg-white p-4" aria-labelledby="gaussTitle gaussDesc">
                     <title id="gaussTitle">Campana de Gauss (Distribución Normal)</title>
                     <desc id="gaussDesc">Un gráfico que muestra la distribución normal, con áreas para 1, 2 y 3 desviaciones estándar (sigma).</desc>
@@ -219,37 +222,37 @@ Otro, 2"></textarea>
                 </svg>
                 <p class="mt-4 text-lg">En un proceso estable, podemos esperar que:</p>
                 <ul class="list-none space-y-1 text-lg mt-2">
-                    <li><span class="font-bold text-green-300">~ 68.2%</span> de los datos caigan dentro de <span class="font-bold">+/- 1 Sigma</span> (Zona C).</li>
-                    <li><span class="font-bold text-yellow-300">~ 95.4%</span> de los datos caigan dentro de <span class="font-bold">+/- 2 Sigma</span> (Zonas C+B).</li>
-                    <li><span class="font-bold text-red-300">~ 99.7%</span> de los datos caigan dentro de <span class="font-bold">+/- 3 Sigma</span> (Zonas C+B+A).</li>
+                    <li><span class="font-bold text-green-600">~ 68.2%</span> de los datos caigan dentro de <span class="font-bold">+/- 1 Sigma</span> (Zona C).</li>
+                    <li><span class="font-bold text-yellow-600">~ 95.4%</span> de los datos caigan dentro de <span class="font-bold">+/- 2 Sigma</span> (Zonas C+B).</li>
+                    <li><span class="font-bold text-red-600">~ 99.7%</span> de los datos caigan dentro de <span class="font-bold">+/- 3 Sigma</span> (Zonas C+B+A).</li>
                 </ul>
-                <p class="mt-3 text-lg text-cyan-200 italic">Por esto, un punto fuera de +/- 3 Sigma (Límites de Control) es tan raro (0.3%) que lo consideramos una señal de una **causa especial**.</p>
+                <p class="mt-3 text-lg text-teal-600 italic">Por esto, un punto fuera de +/- 3 Sigma (Límites de Control) es tan raro (0.3%) que lo consideramos una señal de una **causa especial**.</p>
             </div>
         </section>
 
         <!-- Sección 4: Los 3 Objetivos del SPC -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">4. Los 3 Objetivos Clave del SPC</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">4. Los 3 Objetivos Clave del SPC</h2>
             <p class="mb-6 text-lg">El SPC se implementa para lograr tres objetivos fundamentales en la gestión de la calidad y la mejora continua:</p>
             <div class="grid md:grid-cols-3 gap-6">
-                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
-                    <h3 class="text-xl font-semibold text-cyan-300 mb-2">1. Diagnóstico</h3>
+                <div class="bg-gray-50 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-teal-600 mb-2">1. Diagnóstico</h3>
                     <p>Permite evaluar la estabilidad inicial de un proceso. Responde a la pregunta: ¿Nuestro proceso es predecible o es caótico?</p>
                 </div>
-                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
-                    <h3 class="text-xl font-semibold text-cyan-300 mb-2">2. Control</h3>
+                <div class="bg-gray-50 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-teal-600 mb-2">2. Control</h3>
                     <p>Sirve como una herramienta de monitoreo en tiempo real para determinar cuándo es necesario ajustar un proceso y, más importante, cuándo se debe dejar tal como está.</p>
                 </div>
-                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
-                    <h3 class="text-xl font-semibold text-cyan-300 mb-2">3. Confirmación</h3>
+                <div class="bg-gray-50 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-teal-600 mb-2">3. Confirmación</h3>
                     <p>Después de realizar una mejora (ej. un proyecto Lean o Kaizen), el gráfico de control confirma si la mejora fue efectiva y si el proceso se mantiene estable en su nuevo nivel de rendimiento.</p>
                 </div>
             </div>
         </section>
 
         <!-- Sección 5: Plan de Recolección de Datos -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">5. El Plan de Recolección de Datos</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">5. El Plan de Recolección de Datos</h2>
             <p class="mb-6 text-lg">Para implementar un gráfico de control, se necesita un plan sistemático. El video describe 5 pasos fundamentales:</p>
             <ol class="list-decimal list-inside space-y-3 text-lg">
                 <li><strong>Determinar el tipo de gráfico a utilizar</strong> (Ver la siguiente sección interactiva).</li>
@@ -261,19 +264,19 @@ Otro, 2"></textarea>
         </section>
 
         <!-- Sección 6: Wizard - Selección del Gráfico de Control -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">6. ¿Qué Gráfico de Control Debo Usar?</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">6. ¿Qué Gráfico de Control Debo Usar?</h2>
             
             <!-- Paso 1: Tipo de Dato -->
             <div id="q1">
-                <h3 class="text-2xl font-semibold text-white mb-4">Paso 1: ¿Qué tipo de datos mides?</h3>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">Paso 1: ¿Qué tipo de datos mides?</h3>
                 <div class="grid md:grid-cols-2 gap-4">
-                    <div id="btn-variables" class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q1', 'variables')">
-                        <h4 class="text-xl font-bold text-green-300">Datos por Variables (Continuos)</h4>
+                    <div id="btn-variables" class="wizard-box bg-gray-50 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q1', 'variables')">
+                        <h4 class="text-xl font-bold text-green-600">Datos por Variables (Continuos)</h4>
                         <p>Mediciones en una escala: Peso (kg), Longitud (mm), Temperatura (°C), Resistencia (Ohm).</p>
                     </div>
-                    <div id="btn-atributos" class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q1', 'atributos')">
-                        <h4 class="text-xl font-bold text-yellow-300">Datos por Atributos (Discretos)</h4>
+                    <div id="btn-atributos" class="wizard-box bg-gray-50 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q1', 'atributos')">
+                        <h4 class="text-xl font-bold text-yellow-600">Datos por Atributos (Discretos)</h4>
                         <p>Conteo de "Pasa / No Pasa": N° de piezas defectuosas, N° de defectos por unidad. Se recomiendan muestras grandes (n=50 a 200).</p>
                     </div>
                 </div>
@@ -281,21 +284,21 @@ Otro, 2"></textarea>
 
             <!-- Paso 2 (Ocultos) -->
             <div id="q2" class="mt-8" style="display: none;">
-                <h3 class="text-2xl font-semibold text-white mb-4">Paso 2: ¿Cómo recolectas los datos?</h3>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">Paso 2: ¿Cómo recolectas los datos?</h3>
                 
                 <!-- Opción Variables -->
                 <div id="q2-variables" style="display: none;">
-                    <h4 class="text-lg text-green-300 mb-2">Para Datos de Variables... ¿Cuál es el tamaño de tu subgrupo (n)?</h4>
+                    <h4 class="text-lg text-green-600 mb-2">Para Datos de Variables... ¿Cuál es el tamaño de tu subgrupo (n)?</h4>
                     <div class="grid md:grid-cols-3 gap-4">
-                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xrm')">
+                        <div class="wizard-box bg-gray-50 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xrm')">
                             <h4 class="text-xl font-bold">n = 1 (Muestra Individual)</h4>
                             <p>Procesos lentos, mediciones costosas (destructivas), o cada pieza es única. Ej. **MTTR de un activo**, % químico por lote.</p>
                         </div>
-                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xr')">
+                        <div class="wizard-box bg-gray-50 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xr')">
                             <h4 class="text-xl font-bold">n = 2 a 8 (Subgrupo Pequeño)</h4>
                             <p>El caso más común. Tomas 5 piezas cada hora y mides su longitud. Ej. Monitoreo de vibraciones (PdM).</p>
                         </div>
-                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xs')">
+                        <div class="wizard-box bg-gray-50 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2v', 'xs')">
                             <h4 class="text-xl font-bold">n = 9 o más (Subgrupo Grande)</h4>
                             <p>Menos común. Cuando se toman muestras grandes (ej. 10+ piezas) y se prefiere la Desv. Estándar (S) sobre el Rango (R).</p>
                         </div>
@@ -304,13 +307,13 @@ Otro, 2"></textarea>
 
                 <!-- Opción Atributos -->
                 <div id="q2-atributos" style="display: none;">
-                    <h4 class="text-lg text-yellow-300 mb-2">Para Datos de Atributos... ¿Qué estás contando?</h4>
+                    <h4 class="text-lg text-yellow-600 mb-2">Para Datos de Atributos... ¿Qué estás contando?</h4>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2a', 'p')">
+                        <div class="wizard-box bg-gray-50 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2a', 'p')">
                             <h4 class="text-xl font-bold">Unidades Defectuosas (Pasa/No Pasa)</h4>
                             <p>Cuentas cuántas piezas están "malas" en un lote. Ej. 8 piezas defectuosas de 200 inspeccionadas.</p>
                         </div>
-                        <div class="wizard-box bg-gray-700 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2a', 'u')">
+                        <div class="wizard-box bg-gray-50 p-4 rounded-lg cursor-pointer" onclick="selectWizard('q2a', 'u')">
                             <h4 class="text-xl font-bold">Defectos por Unidad (N° de fallas)</h4>
                             <p>Cuentas *cuántos defectos* hay en *una sola unidad*. Ej. 3 rayones en un parabrisas, **N° de averías por semana** en una línea.</p>
                         </div>
@@ -319,18 +322,18 @@ Otro, 2"></textarea>
             </div>
 
             <!-- Resultado -->
-            <div id="chart-recommendation" class="mt-8 p-4 bg-gray-900 rounded-lg shadow-inner text-center" style="display: none;">
-                <h3 class="text-2xl font-bold text-white">Recomendación:</h3>
-                <p id="recommendation-text" class="text-3xl font-bold text-cyan-300"></p>
-                <p id="recommendation-desc" class="text-lg text-gray-300"></p>
+            <div id="chart-recommendation" class="mt-8 p-4 bg-indigo-50 rounded-lg shadow-inner text-center text-indigo-900" style="display: none;">
+                <h3 class="text-2xl font-bold text-indigo-900">Recomendación:</h3>
+                <p id="recommendation-text" class="text-3xl font-bold text-teal-600"></p>
+                <p id="recommendation-desc" class="text-lg text-gray-600"></p>
             </div>
         </section>
         
         <!-- Sección 7: Las Zonas de Control (3 Sigma) -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">7. Las Zonas de Control (Concepto SPC)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">7. Las Zonas de Control (Concepto SPC)</h2>
             <p class="mb-6 text-lg">Como vimos en la Sección 3, los límites de +/- 1, 2 y 3 Sigma definen las "Zonas de Decisión" para interpretar los patrones en un gráfico de control:</p>
-            <div class="w-full h-48 flex flex-col border-2 border-gray-600 rounded-md overflow-hidden">
+            <div class="w-full h-48 flex flex-col border-2 border-gray-300 rounded-md overflow-hidden">
                 <div class="sigma-band bg-red-400 h-[16.6%]">Zona A (+3σ)</div>
                 <div class="sigma-band bg-yellow-400 h-[16.6%]">Zona B (+2σ)</div>
                 <div class="sigma-band bg-green-400 h-[16.6%]">Zona C (+1σ)</div>
@@ -339,28 +342,28 @@ Otro, 2"></textarea>
                 <div class="sigma-band bg-red-400 h-[16.6%]">Zona A (-3σ)</div>
             </div>
             <div class="flex justify-between text-sm px-2 mt-1">
-                <span class="text-red-300 font-bold">LCL (-3σ)</span>
-                <span class="text-green-300 font-bold">CL (Media)</span>
-                <span class="text-red-300 font-bold">UCL (+3σ)</span>
+                <span class="text-red-600 font-bold">LCL (-3σ)</span>
+                <span class="text-green-600 font-bold">CL (Media)</span>
+                <span class="text-red-600 font-bold">UCL (+3σ)</span>
             </div>
         </section>
 
         <!-- Sección 8: Demos Interactivas (Dojo de RCA) -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">8. Dojo de Simulación (Análisis Causa-Raíz)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">8. Dojo de Simulación (Análisis Causa-Raíz)</h2>
 
             <!-- Pestañas para Demos -->
-            <nav class="flex flex-wrap justify-center border-b border-gray-700 mb-6 -mt-3">
+            <nav class="flex flex-wrap justify-center border-b border-gray-200 mb-6 -mt-3">
                 <button class="tab-button-demo active text-lg font-medium py-3 px-6 border-b-2 border-indigo-600 text-indigo-400" onclick="switchDemo('demo-xr')">Gráfico X-R</button>
-                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-400" onclick="switchDemo('demo-xrm')">Gráfico X-Rm</button>
-                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-400" onclick="switchDemo('demo-p')">Gráfico P</button>
-                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-400" onclick="switchDemo('demo-u')">Gráfico U</button>
+                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-600" onclick="switchDemo('demo-xrm')">Gráfico X-Rm</button>
+                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-600" onclick="switchDemo('demo-p')">Gráfico P</button>
+                <button class="tab-button-demo text-lg font-medium py-3 px-6 border-b-2 border-transparent hover:text-indigo-400 text-gray-600" onclick="switchDemo('demo-u')">Gráfico U</button>
             </nav>
 
             <!-- Demo 1: Gráfico X-R (Medias y Rangos) -->
             <div id="demo-xr" class="chart-section active">
-                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico X-R (para Medias y Rangos)</h3>
-                <p class="mb-4 text-yellow-300 italic">Regla de interpretación: <strong>"Primero se debe interpretar el gráfico de Rango (R).</strong> Si la variabilidad (R) no está bajo control, los límites del gráfico de Media (X) no son válidos."</p>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">Demo: Gráfico X-R (para Medias y Rangos)</h3>
+                <p class="mb-4 text-yellow-600 italic">Regla de interpretación: <strong>"Primero se debe interpretar el gráfico de Rango (R).</strong> Si la variabilidad (R) no está bajo control, los límites del gráfico de Media (X) no son válidos."</p>
                 
                 <div class="grid md:grid-cols-2 gap-6">
                     <div>
@@ -377,8 +380,8 @@ Otro, 2"></textarea>
                     </div>
                 </div>
 
-                <div id="analysis-box-xr" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
-                    <p id="analysis-text-xr" class="text-lg font-medium text-yellow-300"></p>
+                <div id="analysis-box-xr" class="mt-6 p-4 bg-indigo-50 rounded-lg shadow-inner min-h-[60px] text-center text-indigo-900">
+                    <p id="analysis-text-xr" class="text-lg font-medium text-yellow-600"></p>
                 </div>
                 <div class="flex flex-wrap justify-center gap-4 mt-6">
                     <button id="btn-xr-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable</button>
@@ -389,13 +392,13 @@ Otro, 2"></textarea>
 
                 <!-- Calculadora Cpk X-R -->
                 <div id="cpk-calculator-xr" class="cpk-calculator">
-                    <h4 class="text-xl font-semibold text-white mb-3 text-center">Calculadora de Capacidad (Cp/Cpk)</h4>
-                    <p class="text-sm text-center mb-4 text-gray-400">Solo habilitada en procesos estables. Ingrese la Voz del Cliente (Límites de Especificación):</p>
+                    <h4 class="text-xl font-semibold text-gray-900 mb-3 text-center">Calculadora de Capacidad (Cp/Cpk)</h4>
+                    <p class="text-sm text-center mb-4 text-gray-600">Solo habilitada en procesos estables. Ingrese la Voz del Cliente (Límites de Especificación):</p>
                     <div class="flex flex-wrap justify-center gap-4 items-center">
                         <label for="lie-xr" class="font-medium">LIE:</label>
-                        <input type="number" id="lie-xr" value="45" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <input type="number" id="lie-xr" value="45" class="bg-white text-gray-800 border border-gray-300 p-2 rounded-md w-24 text-center">
                         <label for="lse-xr" class="font-medium">LSE:</label>
-                        <input type="number" id="lse-xr" value="55" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <input type="number" id="lse-xr" value="55" class="bg-white text-gray-800 border border-gray-300 p-2 rounded-md w-24 text-center">
                         <button id="btn-calc-cpk-xr" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Calcular</button>
                     </div>
                     <div id="cpk-result-xr" class="mt-4 text-center text-lg font-bold"></div>
@@ -404,8 +407,8 @@ Otro, 2"></textarea>
             
             <!-- Demo 2: Gráfico X-Rm (Individuales y Rango Móvil) -->
             <div id="demo-xrm" class="chart-section">
-                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico X-Rm (Individuales y Rango Móvil)</h3>
-                <p class="mb-4 text-yellow-300 italic">El Gráfico de Rango Móvil (Rm) usa la diferencia entre un punto y el anterior (n=2) para estimar la variabilidad.</p>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">Demo: Gráfico X-Rm (Individuales y Rango Móvil)</h3>
+                <p class="mb-4 text-yellow-600 italic">El Gráfico de Rango Móvil (Rm) usa la diferencia entre un punto y el anterior (n=2) para estimar la variabilidad.</p>
                 
                 <div class="grid md:grid-cols-2 gap-6">
                     <div>
@@ -422,8 +425,8 @@ Otro, 2"></textarea>
                     </div>
                 </div>
 
-                <div id="analysis-box-xrm" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
-                    <p id="analysis-text-xrm" class="text-lg font-medium text-yellow-300"></p>
+                <div id="analysis-box-xrm" class="mt-6 p-4 bg-indigo-50 rounded-lg shadow-inner min-h-[60px] text-center text-indigo-900">
+                    <p id="analysis-text-xrm" class="text-lg font-medium text-yellow-600"></p>
                 </div>
                 <div class="flex flex-wrap justify-center gap-4 mt-6">
                     <button id="btn-xrm-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable</button>
@@ -432,12 +435,12 @@ Otro, 2"></textarea>
 
                 <!-- Calculadora Cpk X-Rm -->
                 <div id="cpk-calculator-xrm" class="cpk-calculator">
-                    <h4 class="text-xl font-semibold text-white mb-3 text-center">Calculadora de Capacidad (Cp/Cpk)</h4>
+                    <h4 class="text-xl font-semibold text-gray-900 mb-3 text-center">Calculadora de Capacidad (Cp/Cpk)</h4>
                     <div class="flex flex-wrap justify-center gap-4 items-center">
                         <label for="lie-xrm" class="font-medium">LIE:</label>
-                        <input type="number" id="lie-xrm" value="95" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <input type="number" id="lie-xrm" value="95" class="bg-white text-gray-800 border border-gray-300 p-2 rounded-md w-24 text-center">
                         <label for="lse-xrm" class="font-medium">LSE:</label>
-                        <input type="number" id="lse-xrm" value="105" class="bg-gray-700 text-white p-2 rounded-md w-24 text-center">
+                        <input type="number" id="lse-xrm" value="105" class="bg-white text-gray-800 border border-gray-300 p-2 rounded-md w-24 text-center">
                         <button id="btn-calc-cpk-xrm" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Calcular</button>
                     </div>
                     <div id="cpk-result-xrm" class="mt-4 text-center text-lg font-bold"></div>
@@ -446,13 +449,13 @@ Otro, 2"></textarea>
 
             <!-- Demo 3: Gráfico P (Atributos) -->
             <div id="demo-p" class="chart-section">
-                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico P (para Atributos - Defectuosos)</h3>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">Demo: Gráfico P (para Atributos - Defectuosos)</h3>
                 <p class="mb-4 text-lg">Simula la <strong>proporción (%)</strong> de piezas defectuosas ("Pasa/No Pasa") encontradas en lotes de inspección.</p>
                 <div class="bg-white p-2 rounded-lg shadow-md">
                     <canvas id="spcChartP"></canvas>
                 </div>
-                <div id="analysis-box-p" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
-                    <p id="analysis-text-p" class="text-lg font-medium text-yellow-300"></p>
+                <div id="analysis-box-p" class="mt-6 p-4 bg-indigo-50 rounded-lg shadow-inner min-h-[60px] text-center text-indigo-900">
+                    <p id="analysis-text-p" class="text-lg font-medium text-yellow-600"></p>
                 </div>
                 <div class="flex flex-wrap justify-center gap-4 mt-6">
                     <button id="btn-p-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable (n=100 fijo)</button>
@@ -463,13 +466,13 @@ Otro, 2"></textarea>
             
             <!-- Demo 4: Gráfico U (Atributos) -->
             <div id="demo-u" class="chart-section">
-                <h3 class="text-2xl font-semibold text-white mb-4">Demo: Gráfico U (para Atributos - Defectos)</h3>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">Demo: Gráfico U (para Atributos - Defectos)</h3>
                 <p class="mb-4 text-lg">Simula el <strong>número de defectos por unidad</strong> (ej. rayones por parabrisas, fallas por m² de tela). Aquí `n=1` unidad.</p>
                 <div class="bg-white p-2 rounded-lg shadow-md">
                     <canvas id="spcChartU"></canvas>
                 </div>
-                <div id="analysis-box-u" class="mt-6 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[60px] text-center">
-                    <p id="analysis-text-u" class="text-lg font-medium text-yellow-300"></p>
+                <div id="analysis-box-u" class="mt-6 p-4 bg-indigo-50 rounded-lg shadow-inner min-h-[60px] text-center text-indigo-900">
+                    <p id="analysis-text-u" class="text-lg font-medium text-yellow-600"></p>
                 </div>
                 <div class="flex flex-wrap justify-center gap-4 mt-6">
                     <button id="btn-u-stable" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Proceso Estable</button>
@@ -480,8 +483,8 @@ Otro, 2"></textarea>
         </section>
 
         <!-- Sección 9: Interpretación de Patrones Visuales -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">9. Interpretación de Patrones (Causas Especiales)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">9. Interpretación de Patrones (Causas Especiales)</h2>
             <p class="mb-6 text-lg">Un proceso está "fuera de control" si muestra patrones no aleatorios. Estos patrones señalan una causa especial que debe ser investigada. Aquí se muestran los patrones más comunes y sus posibles causas raíz:</p>
             
             <div class="overflow-x-auto">
@@ -654,45 +657,45 @@ Otro, 2"></textarea>
         </section>
 
         <!-- Sección 10: Capacidad de Proceso (Cp/Cpk) -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">10. El Siguiente Paso: Capacidad de Proceso (Cp/Cpk)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">10. El Siguiente Paso: Capacidad de Proceso (Cp/Cpk)</h2>
             <p class="mb-4 text-lg">Una vez que un proceso está <strong>"Bajo Control Estadístico"</strong> (es estable y predecible, sin causas especiales), el siguiente paso es preguntar: <strong>¿Es capaz de cumplir con los requisitos del cliente?</strong></p>
             <p class="mb-6 text-lg">Aquí es donde entra la **Capacidad de Proceso**. Compara la "Voz del Proceso" con la "Voz del Cliente".</p>
             
             <div class="grid md:grid-cols-2 gap-6 mt-6">
-                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
-                    <h3 class="text-xl font-semibold text-blue-300 mb-2">Límites de Control (UCL/LCL)</h3>
+                <div class="bg-gray-50 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-indigo-600 mb-2">Límites de Control (UCL/LCL)</h3>
                     <p>Calculados desde los datos del proceso. Representan la <strong>Voz del Proceso (VoP)</strong>. Muestran la variación *natural* y nos dicen si el proceso es estable.</p>
                 </div>
-                <div class="bg-gray-700 p-5 rounded-md shadow-inner">
-                    <h3 class="text-xl font-semibold text-green-300 mb-2">Límites de Especificación (LIE/LSE)</h3>
+                <div class="bg-gray-50 p-5 rounded-md shadow-inner">
+                    <h3 class="text-xl font-semibold text-green-600 mb-2">Límites de Especificación (LIE/LSE)</h3>
                     <p>Definidos por el cliente o el diseño de ingeniería (planos). Representan la <strong>Voz del Cliente (VoC)</strong>. Definen lo que es un producto aceptable o inaceptable.</p>
                 </div>
             </div>
 
             <div class="mt-8 text-center">
-                <div class="bg-gray-900 p-4 rounded-lg shadow-inner">
-                    <h4 class="text-2xl font-bold text-white mb-2">Cp, Cpk y K</h4>
+                <div class="bg-indigo-50 p-4 rounded-lg shadow-inner text-indigo-900">
+                    <h4 class="text-2xl font-bold text-indigo-900 mb-2">Cp, Cpk y K</h4>
                     <p class="text-lg mb-3">Usamos tres índices clave para el diagnóstico:</p>
                     <ul class="list-none space-y-2 text-left text-lg">
-                        <li><span class="font-bold text-cyan-300">Cp (Capacidad Potencial):</span> ¿Qué tan "ancho" es el proceso comparado con la tolerancia? (Ignora el centrado).</li>
-                        <li><span class="font-bold text-cyan-300">Cpk (Capacidad Real):</span> ¿Cómo se desempeña el proceso realmente, tomando en cuenta el centrado?</li>
-                        <li><span class="font-bold text-cyan-300">K (Índice de Centrado):</span> ¿Qué tan "desviada" está la media del proceso del centro de las especificaciones?</li>
+                        <li><span class="font-bold text-teal-600">Cp (Capacidad Potencial):</span> ¿Qué tan "ancho" es el proceso comparado con la tolerancia? (Ignora el centrado).</li>
+                        <li><span class="font-bold text-teal-600">Cpk (Capacidad Real):</span> ¿Cómo se desempeña el proceso realmente, tomando en cuenta el centrado?</li>
+                        <li><span class="font-bold text-teal-600">K (Índice de Centrado):</span> ¿Qué tan "desviada" está la media del proceso del centro de las especificaciones?</li>
                     </ul>
-                    <p class="text-lg mt-3 italic text-yellow-300">Regla de Oro: Si **Cp es alto** pero **Cpk es bajo**, el proceso está **descentrado**. (¡Mire el Índice K!)</p>
+                    <p class="text-lg mt-3 italic text-yellow-600">Regla de Oro: Si **Cp es alto** pero **Cpk es bajo**, el proceso está **descentrado**. (¡Mire el Índice K!)</p>
                 </div>
             </div>
 
             <!-- Nota ISO 9001 -->
-            <div class="mt-6 bg-gray-700 p-4 rounded-md shadow-inner text-sm text-cyan-200">
-                <h5 class="font-bold text-cyan-100">Contexto ISO 9001:2015 (Cláusula 9.1.1)</h5>
+            <div class="mt-6 bg-gray-50 p-4 rounded-md shadow-inner text-sm text-teal-600">
+                <h5 class="font-bold text-teal-700">Contexto ISO 9001:2015 (Cláusula 9.1.1)</h5>
                 <p>El SPC y los estudios de capacidad (Cp/Cpk/K) son herramientas clave para cumplir con el requisito de "Monitoreo, medición, análisis y evaluación". Permiten a la organización "evaluar el desempeño y la eficacia del sistema de gestión de la calidad" y determinar "la necesidad de mejoras".</p>
             </div>
         </section>
 
         <!-- NUEVA SECCIÓN 11: Los 4 Estados del Proceso (del video) -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">11. Los 4 Estados del Proceso (Capacidad vs. Estabilidad)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">11. Los 4 Estados del Proceso (Capacidad vs. Estabilidad)</h2>
             <p class="mb-4 text-lg">Como explica el video, un proceso puede existir en cuatro estados, basados en la combinación de su Capacidad (cumplir especificaciones) y su Estabilidad (ser predecible). La analogía del "camión en el túnel" lo ilustra bien.</p>
             <p class="mb-6 text-lg">El objetivo siempre es mover cualquier proceso al cuadrante **Estable y Capaz**.</p>
             
@@ -705,37 +708,37 @@ Otro, 2"></textarea>
 
                 <!-- Cuadrantes -->
                 <div class="quadrant-box col-start-1 row-start-1 z-10">
-                    <h4 class="quadrant-title text-orange-300">Estado 1: Estable pero Incapaz</h4>
+                    <h4 class="quadrant-title text-orange-600">Estado 1: Estable pero Incapaz</h4>
                     <p>"Establemente malo". El proceso es predecible, pero produce defectos de forma consistente. (El camión es estable, pero más ancho que el túnel).</p>
                     <p class="font-bold mt-2">Acción: Rediseño del proceso (Kaizen) para reducir la variación o cambiar la media.</p>
                 </div>
                 <div class="quadrant-box col-start-2 row-start-1 z-10">
-                    <h4 class="quadrant-title text-green-300">Estado 2: Estable y Capaz (Ideal)</h4>
+                    <h4 class="quadrant-title text-green-600">Estado 2: Estable y Capaz (Ideal)</h4>
                     <p>"El estado ideal". El proceso es predecible y cumple con las especificaciones del cliente. (El camión es estable y cabe en el túnel).</p>
                     <p class="font-bold mt-2">Acción: Monitorear y mantener el control (SPC).</p>
                 </div>
                 <div class="quadrant-box col-start-1 row-start-2 z-10">
-                    <h4 class="quadrant-title text-red-300">Estado 3: Inestable e Incapaz</h4>
+                    <h4 class="quadrant-title text-red-600">Estado 3: Inestable e Incapaz</h4>
                     <p>"El peor estado". El proceso es caótico y no cumple especificaciones. (El camión es más ancho y el conductor es errático).</p>
                     <p class="font-bold mt-2">Acción: ¡Prioridad N°1! Usar SPC y RCA para eliminar causas especiales y estabilizar el proceso.</p>
                 </div>
                 <div class="quadrant-box col-start-2 row-start-2 z-10">
-                    <h4 class="quadrant-title text-yellow-300">Estado 4: Inestable pero Capaz</h4>
+                    <h4 class="quadrant-title text-yellow-600">Estado 4: Inestable pero Capaz</h4>
                     <p>"Engañoso". El proceso es capaz *por ahora*, pero es impredecible. (El camión cabe, pero el conductor es errático y chocará eventualmente).</p>
                     <p class="font-bold mt-2">Acción: Usar SPC para eliminar causas especiales y alcanzar la estabilidad.</p>
                 </div>
             </div>
-            <p class="mt-4 text-lg text-cyan-200 italic font-bold">¡Regla Clave! Primero debe garantizarse que un proceso es **Estable** antes de que tenga sentido analizar su **Capacidad** (Cpk).</p>
+            <p class="mt-4 text-lg text-teal-600 italic font-bold">¡Regla Clave! Primero debe garantizarse que un proceso es **Estable** antes de que tenga sentido analizar su **Capacidad** (Cpk).</p>
         </section>
 
 
         <!-- NUEVA SECCIÓN 12: Nivel Seis Sigma (6σ) -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">12. Interpretación de Capacidad y Nivel Seis Sigma (6σ)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">12. Interpretación de Capacidad y Nivel Seis Sigma (6σ)</h2>
             <p class="mb-4 text-lg">El Nivel Seis Sigma es una métrica de desempeño de clase mundial que cuantifica la capacidad de un proceso. Un proceso "Seis Sigma" es aquel cuya media está a 6 desviaciones estándar de distancia del límite de especificación más cercano (Cp = 2.0).</p>
             <p class="mb-4 text-lg">Debido a que los procesos tienden a "desplazarse" 1.5 sigma a largo plazo, la métrica de 6σ (con el desplazamiento) equivale a solo **3.4 Defectos por Millón de Oportunidades (DPMO)**, un nivel de calidad cercano a la perfección.</p>
             
-            <h4 class="text-2xl font-semibold text-white mb-4 text-center">Tabla de Interpretación de Índices (Cp)</h4>
+            <h4 class="text-2xl font-semibold text-gray-900 mb-4 text-center">Tabla de Interpretación de Índices (Cp)</h4>
             <div class="flex justify-center">
                 <table class="w-full max-w-lg pattern-table text-center">
                     <thead>
@@ -746,26 +749,26 @@ Otro, 2"></textarea>
                             <th>DPMO</th>
                         </tr>
                     </thead>
-                    <tbody class="text-gray-300">
-                        <tr><td class="font-bold text-green-300">Cp ≥ 2.00</td><td class="font-bold text-green-300">Clase Mundial</td><td>6σ</td><td>3.4</td></tr>
-                        <tr><td class="font-bold text-cyan-300">Cp ≥ 1.33</td><td class="font-bold text-cyan-300">Adecuado</td><td>4σ - 5σ</td><td>~6,210</td></tr>
-                        <tr><td class="font-bold text-yellow-300">Cp ≥ 1.00</td><td class="font-bold text-yellow-300">Parcialmente Adecuado</td><td>3σ</td><td>~66,807</td></tr>
-                        <tr><td class="font-bold text-orange-300">Cp ≥ 0.67</td><td class="font-bold text-orange-300">No Adecuado</td><td>2σ</td><td>~308,537</td></tr>
-                        <tr><td class="font-bold text-red-300">Cp < 0.67</td><td class="font-bold text-red-300">Requiere Modificación Seria</td><td>< 2σ</td><td>> 308,537</td></tr>
+                    <tbody class="text-gray-700">
+                        <tr><td class="font-bold text-green-600">Cp ≥ 2.00</td><td class="font-bold text-green-600">Clase Mundial</td><td>6σ</td><td>3.4</td></tr>
+                        <tr><td class="font-bold text-teal-600">Cp ≥ 1.33</td><td class="font-bold text-teal-600">Adecuado</td><td>4σ - 5σ</td><td>~6,210</td></tr>
+                        <tr><td class="font-bold text-yellow-600">Cp ≥ 1.00</td><td class="font-bold text-yellow-600">Parcialmente Adecuado</td><td>3σ</td><td>~66,807</td></tr>
+                        <tr><td class="font-bold text-orange-600">Cp ≥ 0.67</td><td class="font-bold text-orange-600">No Adecuado</td><td>2σ</td><td>~308,537</td></tr>
+                        <tr><td class="font-bold text-red-600">Cp < 0.67</td><td class="font-bold text-red-600">Requiere Modificación Seria</td><td>< 2σ</td><td>> 308,537</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
         <!-- Sección 13: MODO GEMBA (HERRAMIENTA PRÁCTICA) -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-semibold text-white mb-6 border-b-2 border-indigo-600 pb-2">13. Calculadora de Gráficos (Modo Gemba)</h2>
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-semibold text-indigo-900 mb-6 border-b-2 border-indigo-600 pb-2">13. Calculadora de Gráficos (Modo Gemba)</h2>
             <p class="mb-6 text-lg">Pase sus propios datos desde Excel o un bloc de notas para generar un gráfico de control al instante. (Mínimo 20 puntos de datos recomendados).</p>
             
             <div class="grid md:grid-cols-2 gap-6">
                 <!-- Columna de Entrada de Datos -->
                 <div>
-                    <h3 class="text-xl font-semibold text-white mb-2">1. Seleccione el Tipo de Gráfico:</h3>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">1. Seleccione el Tipo de Gráfico:</h3>
                     <div id="gemba-chart-type" class="flex flex-wrap gap-4 mb-4">
                         <label class="flex items-center space-x-2 cursor-pointer">
                             <input type="radio" name="gemba-type" value="xr" class="form-radio text-indigo-600" checked>
@@ -785,8 +788,8 @@ Otro, 2"></textarea>
                         </label>
                     </div>
 
-                    <h3 class="text-xl font-semibold text-white mb-2">2. Pegue sus Datos:</h3>
-                    <textarea id="gemba-data-input" class="w-full h-64 p-3 bg-gray-700 text-white rounded-md font-mono text-sm" placeholder="Formato de Datos:
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">2. Pegue sus Datos:</h3>
+                    <textarea id="gemba-data-input" class="w-full h-64 p-3 bg-white text-gray-800 border border-gray-300 rounded-md font-mono text-sm" placeholder="Formato de Datos:
 - Para X-R: Pegue subgrupos, un subgrupo por línea.
   Ej:
   50.1 50.3 49.9 50.0 50.2
@@ -811,14 +814,14 @@ Otro, 2"></textarea>
   2, 1
   ..."></textarea>
                     
-                    <h3 class="text-xl font-semibold text-white mt-4 mb-2">3. Ingrese Especificaciones (Opcional):</h3>
+                    <h3 class="text-xl font-semibold text-gray-900 mt-4 mb-2">3. Ingrese Especificaciones (Opcional):</h3>
                      <div class="flex flex-wrap justify-center gap-4 items-center">
                         <label for="gemba-lie" class="font-medium">LIE:</label>
-                        <input type="number" id="gemba-lie" placeholder="Ej. 45" class="bg-gray-700 text-white p-2 rounded-md w-28 text-center">
+                        <input type="number" id="gemba-lie" placeholder="Ej. 45" class="bg-white text-gray-800 border border-gray-300 p-2 rounded-md w-28 text-center">
                         <label for="gemba-target" class="font-medium">Objetivo:</label>
-                        <input type="number" id="gemba-target" placeholder="Ej. 50" class="bg-gray-700 text-white p-2 rounded-md w-28 text-center">
+                        <input type="number" id="gemba-target" placeholder="Ej. 50" class="bg-white text-gray-800 border border-gray-300 p-2 rounded-md w-28 text-center">
                         <label for="gemba-lse" class="font-medium">LSE:</label>
-                        <input type="number" id="gemba-lse" placeholder="Ej. 55" class="bg-gray-700 text-white p-2 rounded-md w-28 text-center">
+                        <input type="number" id="gemba-lse" placeholder="Ej. 55" class="bg-white text-gray-800 border border-gray-300 p-2 rounded-md w-28 text-center">
                     </div>
                     
                     <button id="btn-gemba-calc" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition">Generar Gráfico y Análisis</button>
@@ -826,8 +829,8 @@ Otro, 2"></textarea>
                 
                 <!-- Columna de Gráfico Generado -->
                 <div>
-                    <h3 class="text-xl font-semibold text-white mb-2">4. Análisis y Gráficos Generados:</h3>
-                    <div id="gemba-analysis" class="mb-4 p-4 bg-gray-900 rounded-lg shadow-inner min-h-[100px] text-lg">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">4. Análisis y Gráficos Generados:</h3>
+                    <div id="gemba-analysis" class="mb-4 p-4 bg-indigo-50 rounded-lg shadow-inner min-h-[100px] text-lg text-indigo-900">
                         <p id="gemba-analysis-text"></p>
                     </div>
                     <div class="bg-white p-2 rounded-lg shadow-md min-h-[250px]">
@@ -841,19 +844,19 @@ Otro, 2"></textarea>
         </section>
 
         <!-- Sección 14: CAJA DE HERRAMIENTAS DEL EXPERTO -->
-        <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
             <details>
-                <summary class="text-3xl font-semibold text-white cursor-pointer hover:text-indigo-400">
+                <summary class="text-3xl font-semibold text-indigo-900 cursor-pointer hover:text-indigo-600">
                     14. Caja de Herramientas del Experto (Fórmulas y Constantes)
                 </summary>
                 
-                <div class="grid md:grid-cols-2 gap-8 mt-6 border-t border-gray-700 pt-6">
+                <div class="grid md:grid-cols-2 gap-8 mt-6 border-t border-gray-200 pt-6">
                     <!-- Columna Fórmulas -->
                     <div>
-                        <h4 class="text-2xl font-semibold text-white mb-4">Fórmulas Clave</h4>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4">Fórmulas Clave</h4>
                         
                         <div class="mb-4">
-                            <h5 class="text-lg font-bold text-cyan-300">Gráfico X-R (Subgrupos)</h5>
+                            <h5 class="text-lg font-bold text-teal-600">Gráfico X-R (Subgrupos)</h5>
                             <p><span class="formula">UCLx = X&#773;&#773; + A₂ * R&#773;</span></p>
                             <p><span class="formula">LCLx = X&#773;&#773; - A₂ * R&#773;</span></p>
                             <p><span class="formula">UCLr = D₄ * R&#773;</span></p>
@@ -861,24 +864,24 @@ Otro, 2"></textarea>
                         </div>
                         
                         <div class="mb-4">
-                            <h5 class="text-lg font-bold text-cyan-300">Gráfico X-Rm (Individuales)</h5>
+                            <h5 class="text-lg font-bold text-teal-600">Gráfico X-Rm (Individuales)</h5>
                             <p><span class="formula">UCLx = X&#773; + (3 * R&#773;m / d₂)</span></p>
                             <p><span class="formula">LCLx = X&#773; - (3 * R&#773;m / d₂)</span></p>
                             <p><span class="formula">UCLr = D₄ * R&#773;m</span> (Usando n=2)</p>
                         </div>
 
                         <div class="mb-4">
-                            <h5 class="text-lg font-bold text-cyan-300">Gráfico P (Proporción)</h5>
+                            <h5 class="text-lg font-bold text-teal-600">Gráfico P (Proporción)</h5>
                             <p><span class="formula">U/LCLp = p&#773; &pm; 3 * &radic;(p&#773;(1-p&#773;)/n)</span></p>
                         </div>
 
                         <div class="mb-4">
-                            <h5 class="text-lg font-bold text-cyan-300">Gráfico U (Defectos/Unidad)</h5>
+                            <h5 class="text-lg font-bold text-teal-600">Gráfico U (Defectos/Unidad)</h5>
                             <p><span class="formula">U/LCLu = u&#773; &pm; 3 * &radic;(u&#773;/n)</span></p>
                         </div>
 
                         <div class="mb-4">
-                            <h5 class="text-lg font-bold text-cyan-300">Capacidad (Cp, Cpk, K)</h5>
+                            <h5 class="text-lg font-bold text-teal-600">Capacidad (Cp, Cpk, K)</h5>
                             <p><span class="formula">&sigma;&#770; = R&#773; / d₂</span> (para X-R)</p>
                             <p><span class="formula">Cp = (LSE - LIE) / (6&sigma;&#770;)</span></p>
                             <p><span class="formula">Cpk = min( (LSE - X&#773;&#773;)/(3&sigma;&#770;), (X&#773;&#773; - LIE)/(3&sigma;&#770;) )</span></p>
@@ -888,14 +891,14 @@ Otro, 2"></textarea>
                     
                     <!-- Columna Tabla de Constantes -->
                     <div>
-                        <h4 class="text-2xl font-semibold text-white mb-4">Tabla de Constantes de Control</h4>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4">Tabla de Constantes de Control</h4>
                         <table class="w-full pattern-table text-center">
                             <thead>
                                 <tr>
                                     <th>n</th><th>A₂</th><th>D₃</th><th>D₄</th><th>d₂</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-gray-300">
+                            <tbody class="text-gray-700">
                                 <tr><td>2</td><td>1.880</td><td>0</td><td>3.267</td><td>1.128</td></tr>
                                 <tr><td>3</td><td>1.023</td><td>0</td><td>2.574</td><td>1.693</td></tr>
                                 <tr><td>4</td><td>0.729</td><td>0</td><td>2.282</td><td>2.059</td></tr>
@@ -931,11 +934,11 @@ Otro, 2"></textarea>
 
         // --- NUEVA FUNCIÓN: Categoría de Capacidad ---
         function getCapabilityCategory(cp) {
-            if (cp >= 2.0) return `<span class="text-green-300">Clase Mundial (≥ 2.0)</span>`;
-            if (cp >= 1.33) return `<span class="text-cyan-300">Adecuado (≥ 1.33)</span>`;
-            if (cp >= 1.0) return `<span class="text-yellow-300">Parcialmente Adecuado (≥ 1.0)</span>`;
-            if (cp >= 0.67) return `<span class="text-orange-300">No Adecuado (≥ 0.67)</span>`;
-            return `<span class="text-red-300">Requiere Modificación Seria (< 0.67)</span>`;
+            if (cp >= 2.0) return `<span class="text-green-600">Clase Mundial (≥ 2.0)</span>`;
+            if (cp >= 1.33) return `<span class="text-teal-600">Adecuado (≥ 1.33)</span>`;
+            if (cp >= 1.0) return `<span class="text-yellow-600">Parcialmente Adecuado (≥ 1.0)</span>`;
+            if (cp >= 0.67) return `<span class="text-orange-600">No Adecuado (≥ 0.67)</span>`;
+            return `<span class="text-red-600">Requiere Modificación Seria (< 0.67)</span>`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1008,13 +1011,13 @@ Otro, 2"></textarea>
                 button.addEventListener('click', (e) => {
                     tabButtons.forEach(btn => {
                         btn.classList.remove('active', 'border-indigo-600', 'text-indigo-400');
-                        btn.classList.add('border-transparent', 'text-gray-400');
+                        btn.classList.add('border-transparent', 'text-gray-600');
                     });
                     tabContents.forEach(content => content.classList.remove('active'));
 
                     const buttonElement = e.currentTarget;
                     buttonElement.classList.add('active', 'border-indigo-600', 'text-indigo-400');
-                    buttonElement.classList.remove('border-transparent', 'text-gray-400');
+                    buttonElement.classList.remove('border-transparent', 'text-gray-600');
                     
                     const targetId = buttonElement.getAttribute('onclick').match(/'([^']+)'/)[1];
                     document.getElementById(targetId).classList.add('active');
@@ -1388,7 +1391,7 @@ Otro, 2"></textarea>
                 
                 let result = `<b>Cp:</b> ${cp.toFixed(2)} | <b>Cpk:</b> ${cpk.toFixed(2)} | <b>K:</b> ${k.toFixed(1)}% (Centrado)<br>`;
                 result += `<b>Categoría:</b> ${getCapabilityCategory(cp)}`;
-                if (cpk < cp * 0.95) result += `<br><span class="text-yellow-300">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
+                if (cpk < cp * 0.95) result += `<br><span class="text-yellow-600">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
                 
                 cpkResult.innerHTML = result;
             });
@@ -1482,7 +1485,7 @@ Otro, 2"></textarea>
 
                 let result = `<b>Cp:</b> ${cp.toFixed(2)} | <b>Cpk:</b> ${cpk.toFixed(2)} | <b>K:</b> ${k.toFixed(1)}% (Centrado)<br>`;
                 result += `<b>Categoría:</b> ${getCapabilityCategory(cp)}`;
-                if (cpk < cp * 0.95) result += `<br><span class="text-yellow-300">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
+                if (cpk < cp * 0.95) result += `<br><span class="text-yellow-600">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
                 
                 document.getElementById('cpk-result-xrm').innerHTML = result;
             });
@@ -1636,7 +1639,7 @@ Otro, 2"></textarea>
 
                     // Añadir reporte de estabilidad
                     const St = (stabilityReport.specialCausePoints / data.nPoints) * 100;
-                    analysisHTML += `<br><b>Índice de Inestabilidad (St): <span class="${St > 10 ? 'text-red-300' : 'text-green-300'}">${St.toFixed(1)}%</span></b>`;
+                    analysisHTML += `<br><b>Índice de Inestabilidad (St): <span class="${St > 10 ? 'text-red-600' : 'text-green-600'}">${St.toFixed(1)}%</span></b>`;
                     if (St > 10) analysisHTML += ` (Proceso Inestable, ${stabilityReport.specialCausePoints} puntos con causas especiales)`;
                     else analysisHTML += ` (Proceso Estable)`;
 
@@ -1684,7 +1687,7 @@ Otro, 2"></textarea>
         
         // --- NUEVA FUNCIÓN: Calcular Cpk para Gemba ---
         function calculateGembaCpk(mean, stdev, lie, lse, target) {
-            if (stdev === 0) return "<br><span class='text-red-300'>Error: Desviación estándar es cero. No se puede calcular Cpk.</span>";
+            if (stdev === 0) return "<br><span class='text-red-600'>Error: Desviación estándar es cero. No se puede calcular Cpk.</span>";
             const cp = (lse - lie) / (6 * stdev);
             const cpk_u = (lse - mean) / (3 * stdev);
             const cpk_l = (mean - lie) / (3 * stdev);
@@ -1697,7 +1700,7 @@ Otro, 2"></textarea>
             let result = `<br><b>Cp:</b> ${cp.toFixed(2)} | <b>Cpk:</b> ${cpk.toFixed(2)}`;
             if(!isNaN(k)) result += ` | <b>K:</b> ${k.toFixed(1)}%`;
             result += `<br><b>Categoría:</b> ${getCapabilityCategory(cp)}`;
-            if (cpk < cp * 0.95) result += `<br><span class="text-yellow-300">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
+            if (cpk < cp * 0.95) result += `<br><span class="text-yellow-600">Diagnóstico: Proceso descentrado (Cp > Cpk).</span>`;
             return result;
         }
 
