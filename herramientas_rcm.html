@@ -246,13 +246,71 @@
                 <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Se emplea para entender profundamente por qué ocurren ciertos modos de fallo, lo que es crucial para seleccionar tareas proactivas efectivas.</p>
                 <div class="visual-representation">
                     <h5>Ejemplo Práctico de RCA (Usando los "5 Porqués")</h5>
+                        <svg class="svg-rca" viewBox="0 0 800 520" width="100%" style="width:100%;height:auto;display:block;margin:0 auto" role="img" aria-label="Cadena de los 5 porqués hasta la causa raíz" xmlns="http://www.w3.org/2000/svg">
+                        <style>
+                        .svg-rca text{font-family:'Inter','Segoe UI',Arial,sans-serif}
+                        .svg-rca .q{font-size:12px;font-weight:700;fill:#111827}
+                        .svg-rca .a{font-size:12px;fill:#374151}
+                        .svg-rca .num{font-size:14px;font-weight:700;fill:#ffffff}
+                        .svg-rca .cap{font-size:10px;font-weight:700;fill:#ffffff;letter-spacing:.6px}
+                        .svg-rca .arrl{font-size:11px;font-style:italic;fill:#64748b}
+                        .svg-rca .ln1{stroke:#3b82f6;stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+                        .svg-rca .ln5{stroke:#dc2626;stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+                        </style>
+                        <defs>
+                        <marker id="rcb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3b82f6"/></marker>
+                        <marker id="rcr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#dc2626"/></marker>
+                        </defs>
+                        <g>
+                        <path d="M436 92L436 126" class="ln1" marker-end="url(#rcb)"/>
+                        <path d="M436 188L436 222" class="ln1" marker-end="url(#rcb)"/>
+                        <path d="M436 284L436 318" class="ln1" marker-end="url(#rcb)"/>
+                        <path d="M436 380L436 414" class="ln5" marker-end="url(#rcr)"/>
+                        <text x="452" y="113" class="arrl">¿por qué?</text>
+                        <text x="452" y="209" class="arrl">¿por qué?</text>
+                        <text x="452" y="305" class="arrl">¿por qué?</text>
+                        <text x="452" y="401" class="arrl">¿por qué?</text>
+                        </g>
+                        <g>
+                        <rect x="92" y="30" width="688" height="62" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+                        <text x="108" y="54" class="q">¿Por qué se detuvo la máquina?</text>
+                        <text x="108" y="74" class="a"><tspan font-weight="700">Respuesta:</tspan><tspan> El motor principal se sobrecalentó y activó la protección térmica.</tspan></text>
+                        <rect x="92" y="126" width="688" height="62" rx="10" fill="#e4e8f7" stroke="#93c5fd" stroke-width="1.5"/>
+                        <text x="108" y="150" class="q">¿Por qué se sobrecalentó el motor?</text>
+                        <text x="108" y="170" class="a"><tspan font-weight="700">Respuesta:</tspan><tspan> El motor estaba trabajando con sobrecarga.</tspan></text>
+                        <rect x="92" y="222" width="688" height="62" rx="10" fill="#ede6f0" stroke="#c4b5c9" stroke-width="1.5"/>
+                        <text x="108" y="246" class="q">¿Por qué estaba trabajando con sobrecarga?</text>
+                        <text x="108" y="266" class="a"><tspan font-weight="700">Respuesta:</tspan><tspan> Uno de los rodamientos del eje conducido presentaba alta fricción.</tspan></text>
+                        <rect x="92" y="318" width="688" height="62" rx="10" fill="#f5e4e9" stroke="#e8a2ae" stroke-width="1.5"/>
+                        <text x="108" y="342" class="q">¿Por qué el rodamiento presentaba alta fricción?</text>
+                        <text x="108" y="362" class="a"><tspan font-weight="700">Respuesta:</tspan><tspan> Por falta de lubricación adecuada.</tspan></text>
+                        <rect x="92" y="414" width="688" height="86" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="3"/>
+                        <text x="108" y="438" class="q">¿Por qué faltó lubricación adecuada?</text>
+                        <text x="108" y="460" class="a"><tspan font-weight="700">Respuesta:</tspan><tspan> El plan de lubricación no se estaba siguiendo correctamente y el tipo de lubricante</tspan></text>
+                        <text x="108" y="475" class="a">usado no era el óptimo para las condiciones de operación.</text>
+                        <rect x="600" y="424" width="165" height="22" rx="11" fill="#dc2626"/>
+                        <text x="682" y="439" text-anchor="middle" class="cap">CAUSA RAÍZ POTENCIAL</text>
+                        </g>
+                        <g>
+                        <circle cx="52" cy="61" r="20" fill="#3b82f6"/>
+                        <text x="52" y="66" text-anchor="middle" class="num">1</text>
+                        <circle cx="52" cy="157" r="20" fill="#3b82f6"/>
+                        <text x="52" y="162" text-anchor="middle" class="num">2</text>
+                        <circle cx="52" cy="253" r="20" fill="#3b82f6"/>
+                        <text x="52" y="258" text-anchor="middle" class="num">3</text>
+                        <circle cx="52" cy="349" r="20" fill="#3b82f6"/>
+                        <text x="52" y="354" text-anchor="middle" class="num">4</text>
+                        <circle cx="52" cy="457" r="20" fill="#dc2626"/>
+                        <text x="52" y="462" text-anchor="middle" class="num">5</text>
+                        </g>
+                        </svg>
                     <p class="text-gray-700 mb-2"><strong>Problema:</strong> La máquina X se detiene inesperadamente de forma recurrente.</p>
                     <div class="space-y-1">
-                        <div class="rca-item"><strong>1. ¿Por qué se detuvo la máquina?</strong> Respuesta: El motor principal se sobrecalentó y activó la protección térmica.</div>
-                        <div class="rca-item"><strong>2. ¿Por qué se sobrecalentó el motor?</strong> Respuesta: El motor estaba trabajando con sobrecarga.</div>
-                        <div class="rca-item"><strong>3. ¿Por qué estaba trabajando con sobrecarga?</strong> Respuesta: Uno de los rodamientos del eje conducido presentaba alta fricción.</div>
-                        <div class="rca-item"><strong>4. ¿Por qué el rodamiento presentaba alta fricción?</strong> Respuesta: Por falta de lubricación adecuada.</div>
-                        <div class="rca-item"><strong>5. ¿Por qué faltó lubricación adecuada?</strong> Respuesta: El plan de lubricación no se estaba siguiendo correctamente y el tipo de lubricante usado no era el óptimo para las condiciones de operación. <strong>(Causa Raíz Potencial)</strong></div>
+                        <div class="rca-item" style="display:none"><strong>1. ¿Por qué se detuvo la máquina?</strong> Respuesta: El motor principal se sobrecalentó y activó la protección térmica.</div>
+                        <div class="rca-item" style="display:none"><strong>2. ¿Por qué se sobrecalentó el motor?</strong> Respuesta: El motor estaba trabajando con sobrecarga.</div>
+                        <div class="rca-item" style="display:none"><strong>3. ¿Por qué estaba trabajando con sobrecarga?</strong> Respuesta: Uno de los rodamientos del eje conducido presentaba alta fricción.</div>
+                        <div class="rca-item" style="display:none"><strong>4. ¿Por qué el rodamiento presentaba alta fricción?</strong> Respuesta: Por falta de lubricación adecuada.</div>
+                        <div class="rca-item" style="display:none"><strong>5. ¿Por qué faltó lubricación adecuada?</strong> Respuesta: El plan de lubricación no se estaba siguiendo correctamente y el tipo de lubricante usado no era el óptimo para las condiciones de operación. <strong>(Causa Raíz Potencial)</strong></div>
                     </div>
                 </div>
             </div>
@@ -269,25 +327,121 @@
                 <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Son el núcleo para determinar "¿Qué se puede hacer para predecir o prevenir cada falla?" y "¿Qué se debe hacer si no se puede encontrar una tarea proactiva adecuada?".</p>
                 <div class="visual-representation">
                     <h5>Ejemplo Simplificado de Diagrama de Decisión RCM (para un modo de fallo)</h5>
+                        <svg class="svg-logic" viewBox="0 0 800 628" width="100%" style="width:100%;height:auto;display:block;margin:0 auto" role="img" aria-label="Diagrama de lógica de decisión RCM" xmlns="http://www.w3.org/2000/svg">
+                        <style>
+                        .svg-logic text{font-family:'Inter','Segoe UI',Arial,sans-serif}
+                        .svg-logic .t{font-size:12px;fill:#1f2937}
+                        .svg-logic .tb{font-size:12px;font-weight:600;fill:#111827}
+                        .svg-logic .lbl{font-size:11px;font-weight:700}
+                        .svg-logic .lg{font-size:11px;fill:#475569}
+                        .svg-logic .q{fill:#dbeafe;stroke:#3b82f6;stroke-width:2}
+                        .svg-logic .ok{fill:#dcfce7;stroke:#16a34a;stroke-width:2}
+                        .svg-logic .ng{fill:#fee2e2;stroke:#dc2626;stroke-width:2}
+                        .svg-logic .as{stroke:#059669;stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+                        .svg-logic .an{stroke:#dc2626;stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+                        .svg-logic .ls{fill:#059669}
+                        .svg-logic .ln{fill:#dc2626}
+                        </style>
+                        <defs>
+                        <marker id="lgs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#059669"/></marker>
+                        <marker id="lgn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#dc2626"/></marker>
+                        </defs>
+                        <g>
+                        <rect x="550" y="24" width="16" height="13" rx="3" class="q"/>
+                        <text x="572" y="34" class="lg">Pregunta / Decisión</text>
+                        <rect x="550" y="48" width="16" height="13" rx="3" class="ok"/>
+                        <text x="572" y="58" class="lg">Resultado favorable</text>
+                        <rect x="550" y="72" width="16" height="13" rx="3" class="ng"/>
+                        <text x="572" y="82" class="lg">Resultado desfavorable</text>
+                        <line x1="30" y1="40" x2="72" y2="40" class="as" marker-end="url(#lgs)"/>
+                        <text x="80" y="44" class="lbl ls">Sí</text>
+                        <line x1="140" y1="40" x2="182" y2="40" class="an" marker-end="url(#lgn)"/>
+                        <text x="190" y="44" class="lbl ln">No</text>
+                        </g>
+                        <g>
+                        <path d="M340 90L340 118L205 118L205 150" class="as" marker-end="url(#lgs)"/>
+                        <path d="M460 90L460 118L610 118L610 150" class="an" marker-end="url(#lgn)"/>
+                        <path d="M150 232L150 258L105 258L105 282" class="as" marker-end="url(#lgs)"/>
+                        <path d="M265 232L265 258L302 258L302 282" class="an" marker-end="url(#lgn)"/>
+                        <path d="M550 232L550 258L507 258L507 282" class="as" marker-end="url(#lgs)"/>
+                        <path d="M670 232L670 258L695 258L695 282" class="an" marker-end="url(#lgn)"/>
+                        <path d="M255 366L255 390L130 390L130 412" class="as" marker-end="url(#lgs)"/>
+                        <path d="M350 366L350 390L332 390L332 412" class="an" marker-end="url(#lgn)"/>
+                        <path d="M650 366L650 390L535 390L535 412" class="as" marker-end="url(#lgs)"/>
+                        <path d="M755 366L755 390L712 390L712 412" class="an" marker-end="url(#lgn)"/>
+                        <path d="M85 490L85 536" class="as" marker-end="url(#lgs)"/>
+                        <path d="M180 490L180 512L292 512L292 536" class="an" marker-end="url(#lgn)"/>
+                        <path d="M495 490L495 536" class="as" marker-end="url(#lgs)"/>
+                        <path d="M585 490L585 512L690 512L690 536" class="an" marker-end="url(#lgn)"/>
+                        </g>
+                        <g>
+                        <text x="270" y="112" text-anchor="middle" class="lbl ls">Sí</text>
+                        <text x="540" y="112" text-anchor="middle" class="lbl ln">No</text>
+                        <text x="128" y="252" text-anchor="middle" class="lbl ls">Sí</text>
+                        <text x="285" y="252" text-anchor="middle" class="lbl ln">No</text>
+                        <text x="528" y="252" text-anchor="middle" class="lbl ls">Sí</text>
+                        <text x="683" y="251" text-anchor="middle" class="lbl ln">No</text>
+                        <text x="192" y="384" text-anchor="middle" class="lbl ls">Sí</text>
+                        <text x="341" y="383" text-anchor="middle" class="lbl ln">No</text>
+                        <text x="592" y="384" text-anchor="middle" class="lbl ls">Sí</text>
+                        <text x="734" y="383" text-anchor="middle" class="lbl ln">No</text>
+                        <text x="98" y="516" text-anchor="middle" class="lbl ls">Sí</text>
+                        <text x="215" y="506" text-anchor="middle" class="lbl ln">No</text>
+                        <text x="508" y="516" text-anchor="middle" class="lbl ls">Sí</text>
+                        <text x="620" y="506" text-anchor="middle" class="lbl ln">No</text>
+                        </g>
+                        <g>
+                        <rect x="275" y="24" width="250" height="66" rx="10" class="q"/>
+                        <text x="400" y="46" text-anchor="middle" class="tb"><tspan x="400">P1: ¿Es evidente la falla para el</tspan><tspan x="400" dy="15">personal operativo durante sus</tspan><tspan x="400" dy="15">tareas normales?</tspan></text>
+                        <rect x="80" y="150" width="250" height="82" rx="10" class="q"/>
+                        <text x="205" y="180" text-anchor="middle" class="tb"><tspan x="205">P2.1: ¿La pérdida de función tiene</tspan><tspan x="205" dy="15">consecuencias adversas para la</tspan><tspan x="205" dy="15">seguridad o el medio ambiente?</tspan></text>
+                        <rect x="485" y="150" width="250" height="82" rx="10" class="q"/>
+                        <text x="610" y="173" text-anchor="middle" class="tb"><tspan x="610">P3.1: ¿La falla oculta, combinada</tspan><tspan x="610" dy="15">con una segunda falla, tiene</tspan><tspan x="610" dy="15">consecuencias para la seguridad</tspan><tspan x="610" dy="15">o el medio ambiente?</tspan></text>
+                        <rect x="20" y="282" width="170" height="84" rx="10" class="ok"/>
+                        <text x="105" y="313" text-anchor="middle" class="t"><tspan x="105">Tarea proactiva</tspan><tspan x="105" dy="15">obligatoria o</tspan><tspan x="105" dy="15">rediseño.</tspan></text>
+                        <rect x="205" y="282" width="195" height="84" rx="10" class="q"/>
+                        <text x="302" y="306" text-anchor="middle" class="tb"><tspan x="302">P2.2: ¿La pérdida de</tspan><tspan x="302" dy="15">función tiene consecuencias</tspan><tspan x="302" dy="15">operacionales (producción,</tspan><tspan x="302" dy="15">costos, calidad)?</tspan></text>
+                        <rect x="430" y="282" width="155" height="84" rx="10" class="ok"/>
+                        <text x="507" y="320" text-anchor="middle" class="t"><tspan x="507">Tarea de búsqueda de</tspan><tspan x="507" dy="15">fallos obligatoria.</tspan></text>
+                        <rect x="610" y="282" width="170" height="84" rx="10" class="q"/>
+                        <text x="695" y="313" text-anchor="middle" class="tb"><tspan x="695">¿Tiene consecuencias</tspan><tspan x="695" dy="15">económicas</tspan><tspan x="695" dy="15">significativas?</tspan></text>
+                        <rect x="25" y="412" width="205" height="78" rx="10" class="q"/>
+                        <text x="127" y="440" text-anchor="middle" class="tb"><tspan x="127">¿Es técnicamente factible y</tspan><tspan x="127" dy="15">costo-efectiva una tarea</tspan><tspan x="127" dy="15">proactiva (PdM o PM)?</tspan></text>
+                        <rect x="245" y="412" width="175" height="78" rx="10" class="ng"/>
+                        <text x="332" y="440" text-anchor="middle" class="t"><tspan x="332">Permitir fallo</tspan><tspan x="332" dy="15">(si no hay otras</tspan><tspan x="332" dy="15">consecuencias).</tspan></text>
+                        <rect x="445" y="412" width="180" height="78" rx="10" class="q"/>
+                        <text x="535" y="447" text-anchor="middle" class="tb"><tspan x="535">¿Tarea de búsqueda de</tspan><tspan x="535" dy="15">fallos costo-efectiva?</tspan></text>
+                        <rect x="645" y="412" width="135" height="78" rx="10" class="ng"/>
+                        <text x="712" y="447" text-anchor="middle" class="t"><tspan x="712">No se requiere</tspan><tspan x="712" dy="15">tarea proactiva.</tspan></text>
+                        <rect x="25" y="536" width="120" height="72" rx="10" class="ok"/>
+                        <text x="85" y="568" text-anchor="middle" class="t"><tspan x="85">Implementar</tspan><tspan x="85" dy="15">tarea.</tspan></text>
+                        <rect x="175" y="536" width="235" height="72" rx="10" class="ng"/>
+                        <text x="292" y="561" text-anchor="middle" class="t"><tspan x="292">Considerar rediseño o permitir</tspan><tspan x="292" dy="15">fallo (si las consecuencias</tspan><tspan x="292" dy="15">son tolerables).</tspan></text>
+                        <rect x="435" y="536" width="120" height="72" rx="10" class="ok"/>
+                        <text x="495" y="576" text-anchor="middle" class="t">Implementar.</text>
+                        <rect x="600" y="536" width="180" height="72" rx="10" class="ng"/>
+                        <text x="690" y="576" text-anchor="middle" class="t">Permitir fallo oculto.</text>
+                        </g>
+                        </svg>
                     <div class="space-y-1">
-                        <div class="logic-item"><strong>P1: ¿Es evidente la falla para el personal operativo durante sus tareas normales?</strong></div>
-                        <div class="logic-item ml-4"><strong>SI → Ir a P2 (Consecuencias de Falla Evidente)</strong></div>
-                        <div class="logic-item ml-8"><strong>P2.1: ¿La pérdida de función causada por este modo de fallo tiene consecuencias adversas para la seguridad o el medio ambiente?</strong></div>
-                        <div class="logic-item ml-12">SI → Tarea proactiva obligatoria o rediseño.</div>
-                        <div class="logic-item ml-12">NO → Ir a P2.2</div>
-                        <div class="logic-item ml-8"><strong>P2.2: ¿La pérdida de función tiene consecuencias operacionales (producción, costos, calidad)?</strong></div>
-                        <div class="logic-item ml-12">SI → ¿Es técnicamente factible y costo-efectiva una tarea proactiva (PdM o PM)?</div>
-                        <div class="logic-item ml-16">SI → Implementar tarea.</div>
-                        <div class="logic-item ml-16">NO → Considerar rediseño o permitir fallo (si las consecuencias son tolerables).</div>
-                        <div class="logic-item ml-12">NO → Permitir fallo (si no hay otras consecuencias).</div>
-                        <div class="logic-item ml-4"><strong>NO (Falla Oculta) → Ir a P3 (Consecuencias de Falla Oculta)</strong></div>
-                        <div class="logic-item ml-8"><strong>P3.1: ¿La falla oculta, combinada con una segunda falla, tiene consecuencias para la seguridad o el medio ambiente?</strong></div>
-                        <div class="logic-item ml-12">SI → Tarea de búsqueda de fallos obligatoria.</div>
-                        <div class="logic-item ml-12">NO → ¿Tiene consecuencias económicas significativas?</div>
-                        <div class="logic-item ml-16">SI → ¿Tarea de búsqueda de fallos costo-efectiva?</div>
-                         <div class="logic-item ml-20">SI → Implementar.</div>
-                         <div class="logic-item ml-20">NO → Permitir fallo oculto.</div>
-                        <div class="logic-item ml-16">NO → No se requiere tarea proactiva.</div>
+                        <div class="logic-item" style="display:none"><strong>P1: ¿Es evidente la falla para el personal operativo durante sus tareas normales?</strong></div>
+                        <div class="logic-item ml-4" style="display:none"><strong>SI → Ir a P2 (Consecuencias de Falla Evidente)</strong></div>
+                        <div class="logic-item ml-8" style="display:none"><strong>P2.1: ¿La pérdida de función causada por este modo de fallo tiene consecuencias adversas para la seguridad o el medio ambiente?</strong></div>
+                        <div class="logic-item ml-12" style="display:none">SI → Tarea proactiva obligatoria o rediseño.</div>
+                        <div class="logic-item ml-12" style="display:none">NO → Ir a P2.2</div>
+                        <div class="logic-item ml-8" style="display:none"><strong>P2.2: ¿La pérdida de función tiene consecuencias operacionales (producción, costos, calidad)?</strong></div>
+                        <div class="logic-item ml-12" style="display:none">SI → ¿Es técnicamente factible y costo-efectiva una tarea proactiva (PdM o PM)?</div>
+                        <div class="logic-item ml-16" style="display:none">SI → Implementar tarea.</div>
+                        <div class="logic-item ml-16" style="display:none">NO → Considerar rediseño o permitir fallo (si las consecuencias son tolerables).</div>
+                        <div class="logic-item ml-12" style="display:none">NO → Permitir fallo (si no hay otras consecuencias).</div>
+                        <div class="logic-item ml-4" style="display:none"><strong>NO (Falla Oculta) → Ir a P3 (Consecuencias de Falla Oculta)</strong></div>
+                        <div class="logic-item ml-8" style="display:none"><strong>P3.1: ¿La falla oculta, combinada con una segunda falla, tiene consecuencias para la seguridad o el medio ambiente?</strong></div>
+                        <div class="logic-item ml-12" style="display:none">SI → Tarea de búsqueda de fallos obligatoria.</div>
+                        <div class="logic-item ml-12" style="display:none">NO → ¿Tiene consecuencias económicas significativas?</div>
+                        <div class="logic-item ml-16" style="display:none">SI → ¿Tarea de búsqueda de fallos costo-efectiva?</div>
+                         <div class="logic-item ml-20" style="display:none">SI → Implementar.</div>
+                         <div class="logic-item ml-20" style="display:none">NO → Permitir fallo oculto.</div>
+                        <div class="logic-item ml-16" style="display:none">NO → No se requiere tarea proactiva.</div>
                     </div>
                      <p class="text-xs mt-2 text-gray-600">Nota: Este es un flujo muy simplificado. Los diagramas reales son más detallados.</p>
                 </div>
@@ -356,24 +510,89 @@
                 <p class="text-gray-700"><strong class="text-gray-900">Uso en RCM:</strong> Aunque no siempre es parte central del RCM como el FMEA, puede ser útil para comprender sistemas complejos y las interacciones que llevan a fallos funcionales.</p>
                  <div class="visual-representation">
                     <h5>Ejemplo Simplificado de Árbol de Fallos (Sistema de Iluminación Falla)</h5>
+                        <svg class="svg-fta" viewBox="0 0 800 528" width="100%" style="width:100%;height:auto;display:block;margin:0 auto" role="img" aria-label="Árbol de fallos del sistema de iluminación" xmlns="http://www.w3.org/2000/svg">
+                        <style>
+                        .svg-fta text{font-family:'Inter','Segoe UI',Arial,sans-serif}
+                        .svg-fta .t{font-size:12px;fill:#1f2937}
+                        .svg-fta .tb{font-size:12px;font-weight:700;fill:#111827}
+                        .svg-fta .lg{font-size:11px;fill:#475569}
+                        .svg-fta .gl{font-size:12px;font-weight:700;letter-spacing:.4px}
+                        .svg-fta .top{fill:#fee2e2;stroke:#dc2626;stroke-width:2.5}
+                        .svg-fta .mid{fill:#dbeafe;stroke:#3b82f6;stroke-width:2}
+                        .svg-fta .bas{fill:#f8fafc;stroke:#64748b;stroke-width:2}
+                        .svg-fta .ln{stroke:#475569;stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+                        .svg-fta .g-or{fill:#fed7aa;stroke:#ea580c;stroke-width:2}
+                        .svg-fta .g-and{fill:#bfdbfe;stroke:#2563eb;stroke-width:2}
+                        .svg-fta .cap-or{fill:#c2410c}
+                        .svg-fta .cap-and{fill:#1d4ed8}
+                        </style>
+                        <defs>
+                        <marker id="fts" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker>
+                        </defs>
+                        <g>
+                        <path d="M400 76L400 108" class="ln" marker-end="url(#fts)"/>
+                        <path d="M380 156L380 185L177 185L177 210" class="ln" marker-end="url(#fts)"/>
+                        <path d="M420 156L420 185L587 185L587 210" class="ln" marker-end="url(#fts)"/>
+                        <path d="M530 264L530 296L225 296L225 328" class="ln" marker-end="url(#fts)"/>
+                        <path d="M635 264L635 328" class="ln" marker-end="url(#fts)"/>
+                        <path d="M205 376L205 406L132 406L132 436" class="ln" marker-end="url(#fts)"/>
+                        <path d="M245 376L245 406L317 406L317 436" class="ln" marker-end="url(#fts)"/>
+                        <path d="M615 376L615 406L550 406L550 436" class="ln" marker-end="url(#fts)"/>
+                        <path d="M655 376L655 406L712 406L712 436" class="ln" marker-end="url(#fts)"/>
+                        </g>
+                        <g transform="translate(368,108)"><path d="M6 3C22 12 22 36 6 45L46 45C64 34 64 14 46 3Z" class="g-or"/></g>
+                        <g transform="translate(196,328)"><path d="M3 3L34 3A21 21 0 0 1 34 45L3 45Z" class="g-and"/></g>
+                        <g transform="translate(603,328)"><path d="M6 3C22 12 22 36 6 45L46 45C64 34 64 14 46 3Z" class="g-or"/></g>
+                        <text x="407" y="136" text-anchor="middle" class="gl cap-or">OR</text>
+                        <text x="225" y="356" text-anchor="middle" class="gl cap-and">AND</text>
+                        <text x="642" y="356" text-anchor="middle" class="gl cap-or">OR</text>
+                        <g>
+                        <rect x="215" y="28" width="370" height="48" rx="10" class="top"/>
+                        <text x="400" y="56" text-anchor="middle" class="tb">Evento Tope: Sistema de Iluminación No Funciona</text>
+                        <rect x="60" y="210" width="235" height="54" rx="10" class="bas"/>
+                        <text x="177" y="233" text-anchor="middle" class="t"><tspan x="177">Falla de Suministro</tspan><tspan x="177" dy="15">Eléctrico General</tspan></text>
+                        <rect x="460" y="210" width="255" height="54" rx="10" class="mid"/>
+                        <text x="587" y="233" text-anchor="middle" class="tb"><tspan x="587">Falla en el Circuito</tspan><tspan x="587" dy="15">de Iluminación</tspan></text>
+                        <rect x="55" y="436" width="155" height="52" rx="10" class="bas"/>
+                        <text x="132" y="458" text-anchor="middle" class="t"><tspan x="132">Falla Bombilla</tspan><tspan x="132" dy="15">Principal</tspan></text>
+                        <rect x="235" y="436" width="165" height="52" rx="10" class="bas"/>
+                        <text x="317" y="458" text-anchor="middle" class="t"><tspan x="317">Falla Bombilla</tspan><tspan x="317" dy="15">de Respaldo</tspan></text>
+                        <rect x="470" y="436" width="160" height="52" rx="10" class="bas"/>
+                        <text x="550" y="458" text-anchor="middle" class="t"><tspan x="550">Interruptor</tspan><tspan x="550" dy="15">Defectuoso</tspan></text>
+                        <rect x="645" y="436" width="135" height="52" rx="10" class="bas"/>
+                        <text x="712" y="458" text-anchor="middle" class="t"><tspan x="712">Cableado</tspan><tspan x="712" dy="15">Abierto</tspan></text>
+                        </g>
+                        <g>
+                        <rect x="30" y="494" width="18" height="13" rx="3" class="top"/>
+                        <text x="54" y="504" class="lg">Evento tope</text>
+                        <rect x="150" y="494" width="18" height="13" rx="3" class="mid"/>
+                        <text x="174" y="504" class="lg">Evento intermedio</text>
+                        <rect x="320" y="494" width="18" height="13" rx="3" class="bas"/>
+                        <text x="344" y="504" class="lg">Evento básico</text>
+                        <g transform="translate(470,492)"><path d="M2 1C7 5 7 12 2 16L15 16C21 12 21 5 15 1Z" class="g-or"/></g>
+                        <text x="500" y="504" class="lg">Compuerta OR (≥1)</text>
+                        <g transform="translate(625,492)"><path d="M1 1L12 1A8 8 0 0 1 12 17L1 17Z" class="g-and"/></g>
+                        <text x="655" y="504" class="lg">Compuerta AND (Y)</text>
+                        </g>
+                        </svg>
                     <ul class="list-none p-0">
-                        <li class="fta-item"><strong>Evento Tope: Sistema de Iluminación No Funciona</strong>
+                        <li class="fta-item" style="display:none"><strong>Evento Tope: Sistema de Iluminación No Funciona</strong>
                             <ul class="list-none">
-                                <li class="fta-item"><strong>[O] Compuerta OR</strong> (Falla si ocurre CUALQUIERA de los siguientes)
+                                <li class="fta-item" style="display:none"><strong>[O] Compuerta OR</strong> (Falla si ocurre CUALQUIERA de los siguientes)
                                     <ul class="list-none">
-                                        <li class="fta-item">Falla de Suministro Eléctrico General</li>
-                                        <li class="fta-item">Falla en el Circuito de Iluminación
+                                        <li class="fta-item" style="display:none">Falla de Suministro Eléctrico General</li>
+                                        <li class="fta-item" style="display:none">Falla en el Circuito de Iluminación
                                             <ul class="list-none">
-                                                <li class="fta-item"><strong>[Y] Compuerta AND</strong> (Falla si ocurren TODOS los siguientes en un sistema redundante simple)
+                                                <li class="fta-item" style="display:none"><strong>[Y] Compuerta AND</strong> (Falla si ocurren TODOS los siguientes en un sistema redundante simple)
                                                      <ul class="list-none">
-                                                        <li class="fta-item">Falla Bombilla Principal</li>
-                                                        <li class="fta-item">Falla Bombilla de Respaldo</li>
+                                                        <li class="fta-item" style="display:none">Falla Bombilla Principal</li>
+                                                        <li class="fta-item" style="display:none">Falla Bombilla de Respaldo</li>
                                                      </ul>
                                                 </li>
-                                                <li class="fta-item"><strong>[O] Compuerta OR</strong>
+                                                <li class="fta-item" style="display:none"><strong>[O] Compuerta OR</strong>
                                                     <ul class="list-none">
-                                                        <li class="fta-item">Interruptor Defectuoso</li>
-                                                        <li class="fta-item">Cableado Abierto</li>
+                                                        <li class="fta-item" style="display:none">Interruptor Defectuoso</li>
+                                                        <li class="fta-item" style="display:none">Cableado Abierto</li>
                                                     </ul>
                                                 </li>
                                             </ul>
