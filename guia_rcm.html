@@ -784,103 +784,96 @@
 
                         <div class="content-block">
                             <h4>Análisis del Árbol de Fallos (FTA)</h4>
-                            <p><strong>Descripción:</strong> Es un método deductivo de análisis de fiabilidad que comienza con un evento no deseado (fallo del sistema) y trabaja hacia atrás para identificar todas las posibles combinaciones de fallos de componentes o eventos que podrían causarlo.</p>
-                            <p><strong>Uso en RCM:</strong> Aunque no siempre es parte central del RCM como el FMEA, puede ser útil para comprender sistemas complejos y las interacciones que llevan a fallos funcionales.</p>
+                            <p><strong>Descripción:</strong> Es un método deductivo que parte de un evento no deseado (fallo del sistema) y desciende identificando las combinaciones de fallos que lo causan. Las compuertas OR indican que cualquier causa individual provoca el fallo; las compuertas AND indican que un sistema redundante falla solo cuando todos sus componentes fallan simultáneamente.</p>
+                            <p><strong>Uso en RCM:</strong> Permite entender sistemas complejos, calcular la probabilidad del fallo superior y priorizar qué componentes requieren tareas proactivas o redundancia.</p>
                              <div class="visual-representation">
                                 <h5>Ejemplo Simplificado de Árbol de Fallos (Sistema de Iluminación Falla)</h5>
-                                    <svg class="svg-fta" viewBox="0 0 800 528" width="100%" style="width:100%;height:auto;display:block;margin:0 auto" role="img" aria-label="Árbol de fallos del sistema de iluminación" xmlns="http://www.w3.org/2000/svg">
-                                    <style>
-                                    .svg-fta text{font-family:'Inter','Segoe UI',Arial,sans-serif}
-                                    .svg-fta .t{font-size:12px;fill:#1f2937}
-                                    .svg-fta .tb{font-size:12px;font-weight:700;fill:#111827}
-                                    .svg-fta .lg{font-size:11px;fill:#475569}
-                                    .svg-fta .gl{font-size:12px;font-weight:700;letter-spacing:.4px}
-                                    .svg-fta .top{fill:#fee2e2;stroke:#dc2626;stroke-width:2.5}
-                                    .svg-fta .mid{fill:#dbeafe;stroke:#3b82f6;stroke-width:2}
-                                    .svg-fta .bas{fill:#f8fafc;stroke:#64748b;stroke-width:2}
-                                    .svg-fta .ln{stroke:#475569;stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
-                                    .svg-fta .g-or{fill:#fed7aa;stroke:#ea580c;stroke-width:2}
-                                    .svg-fta .g-and{fill:#bfdbfe;stroke:#2563eb;stroke-width:2}
-                                    .svg-fta .cap-or{fill:#c2410c}
-                                    .svg-fta .cap-and{fill:#1d4ed8}
-                                    </style>
-                                    <defs>
-                                    <marker id="fts" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker>
-                                    </defs>
-                                    <g>
-                                    <path d="M400 76L400 108" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M380 156L380 185L177 185L177 210" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M420 156L420 185L587 185L587 210" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M530 264L530 296L225 296L225 328" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M635 264L635 328" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M205 376L205 406L132 406L132 436" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M245 376L245 406L317 406L317 436" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M615 376L615 406L550 406L550 436" class="ln" marker-end="url(#fts)"/>
-                                    <path d="M655 376L655 406L712 406L712 436" class="ln" marker-end="url(#fts)"/>
-                                    </g>
-                                    <g transform="translate(368,108)"><path d="M6 3C22 12 22 36 6 45L46 45C64 34 64 14 46 3Z" class="g-or"/></g>
-                                    <g transform="translate(196,328)"><path d="M3 3L34 3A21 21 0 0 1 34 45L3 45Z" class="g-and"/></g>
-                                    <g transform="translate(603,328)"><path d="M6 3C22 12 22 36 6 45L46 45C64 34 64 14 46 3Z" class="g-or"/></g>
-                                    <text x="407" y="136" text-anchor="middle" class="gl cap-or">OR</text>
-                                    <text x="225" y="356" text-anchor="middle" class="gl cap-and">AND</text>
-                                    <text x="642" y="356" text-anchor="middle" class="gl cap-or">OR</text>
-                                    <g>
-                                    <rect x="215" y="28" width="370" height="48" rx="10" class="top"/>
-                                    <text x="400" y="56" text-anchor="middle" class="tb">Evento Tope: Sistema de Iluminación No Funciona</text>
-                                    <rect x="60" y="210" width="235" height="54" rx="10" class="bas"/>
-                                    <text x="177" y="233" text-anchor="middle" class="t"><tspan x="177">Falla de Suministro</tspan><tspan x="177" dy="15">Eléctrico General</tspan></text>
-                                    <rect x="460" y="210" width="255" height="54" rx="10" class="mid"/>
-                                    <text x="587" y="233" text-anchor="middle" class="tb"><tspan x="587">Falla en el Circuito</tspan><tspan x="587" dy="15">de Iluminación</tspan></text>
-                                    <rect x="55" y="436" width="155" height="52" rx="10" class="bas"/>
-                                    <text x="132" y="458" text-anchor="middle" class="t"><tspan x="132">Falla Bombilla</tspan><tspan x="132" dy="15">Principal</tspan></text>
-                                    <rect x="235" y="436" width="165" height="52" rx="10" class="bas"/>
-                                    <text x="317" y="458" text-anchor="middle" class="t"><tspan x="317">Falla Bombilla</tspan><tspan x="317" dy="15">de Respaldo</tspan></text>
-                                    <rect x="470" y="436" width="160" height="52" rx="10" class="bas"/>
-                                    <text x="550" y="458" text-anchor="middle" class="t"><tspan x="550">Interruptor</tspan><tspan x="550" dy="15">Defectuoso</tspan></text>
-                                    <rect x="645" y="436" width="135" height="52" rx="10" class="bas"/>
-                                    <text x="712" y="458" text-anchor="middle" class="t"><tspan x="712">Cableado</tspan><tspan x="712" dy="15">Abierto</tspan></text>
-                                    </g>
-                                    <g>
-                                    <rect x="30" y="494" width="18" height="13" rx="3" class="top"/>
-                                    <text x="54" y="504" class="lg">Evento tope</text>
-                                    <rect x="150" y="494" width="18" height="13" rx="3" class="mid"/>
-                                    <text x="174" y="504" class="lg">Evento intermedio</text>
-                                    <rect x="320" y="494" width="18" height="13" rx="3" class="bas"/>
-                                    <text x="344" y="504" class="lg">Evento básico</text>
-                                    <g transform="translate(470,492)"><path d="M2 1C7 5 7 12 2 16L15 16C21 12 21 5 15 1Z" class="g-or"/></g>
-                                    <text x="500" y="504" class="lg">Compuerta OR (≥1)</text>
-                                    <g transform="translate(625,492)"><path d="M1 1L12 1A8 8 0 0 1 12 17L1 17Z" class="g-and"/></g>
-                                    <text x="655" y="504" class="lg">Compuerta AND (Y)</text>
-                                    </g>
-                                    </svg>
+                                    <svg class="svg-fta" viewBox="0 0 800 400" width="100%" style="width:100%;height:auto;display:block;margin:0 auto" role="img" aria-label="Áu00e1rbol de fallos del sistema de iluminación" xmlns="http://www.w3.org/2000/svg">
+<style>
+.svg-fta text{font-family:'Inter','Segoe UI',Arial,sans-serif}
+.svg-fta .t{font-size:11px;fill:#1f2937}
+.svg-fta .tb{font-size:12px;font-weight:700;fill:#111827}
+.svg-fta .lg{font-size:11px;fill:#475569}
+.svg-fta .gl{font-size:11px;font-weight:700;letter-spacing:.4px}
+.svg-fta .top{fill:#fee2e2;stroke:#dc2626;stroke-width:2.5}
+.svg-fta .mid{fill:#dbeafe;stroke:#3b82f6;stroke-width:2}
+.svg-fta .bas{fill:#f8fafc;stroke:#64748b;stroke-width:2}
+.svg-fta .red{fill:#fee2e2;stroke:#dc2626;stroke-width:2}
+.svg-fta .ln{stroke:#475569;stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.svg-fta .g-or{fill:#fed7aa;stroke:#ea580c;stroke-width:2}
+.svg-fta .g-and{fill:#bfdbfe;stroke:#2563eb;stroke-width:2}
+.svg-fta .cap-or{fill:#c2410c}
+.svg-fta .cap-and{fill:#1d4ed8}
+.svg-fta .lbl{font-size:10px;font-style:italic;fill:#64748b}
+</style>
+<defs>
+<marker id="fts" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker>
+</defs>
+<g>
+<path d="M400 68L400 96" class="ln" marker-end="url(#fts)"/>
+<path d="M400 140L400 165" class="ln"/>
+<path d="M120 165L660 165" class="ln"/>
+<path d="M120 165L120 185" class="ln" marker-end="url(#fts)"/>
+<path d="M310 165L310 185" class="ln" marker-end="url(#fts)"/>
+<path d="M490 165L490 185" class="ln" marker-end="url(#fts)"/>
+<path d="M660 165L660 182" class="ln" marker-end="url(#fts)"/>
+<path d="M660 224L660 248" class="ln"/>
+<path d="M565 248L755 248" class="ln"/>
+<path d="M565 248L565 268" class="ln" marker-end="url(#fts)"/>
+<path d="M755 248L755 268" class="ln" marker-end="url(#fts)"/>
+</g>
+<g transform="translate(380,96)"><path d="M4 2C16 10 16 36 4 44L36 44C50 34 50 12 36 2Z" class="g-or"/></g>
+<text x="408" y="124" text-anchor="middle" class="gl cap-or">OR</text>
+<g transform="translate(642,182)"><path d="M2 2L18 2L18 42L2 42Z" class="g-and"/></g>
+<text x="660" y="210" text-anchor="middle" class="gl cap-and">AND</text>
+<g>
+<rect x="230" y="20" width="340" height="48" rx="10" class="top"/>
+<text x="400" y="49" text-anchor="middle" class="tb">Evento Tope: Sistema de Iluminación No Funciona</text>
+<rect x="45" y="185" width="150" height="54" rx="10" class="bas"/>
+<text x="120" y="207" text-anchor="middle" class="t"><tspan x="120">Falla de Suministro</tspan><tspan x="120" dy="14">Eléctrico General</tspan></text>
+<rect x="235" y="185" width="150" height="54" rx="10" class="bas"/>
+<text x="310" y="207" text-anchor="middle" class="t"><tspan x="310">Interruptor</tspan><tspan x="310" dy="14">Defectuoso</tspan></text>
+<rect x="415" y="185" width="150" height="54" rx="10" class="bas"/>
+<text x="490" y="207" text-anchor="middle" class="t"><tspan x="490">Cableado</tspan><tspan x="490" dy="14">Abierto</tspan></text>
+<rect x="495" y="268" width="140" height="52" rx="10" class="red"/>
+<text x="565" y="290" text-anchor="middle" class="t"><tspan x="565">Falla Bombilla</tspan><tspan x="565" dy="14">Principal</tspan></text>
+<rect x="685" y="268" width="140" height="52" rx="10" class="red"/>
+<text x="755" y="290" text-anchor="middle" class="t"><tspan x="755">Falla Bombilla</tspan><tspan x="755" dy="14">de Respaldo</tspan></text>
+<text x="660" y="340" text-anchor="middle" class="lbl">Sistema redundante: ambas deben fallar</text>
+</g>
+<g>
+<rect x="30" y="368" width="18" height="13" rx="3" class="top"/>
+<text x="54" y="378" class="lg">Evento tope</text>
+<rect x="150" y="368" width="18" height="13" rx="3" class="bas"/>
+<text x="174" y="378" class="lg">Evento básico</text>
+<rect x="280" y="368" width="18" height="13" rx="3" class="red"/>
+<text x="304" y="378" class="lg">Evento básico (rama redundante)</text>
+<g transform="translate(500,366)"><path d="M2 1C7 5 7 12 2 16L15 16C21 12 21 5 15 1Z" class="g-or"/></g>
+<text x="530" y="378" class="lg">Compuerta OR (falla si ocurre CUALQUIERA)</text>
+<g transform="translate(720,366)"><path d="M1 1L12 1A8 8 0 0 1 12 17L1 17Z" class="g-and"/></g>
+<text x="744" y="378" class="lg">AND (falla si ocurren TODAS)</text>
+</g>
+</svg>
                                 <ul class="list-none p-0">
-                                    <li class="fta-item" style="display:none"><strong>Evento Tope: Sistema de Iluminación No Funciona</strong>
-                                        <ul class="list-none">
-                                            <li class="fta-item" style="display:none"><strong>[O] Compuerta OR</strong> (Falla si ocurre CUALQUIERA de los siguientes)
-                                                <ul class="list-none">
-                                                    <li class="fta-item" style="display:none">Falla de Suministro Eléctrico General</li>
-                                                    <li class="fta-item" style="display:none">Falla en el Circuito de Iluminación
-                                                        <ul class="list-none">
-                                                            <li class="fta-item" style="display:none"><strong>[Y] Compuerta AND</strong> (Falla si ocurren TODOS los siguientes en un sistema redundante simple)
-                                                                 <ul class="list-none">
-                                                                    <li class="fta-item" style="display:none">Falla Bombilla Principal</li>
-                                                                    <li class="fta-item" style="display:none">Falla Bombilla de Respaldo</li>
-                                                                 </ul>
-                                                            </li>
-                                                            <li class="fta-item" style="display:none"><strong>[O] Compuerta OR</strong>
-                                                                <ul class="list-none">
-                                                                    <li class="fta-item" style="display:none">Interruptor Defectuoso</li>
-                                                                    <li class="fta-item" style="display:none">Cableado Abierto</li>
-                                                                </ul>
-                                                            </li>
-                                                        </ul>
-                                                    </li>
-                                                </ul>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                                <p class="text-xs mt-2 text-gray-600">Nota: [O] = Compuerta OR (sucede si alguna entrada ocurre). [Y] = Compuerta AND (sucede si todas las entradas ocurren).</p>
+    <li class="fta-item" style="display:none"><strong>Evento Tope: Sistema de Iluminación No Funciona</strong>
+        <ul class="list-none">
+            <li class="fta-item" style="display:none"><strong>[OR] Compuerta OR</strong> (falla si ocurre CUALQUIERA de las siguientes causas)
+                <ul class="list-none">
+                    <li class="fta-item" style="display:none">Falla de Suministro Eléctrico General</li>
+                    <li class="fta-item" style="display:none">Interruptor Defectuoso</li>
+                    <li class="fta-item" style="display:none">Cableado Abierto</li>
+                    <li class="fta-item" style="display:none"><strong>[AND] Compuerta AND</strong> — Sistema redundante: falla solo si AMBAS bombillas fallan
+                        <ul class="list-none">
+                            <li class="fta-item" style="display:none">Falla Bombilla Principal</li>
+                            <li class="fta-item" style="display:none">Falla Bombilla de Respaldo</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+</ul>
+<p class="text-xs mt-2 text-gray-600">Nota: [OR] = Compuerta OR (el evento superior ocurre si alguna entrada ocurre). [AND] = Compuerta AND (el evento superior ocurre solo si todas las entradas ocurren — sistema redundante).</p>
                             </div>
                         </div>
                     </div>
