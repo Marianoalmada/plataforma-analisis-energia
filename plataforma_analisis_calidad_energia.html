@@ -687,9 +687,10 @@
                 <div id="tab-ai-report" class="tab-content p-4 md:p-8 max-w-4xl mx-auto">
                     <div class="bg-white p-6 rounded-2xl shadow-xl border border-gray-200">
                         <h3 class="text-2xl font-bold text-indigo-700 mb-2">Generación de Reporte Experto con Inteligencia Artificial</h3>
-                        <p class="text-gray-600 mb-6">Interpreta los datos registrados por el equipo y genera un informe gerencial con recomendaciones de ingeniería industrial. Con OpenRouter accedés a cientos de modelos (Xiaomi MiMo, GPT, Claude, DeepSeek, Gemini...) con una sola API Key.</p>
+                        <p class="text-gray-600 mb-6" id="ai-tab-subtitle">Interpreta los datos registrados por el equipo y genera un informe gerencial con recomendaciones de ingeniería industrial.</p>
 
-                        <div class="space-y-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <!-- Configuración IA: SÓLO visible para el administrador -->
+                        <div id="ai-config-section" class="space-y-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
                             <div>
                                 <label for="ai-provider-select" class="block text-sm font-bold text-gray-700 mb-1">Proveedor de IA</label>
                                 <select id="ai-provider-select" class="form-select w-full"></select>
@@ -712,6 +713,12 @@
                                     Actualizar Modelos
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Info para usuarios no-admin: motor configurado por el administrador -->
+                        <div id="ai-config-info" class="hidden mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                            <p class="text-sm text-blue-800 font-semibold">🔒 Motor IA configurado por el administrador</p>
+                            <p class="text-xs text-blue-600 mt-1" id="ai-config-info-model">Cargando modelo...</p>
                         </div>
 
                         <div class="text-center">
@@ -2839,8 +2846,10 @@
             const modelSelect = document.getElementById('ai-model-select');
             const keyToUse = storedAIKey() || (aiApiKeyInput ? aiApiKeyInput.value : '');
 
-            // El endpoint personalizado puede no requerir key; los demás sí.
-            if (!keyToUse && activeAIProviderId !== 'custom') {
+            // Con sesión activa el proxy maneja la key del lado del servidor:
+            // no exigir key al usuario (sólo se pide en modo local sin sesión).
+            const hasProxy = !!(window.IEAuth && IEAuth.sb);
+            if (!keyToUse && !hasProxy && activeAIProviderId !== 'custom') {
                 showNotification(t('notif.api_key_missing'), "warning");
                 return;
             }
@@ -6426,6 +6435,25 @@ ${dataContext}`;
         // Tras el login: aplicar la configuración IA compartida del administrador
         // (proveedor + key + modelo) si el usuario no configuró una propia.
         IEAuth.onLogin((auth) => {
+            // OCULTAR configuración IA para usuarios no-admin: el motor lo
+            // configura el administrador desde el portal (index.html).
+            const configSection = document.getElementById('ai-config-section');
+            const configInfo = document.getElementById('ai-config-info');
+            if (auth.isAdmin) {
+                configSection.classList.remove('hidden');
+                configInfo.classList.add('hidden');
+            } else {
+                configSection.classList.add('hidden');
+                configInfo.classList.remove('hidden');
+                // Mostrar qué modelo está configurado
+                const modelEl = document.getElementById('ai-config-info-model');
+                if (auth.sharedAIConfig && auth.sharedAIConfig.model) {
+                    modelEl.textContent = 'Modelo activo: ' + auth.sharedAIConfig.model;
+                } else {
+                    modelEl.textContent = 'El administrador aún no configuró el motor IA.';
+                }
+            }
+
             const cfg = auth.sharedAIConfig;
             if (!cfg || !cfg.provider) return;
             // Aplicar el proveedor del admin si el usuario no eligió uno
