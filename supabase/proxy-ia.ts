@@ -12,36 +12,55 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// Contenido multimodal: string simple o array de partes OpenAI-compatible
+// ({type:'text',text} | {type:'image_url',image_url:{url:'data:mime;base64,...'}})
+function toGeminiParts(content) {
+  if (typeof content === 'string') return [{ text: content }];
+  const parts = [];
+  for (const p of content || []) {
+    if (p?.type === 'text') parts.push({ text: p.text || '' });
+    else if (p?.type === 'image_url') {
+      const m = String(p.image_url?.url || '').match(/^data:([^;]+);base64,(.+)$/);
+      if (m) parts.push({ inline_data: { mime_type: m[1], data: m[2] } });
+    }
+  }
+  return parts;
+}
+
 // Metadatos de proveedores: cómo construir la URL y parsear la respuesta
 const PROVIDERS = {
   xiaomi: {
     chatUrl: (baseUrl) => baseUrl + '/chat/completions',
-    buildBody: (model, messages) => JSON.stringify({ model, messages }),
+    buildBody: (model, messages, maxTokens) =>
+      JSON.stringify({ model, messages, ...(maxTokens ? { max_tokens: maxTokens } : {}) }),
     parseResponse: (data) => data.choices?.[0]?.message?.content || '',
     headers: (key) => ({ 'Authorization': 'Bearer ' + key })
   },
   gemini: {
     chatUrl: (baseUrl, model, key) => `${baseUrl}/models/${model}:generateContent?key=${key}`,
-    buildBody: (model, messages) => {
+    buildBody: (model, messages, maxTokens) => {
       const system = messages.find(m => m.role === 'system');
       const user = messages.filter(m => m.role !== 'system');
       return JSON.stringify({
-        contents: user.map(m => ({ parts: [{ text: m.content }] })),
-        systemInstruction: system ? { parts: [{ text: system.content }] } : undefined
+        contents: user.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) })),
+        systemInstruction: system ? { parts: toGeminiParts(system.content) } : undefined,
+        generationConfig: maxTokens ? { maxOutputTokens: maxTokens } : undefined
       });
     },
-    parseResponse: (data) => data.candidates?.[0]?.content?.parts?.[0]?.text || '',
+    parseResponse: (data) => (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join(''),
     headers: () => ({})
   },
   openrouter: {
     chatUrl: (baseUrl) => baseUrl + '/chat/completions',
-    buildBody: (model, messages) => JSON.stringify({ model, messages }),
+    buildBody: (model, messages, maxTokens) =>
+      JSON.stringify({ model, messages, ...(maxTokens ? { max_tokens: maxTokens } : {}) }),
     parseResponse: (data) => data.choices?.[0]?.message?.content || '',
     headers: (key) => ({ 'Authorization': 'Bearer ' + key, 'X-Title': 'Portal IE' })
   },
   custom: {
     chatUrl: (baseUrl) => baseUrl + '/chat/completions',
-    buildBody: (model, messages) => JSON.stringify({ model, messages }),
+    buildBody: (model, messages, maxTokens) =>
+      JSON.stringify({ model, messages, ...(maxTokens ? { max_tokens: maxTokens } : {}) }),
     parseResponse: (data) => data.choices?.[0]?.message?.content || '',
     headers: (key) => key ? ({ 'Authorization': 'Bearer ' + key }) : ({})
   }
@@ -70,13 +89,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'sin-configuracion-ia', message: 'El administrador no configuró el motor de IA aún.' }), { status: 400, headers: CORS });
     }
 
-    // 3. Recibir el mensaje del cliente
-    const { messages, model: requestModel } = await req.json();
+    // 3. Recibir el mensaje del cliente (texto y/o imágenes data-URL)
+    const { messages, model: requestModel, max_tokens: requestMaxTokens } = await req.json();
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       throw new Error('messages requerido');
     }
     const model = requestModel || cfg.model;
     if (!model) throw new Error('sin modelo configurado');
+    // Tope de seguridad: las apps de visión piden 3000; nada por encima de 8000
+    const maxTokens = Math.min(Number(requestMaxTokens) || 0, 8000) || undefined;
 
     // 4. Construir y enviar la petición al proveedor
     const provider = PROVIDERS[cfg.provider] || PROVIDERS.custom;
@@ -102,7 +123,7 @@ Deno.serve(async (req) => {
     const aiResponse = await fetch(url, {
       method: 'POST',
       headers: aiHeaders,
-      body: provider.buildBody(model, messages)
+      body: provider.buildBody(model, messages, maxTokens)
     });
 
     const aiData = await aiResponse.json();

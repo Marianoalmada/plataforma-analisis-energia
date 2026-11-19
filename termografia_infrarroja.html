@@ -1,0 +1,2578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Termografía IR — Portal de Herramientas IE</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+tailwind.config = {
+    darkMode: 'class',
+    theme: {
+        extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+            colors: {
+                thermal: { purple: '#9c1c6b', magenta: '#d4366b', orange: '#e96115', yellow: '#f8cc1b', white: '#fdf6e3' }
+            }
+        }
+    }
+};
+</script>
+<style>
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glass-panel { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06); }
+    .glass-btn { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; }
+    .glass-btn:hover { background: #fff7ed; border-color: #e96115; }
+    .glass-btn.active { background: linear-gradient(135deg, #e96115, #f8cc1b); color: #1e1500; border-color: transparent; font-weight: 600; }
+    .glass-input { background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; }
+    .glass-input:focus { outline: none; border-color: #e96115; box-shadow: 0 0 0 2px rgba(233, 97, 21, 0.15); }
+    .tool-btn.active { background: linear-gradient(135deg, #e96115, #f8cc1b); color: #1e1500; border-color: transparent; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 3px; }
+    .img-card { cursor: pointer; transition: all .15s ease; }
+    .img-card:hover { border-color: rgba(233, 97, 21, 0.55); }
+    .img-card.active { border-color: #f8cc1b; box-shadow: 0 0 0 1px #f8cc1b, 0 4px 18px rgba(248, 204, 27, 0.15); }
+    #mainCanvas { image-rendering: auto; cursor: crosshair; }
+    .badge { font-size: 10px; padding: 1px 7px; border-radius: 999px; }
+    table.meta td { padding: 3px 6px; }
+    .section-title { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #94a3b8; font-weight: 600; }
+    @media print {
+        .no-print { display: none !important; }
+        #btn-auth-user, #auth-gate { display: none !important; }
+        body { background: #fff !important; color: #000 !important; }
+        #reportModal:not(.hidden) { position: static !important; background: #fff !important; padding: 0 !important; overflow: visible !important; }
+        #reportModal > div { max-width: 100% !important; border-radius: 0 !important; padding: 0 !important; box-shadow: none !important; }
+        /* Una página A4 vertical por imagen */
+        @page { size: A4 portrait; margin: 10mm; }
+        .rep-page {
+            width: 100% !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            page-break-after: always;
+            break-after: page;
+        }
+        .rep-page:last-child { page-break-after: auto; break-after: auto; }
+        /* Compactación: una termografía = una sola hoja */
+        .rep-page .rp-img { max-height: 46mm; object-fit: contain; margin: 0 auto; }
+        .rep-page .rp-chart { max-height: 30mm; object-fit: contain; margin: 0 auto; }
+        .rep-page table.meta td { padding: 1px 4px; }
+        .rep-page .rp-box { padding: 4px 6px; }
+        .rep-page .rp-gap > * + * { margin-top: 4px; }
+    }
+</style>
+</head>
+<body class="min-h-screen text-slate-800">
+
+<!-- ══════════════ TOOLBAR (arriba) ══════════════ -->
+<header class="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div class="max-w-[1800px] mx-auto px-4 py-2.5 flex items-center gap-3 flex-wrap">
+        <a href="index.html" class="no-print inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs font-semibold" title="Volver al Portal de Herramientas IE">← Portal IE</a>
+        <div class="flex items-center gap-2 mr-2">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#9c1c6b,#e96115,#f8cc1b)">
+                <i data-lucide="thermometer" class="w-4.5 h-4.5 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold leading-none">Termografía IR</h1>
+                <p class="text-[9px] text-slate-500 leading-none mt-0.5">Analizador Termográfico · IE</p>
+            </div>
+        </div>
+
+        <div class="h-7 w-px bg-slate-200 hidden md:block"></div>
+
+        <!-- Carga (oculta: se activa desde el ⊕ de la lista de imágenes) -->
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
+
+        <div class="h-7 w-px bg-slate-200 hidden md:block"></div>
+
+        <!-- Tools -->
+        <div class="flex items-center gap-1">
+            <button data-tool="spot" class="tool-btn active inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs" title="Punto de medición">
+                <i data-lucide="crosshair" class="w-3.5 h-3.5"></i><span class="hidden lg:inline">Punto</span>
+            </button>
+            <button data-tool="delta" class="tool-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs" title="Delta de 2 puntos (coloca 2 puntos y muestra ΔT)">
+                <i data-lucide="git-compare-arrows" class="w-3.5 h-3.5"></i><span class="hidden lg:inline">Δ 2 puntos</span>
+            </button>
+            <button data-tool="roi" class="tool-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs" title="Zona rectangular (ROI) con estadísticas">
+                <i data-lucide="square-dashed" class="w-3.5 h-3.5"></i><span class="hidden lg:inline">Zona</span>
+            </button>
+            <button data-tool="line" class="tool-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs" title="Línea de perfil térmico">
+                <i data-lucide="chart-no-axes-column-increasing" class="w-3.5 h-3.5"></i><span class="hidden lg:inline">Perfil</span>
+            </button>
+            <button data-tool="fusion" class="tool-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs" title="Fusión IR + visible (crossfade, alineación y relieve Laplace)">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i><span class="hidden lg:inline">Fusión</span>
+            </button>
+            <button id="btnClearTools" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs text-slate-700" title="Limpiar herramientas de esta imagen (puntos, delta, zonas y perfil)">
+                <i data-lucide="eraser" class="w-3.5 h-3.5"></i><span class="hidden lg:inline">Limpiar</span>
+            </button>
+        </div>
+
+        <div class="h-7 w-px bg-slate-200 hidden md:block"></div>
+
+        <!-- Escala -->
+        <div class="flex items-center gap-1.5">
+            <span class="text-[10px] text-slate-500">Escala °C</span>
+            <input id="scaleMin" type="number" step="0.1" value="80.0" class="glass-input w-[68px] rounded px-1.5 py-1 text-xs mono text-amber-600 font-bold">
+            <span class="text-slate-600 text-xs">→</span>
+            <input id="scaleMax" type="number" step="0.1" value="166.8" class="glass-input w-[68px] rounded px-1.5 py-1 text-xs mono text-amber-600 font-bold">
+            <button id="btnAutoScale" class="px-2 py-1 rounded-lg glass-btn text-[10px] text-amber-600" title="Auto-escala P2–P98 de la escena">Auto</button>
+        </div>
+
+        <div class="h-7 w-px bg-slate-200 hidden md:block"></div>
+
+        <!-- Paleta de colores -->
+        <div class="flex items-center gap-1.5">
+            <span class="text-[10px] text-slate-500">Paleta</span>
+            <select id="selPalette" class="glass-input rounded px-1.5 py-1 text-[10px] text-amber-600" title="Paleta de colores del termograma">
+                <option value="ironbow" selected>Ironbow</option>
+                <option value="whitehot">B caliente</option>
+                <option value="blackhot">N caliente</option>
+                <option value="lava">Lava</option>
+                <option value="sky">Cielo</option>
+            </select>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- Acciones -->
+        <div class="live-readout hidden md:flex items-center gap-3 mr-2 mono text-[11px]">
+            <span class="text-slate-500">T:</span><span id="liveTemp" class="text-amber-600 font-bold">—</span>
+            <span class="text-slate-500">x,y:</span><span id="liveCoords" class="text-slate-500">—</span>
+        </div>
+        <button id="btnAiSettings" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-white text-xs font-semibold" style="background:linear-gradient(135deg,#9c1c6b,#e96115)" title="Configurar IA experto">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> IA
+        </button>
+        <button id="btnSetup" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs text-slate-800" title="Configurar logo, empresa, termógrafo y datos del informe">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i> Setup
+        </button>
+        <button id="btnOpenReport" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold" style="background:linear-gradient(135deg,#e96115,#f8cc1b)">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Reporte
+        </button>
+    </div>
+</header>
+
+<!-- ══════════════ LAYOUT: lista | canvas | datos ══════════════ -->
+<main class="no-print max-w-[1800px] mx-auto p-3 grid gap-3" style="grid-template-columns: 240px minmax(0,1fr) 360px; align-items:start;">
+
+    <!-- ─── IZQUIERDA: lista de imágenes ─── -->
+    <aside class="glass-panel rounded-xl p-2.5 space-y-2" style="max-height:calc(100vh - 90px); overflow-y:auto;">
+        <div class="flex items-center justify-between px-1">
+            <span class="section-title">Imágenes</span>
+            <span id="imgCount" class="badge bg-slate-200 text-slate-700 mono">0</span>
+        </div>
+        <div id="imageList" class="space-y-2">
+            <div id="imgListEmpty" class="text-[11px] text-slate-500 text-center py-8 leading-relaxed px-2">
+                <i data-lucide="images" class="w-8 h-8 mx-auto mb-2 text-slate-700"></i>
+                Abre imágenes IR + visibles.<br>Se agruparán en parejas automáticamente<br>
+                <span class="text-slate-600 mono text-[10px]">ej. 20260930144524-IR.jpg<br>+ 20260930144524-DC.jpg</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ─── CENTRO: imagen grande ─── -->
+    <section class="glass-panel rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 min-w-0">
+                <h2 id="canvasTitle" class="text-sm font-semibold truncate text-slate-800">Sin imagen</h2>
+                <span id="badgeScale" class="badge bg-amber-100 text-amber-600 border border-amber-300 mono hidden">Manual</span>
+                <span id="badgeRad" class="badge bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 mono hidden">Radiométrico</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+            </div>
+        </div>
+        <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-black flex items-center justify-center" style="min-height:320px;">
+            <canvas id="mainCanvas" width="640" height="480" class="w-full h-auto"></canvas>
+            <div id="canvasEmpty" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 pointer-events-none">
+                <i data-lucide="image-plus" class="w-12 h-12 mb-2"></i>
+                <p class="text-xs">Carga una termografía IR para comenzar</p>
+            </div>
+        </div>
+        <!-- Barra de escala de temperatura (degradado ironbow) -->
+        <div id="tempScaleBar" class="flex items-center gap-2 text-[10px] mono">
+            <span id="tempScaleMin" class="text-slate-500 w-12 text-right">—</span>
+            <div class="relative h-3 flex-1 rounded-full overflow-hidden border border-slate-200" style="background:linear-gradient(to right,#000000,#1b0038,#4a005f,#7d1063,#b3285d,#d9553f,#f28c28,#f9c11c,#fff6b0,#ffffff)"></div>
+            <span id="tempScaleMax" class="text-slate-500 w-12">—</span>
+            <span class="text-slate-600">°C</span>
+        </div>
+        <!-- Pareja visible bajo la imagen -->
+        <div id="visiblePairBar" class="hidden flex items-center gap-2 text-[11px] text-slate-500">
+            <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+            <span>Visible asociada:</span>
+            <span id="visiblePairName" class="mono text-slate-700"></span>
+            <button id="btnToggleVisible" class="ml-auto px-2 py-0.5 rounded glass-btn text-[10px]">Ver visible</button>
+        </div>
+        <!-- Controles de fusión IR + visible -->
+        <div id="fusionPanel" class="hidden glass-panel rounded-lg p-2.5 space-y-2">
+            <div class="flex items-center gap-2">
+                <span class="section-title">Fusión IR + visible</span>
+                <button id="btnFusionReset" class="ml-auto px-2 py-0.5 rounded glass-btn text-[10px] text-slate-700" title="Restablecer fusión (mezcla 50 %, sin desplazamiento ni relieve)">Reset</button>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <label class="flex items-center gap-2 text-[10px] text-slate-500">
+                    <span class="w-14 shrink-0">Crossfade</span>
+                    <input id="fusionMix" type="range" min="0" max="100" value="50" class="flex-1 accent-amber-500">
+                    <span id="fusionMixVal" class="mono text-amber-600 w-9 text-right">50 %</span>
+                </label>
+                <label class="flex items-center gap-2 text-[10px] text-slate-500">
+                    <span class="w-14 shrink-0">Relieve</span>
+                    <input id="fusionRelief" type="range" min="0" max="100" value="35" class="flex-1 accent-amber-500">
+                    <span id="fusionReliefVal" class="mono text-amber-600 w-9 text-right">35 %</span>
+                </label>
+                <label class="flex items-center gap-2 text-[10px] text-slate-500">
+                    <span class="w-14 shrink-0">Alinea X</span>
+                    <input id="fusionDx" type="range" min="-120" max="120" value="0" class="flex-1 accent-amber-500">
+                    <span id="fusionDxVal" class="mono text-amber-600 w-9 text-right">0</span>
+                </label>
+                <label class="flex items-center gap-2 text-[10px] text-slate-500">
+                    <span class="w-14 shrink-0">Alinea Y</span>
+                    <input id="fusionDy" type="range" min="-120" max="120" value="0" class="flex-1 accent-amber-500">
+                    <span id="fusionDyVal" class="mono text-amber-600 w-9 text-right">0</span>
+                </label>
+            </div>
+            <p class="text-[9px] text-slate-500 leading-snug">Los contornos de la imagen visible (Laplace) realzan el contraste de la IR fusionada. Ajusta X/Y hasta alinear ambas.</p>
+        </div>
+    </section>
+
+    <!-- ─── DERECHA: metadatos + tools + observaciones ─── -->
+    <aside class="space-y-3" style="max-height:calc(100vh - 90px); overflow-y:auto;">
+
+        <!-- Equipo / metadatos -->
+        <div class="glass-panel rounded-xl p-3 space-y-2">
+            <span class="section-title">Equipo y metadatos</span>
+            <div>
+                <label class="text-[10px] text-slate-500">Equipo inspeccionado (aparece en el encabezado del reporte)</label>
+                <input id="inpAsset" type="text" placeholder="ej. TRAFO-01 Sala de Fuerza" class="glass-input w-full rounded px-2 py-1.5 text-xs mt-0.5">
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-500">Nombre del termógrafo</label>
+                <input id="inpThermographer" type="text" placeholder="Configúralo en Setup" class="glass-input w-full rounded px-2 py-1.5 text-xs mt-0.5">
+            </div>
+            <table class="meta w-full text-[11px] mono">
+                <tr><td class="text-slate-500 w-[92px]">Archivo IR</td><td id="metaIrName" class="text-slate-800 truncate">—</td></tr>
+                <tr><td class="text-slate-500">Visible</td><td id="metaDcName" class="text-slate-800 truncate">—</td></tr>
+                <tr><td class="text-slate-500">Fecha</td><td id="metaDate" class="text-slate-800">—</td></tr>
+                <tr><td class="text-slate-500">Dispositivo</td><td id="metaDevice" class="text-slate-800">—</td></tr>
+                <tr><td class="text-slate-500">Nº serie</td><td id="metaSerial" class="text-slate-800">—</td></tr>
+                <tr><td class="text-slate-500">Resolución</td><td id="metaRes" class="text-slate-800">—</td></tr>
+                <tr><td class="text-slate-500">Escala</td><td id="metaScale" class="text-amber-600">—</td></tr>
+            </table>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] text-slate-500">Emisividad ε</label>
+                    <input id="inpEmissivity" type="number" step="0.01" min="0.1" max="1" value="0.95" class="glass-input w-full rounded px-2 py-1 text-xs mono">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-500">T reflejada °C</label>
+                    <input id="inpTRefl" type="number" step="0.1" value="25.0" class="glass-input w-full rounded px-2 py-1 text-xs mono">
+                </div>
+            </div>
+        </div>
+
+        <!-- Mediciones (tools) -->
+        <div class="glass-panel rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+                <span class="section-title">Mediciones</span>
+                <span id="toolHint" class="text-[9px] text-slate-500"></span>
+            </div>
+
+            <!-- Puntos -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] text-slate-500 font-medium">Puntos de medición</span>
+                    <button id="btnClearSpots" class="text-[9px] text-slate-500 hover:text-rose-400">vaciar</button>
+                </div>
+                <table class="w-full text-[10px] mono">
+                    <thead><tr class="text-slate-500 border-b border-slate-200"><th class="text-left font-normal py-1">#</th><th class="text-left font-normal">x,y</th><th class="text-right font-normal">T °C</th></tr></thead>
+                    <tbody id="spotsTable"><tr><td colspan="3" class="text-slate-600 text-center py-1.5">Sin puntos</td></tr></tbody>
+                </table>
+            </div>
+
+            <!-- Delta 2 puntos -->
+            <div id="deltaBox" class="bg-slate-100 rounded-lg p-2 space-y-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-slate-500 font-medium">Delta 2 puntos</span>
+                    <button id="btnClearDelta" class="text-[9px] text-slate-500 hover:text-rose-400">vaciar</button>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[11px] mono text-center">
+                    <div><div class="text-slate-500 text-[9px]">T1</div><div id="deltaT1" class="text-orange-300 font-bold">—</div></div>
+                    <div><div class="text-slate-500 text-[9px]">T2</div><div id="deltaT2" class="text-orange-300 font-bold">—</div></div>
+                    <div><div class="text-slate-500 text-[9px]">ΔT</div><div id="deltaVal" class="text-amber-600 font-bold">—</div></div>
+                </div>
+            </div>
+
+            <!-- ROI -->
+            <div id="roiBox" class="hidden bg-slate-100 rounded-lg p-2">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] text-slate-500 font-medium">Zona (ROI)</span>
+                    <button id="btnClearRoi" class="text-[9px] text-slate-500 hover:text-rose-400">vaciar</button>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[11px] mono text-center">
+                    <div><div class="text-slate-500 text-[9px]">Mín</div><div id="roiMin" class="text-cyan-600">—</div></div>
+                    <div><div class="text-slate-500 text-[9px]">Media</div><div id="roiAvg" class="text-cyan-600">—</div></div>
+                    <div><div class="text-slate-500 text-[9px]">Máx</div><div id="roiMax" class="text-cyan-600">—</div></div>
+                </div>
+            </div>
+
+            <!-- Perfil -->
+            <div id="profileBox" class="hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] text-slate-500 font-medium">Perfil térmico</span>
+                    <button id="btnClearProfile" class="text-[9px] text-slate-500 hover:text-rose-400">vaciar</button>
+                </div>
+                <canvas id="profileChart" height="110"></canvas>
+            </div>
+        </div>
+
+        <!-- Histograma / estadísticas -->
+        <div class="glass-panel rounded-xl p-3 space-y-2">
+            <span class="section-title">Estadísticas de escena</span>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-slate-100 rounded-lg p-1.5"><div class="text-[9px] text-slate-500">Mín</div><div id="statMin" class="text-xs mono text-cyan-600 font-bold">—</div></div>
+                <div class="bg-slate-100 rounded-lg p-1.5"><div class="text-[9px] text-slate-500">Media</div><div id="statAvg" class="text-xs mono text-cyan-600 font-bold">—</div></div>
+                <div class="bg-slate-100 rounded-lg p-1.5"><div class="text-[9px] text-slate-500">Máx</div><div id="statMax" class="text-xs mono text-amber-600 font-bold">—</div></div>
+            </div>
+            <canvas id="histogramChart" height="110"></canvas>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="glass-panel rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="section-title">Observaciones</span>
+                <select id="selCondition" class="glass-input rounded px-1.5 py-0.5 text-[10px]">
+                    <option>Normal - Operación Estable</option>
+                    <option selected>Atención - Seguimiento Programado</option>
+                    <option>Atención Urgente - Intervención Prioritaria</option>
+                    <option>Crítico - Acción Prioritaria</option>
+                </select>
+            </div>
+            <textarea id="txtNotes" rows="4" placeholder="Observaciones del termógrafo…" class="glass-input w-full rounded-lg px-2.5 py-2 text-xs resize-y"></textarea>
+            <div class="flex items-center justify-between">
+                <span class="section-title">Recomendaciones</span>
+            </div>
+            <textarea id="txtRecs" rows="4" placeholder="Recomendaciones del termógrafo (apriete de borneras, torque, seguimiento…)…" class="glass-input w-full rounded-lg px-2.5 py-2 text-xs resize-y"></textarea>
+            <button id="btnGenerateAi" class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-white text-xs font-semibold" style="background:linear-gradient(135deg,#9c1c6b,#e96115)">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Generar análisis con IA (experto termógrafo)
+            </button>
+            <div id="aiBlock" class="hidden bg-slate-100 rounded-lg p-2.5 space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-amber-600 font-semibold">Análisis IA</span>
+                    <span id="aiMeta" class="text-[9px] text-slate-500 mono"></span>
+                </div>
+                <div id="aiText" class="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<!-- ══════════════ MODAL: configuración IA ══════════════ -->
+<div id="aiSettingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+    <div class="glass-panel rounded-2xl p-5 w-full max-w-md space-y-3">
+        <h3 class="text-sm font-bold">Configuración — IA Experto Termógrafo</h3>
+        <div>
+            <label class="text-[10px] text-slate-500">Proveedor</label>
+            <select id="aiProvider" class="glass-input w-full rounded px-2 py-1.5 text-xs mt-0.5">
+                <option value="xiaomi">Xiaomi MiMo</option>
+                <option value="openai">OpenAI</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="custom">Endpoint OpenAI-compatible</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-[10px] text-slate-500">Modelo</label>
+            <div class="flex gap-1.5">
+                <select id="aiModel" class="glass-input flex-1 rounded px-2 py-1.5 text-xs mono mt-0.5">
+                    <option value="mimo-v2.6-flash">Xiaomi MiMo 2.6 Flash</option>
+                    <option value="mimo-v2.6-pro">Xiaomi MiMo 2.6 Pro</option>
+                </select>
+                <button id="btnRefreshModels" class="px-2 py-1.5 rounded-lg glass-btn text-[10px] text-slate-700 mt-0.5" title="Actualizar el listado de modelos desde la API">Actualizar</button>
+            </div>
+            <input id="aiModelCustom" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs mono mt-1.5 hidden" placeholder="id del modelo">
+        </div>
+        <div>
+            <label class="text-[10px] text-slate-500">API Key</label>
+            <input id="aiApiKey" type="password" class="glass-input w-full rounded px-2 py-1.5 text-xs mono mt-0.5">
+        </div>
+        <div id="aiEndpointWrap" class="hidden">
+            <label class="text-[10px] text-slate-500">Endpoint</label>
+            <input id="aiEndpoint" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs mono mt-0.5" placeholder="https://.../v1">
+        </div>        <div class="flex gap-2 pt-1">
+            <button id="btnCancelAiSettings" class="flex-1 px-3 py-2 rounded-lg glass-btn text-xs">Cancelar</button>
+            <button id="btnSaveAiSettings" class="flex-1 px-3 py-2 rounded-lg text-white text-xs font-semibold" style="background:linear-gradient(135deg,#e96115,#f8cc1b)">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ MODAL: Setup (logo, empresas, termógrafo) ══════════════ -->
+<div id="setupModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-auto">
+    <div class="glass-panel rounded-2xl p-5 w-full max-w-lg space-y-3 my-8">
+        <h3 class="text-sm font-bold">Setup — Datos del informe</h3>
+
+        <!-- Logo de mi empresa -->
+        <div class="rounded-xl border border-slate-200 p-3 space-y-2">
+            <div class="section-title">Logo de mi empresa (carátula y páginas del informe)</div>
+            <div class="flex items-center gap-3">
+                <img id="setupLogoPreview" class="hidden h-12 object-contain bg-white/90 rounded px-2 py-1">
+                <div class="flex gap-2">
+                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass-btn text-xs cursor-pointer">
+                        <i data-lucide="image-plus" class="w-3.5 h-3.5"></i> Cargar logo
+                        <input id="setupLogoInput" type="file" accept="image/*" class="hidden">
+                    </label>
+                    <button id="setupLogoRemove" class="px-2 py-1.5 rounded-lg glass-btn text-xs hidden">Quitar logo</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mi empresa (IE) -->
+        <div class="rounded-xl border border-slate-200 p-3 space-y-2">
+            <div class="section-title">Mi empresa — datos del termógrafo / contratista</div>
+            <input id="setupCompany" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="Nombre de mi empresa (ej. Ingeniería Eléctrica S.A.S.)">
+            <div class="grid grid-cols-2 gap-2">
+                <input id="setupCompanyNit" type="text" class="glass-input rounded px-2 py-1.5 text-xs" placeholder="NIT / RUT">
+                <input id="setupCompanyTel" type="text" class="glass-input rounded px-2 py-1.5 text-xs" placeholder="Teléfono">
+            </div>
+            <input id="setupCompanyAddr" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="Dirección">
+            <input id="setupCompanyMail" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="Correo / web">
+            <input id="setupThermographer" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="Nombre del termógrafo (ej. Ing. María Pérez — Nivel II)">
+            <input id="setupThermographerCert" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="Certificación / nivel (ej. Nivel II ISO 18436-2)">
+        </div>
+
+        <!-- Empresa cliente -->
+        <div class="rounded-xl border border-slate-200 p-3 space-y-2">
+            <div class="section-title">Empresa a la que se le realiza la termografía (carátula)</div>
+            <input id="setupClient" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="Nombre de la empresa cliente">
+            <input id="setupClientNit" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="NIT / identificación (opcional)">
+            <input id="setupClientAddr" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs" placeholder="Sitio / dirección (opcional)">
+        </div>
+
+        <div class="flex gap-2 pt-1">
+            <button id="btnCancelSetup" class="flex-1 px-3 py-2 rounded-lg glass-btn text-xs">Cancelar</button>
+            <button id="btnSaveSetup" class="flex-1 px-3 py-2 rounded-lg text-white text-xs font-semibold" style="background:linear-gradient(135deg,#e96115,#f8cc1b)">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ MODAL: reporte ══════════════ -->
+<div id="reportModal" class="hidden fixed inset-0 z-50 bg-black/80 p-4 overflow-auto">
+    <div class="max-w-4xl mx-auto space-y-5">
+        <div class="flex items-center justify-between bg-white text-slate-900 rounded-2xl p-4 no-print">
+            <div>
+                <h2 class="text-lg font-bold">Informe de Análisis Termográfico</h2>
+                <p class="text-xs text-slate-500">Inteligencia Energética (IE) — <span id="repCount"></span> — generado <span id="repNow"></span></p>
+            </div>
+            <div class="flex gap-2 items-center">
+                <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-semibold">Imprimir</button>
+                <button id="btnCloseReport" class="px-3 py-1.5 rounded-lg bg-slate-200 text-xs">Cerrar</button>
+            </div>
+        </div>
+        <div id="repPages" class="space-y-6"></div>
+    </div>
+</div>
+
+<!-- Plantilla de la caratula A4 (primera pagina del informe) -->
+<template id="tplCoverPage">
+    <div class="rep-page bg-white text-slate-900 rounded-2xl p-8 flex flex-col">
+        <!-- Logo de mi empresa centrado -->
+        <div class="flex justify-center pt-6">
+            <img data-f="logo" class="hidden max-h-24 object-contain">
+        </div>
+        <!-- Nombre de la empresa cliente, debajo del logo -->
+        <div class="text-center mt-8">
+            <div class="text-xs tracking-widest text-slate-500 uppercase">Informe de termografía para</div>
+            <h1 class="text-3xl font-bold mt-2" data-f="clientName"></h1>
+            <div class="text-sm text-slate-600 mt-1" data-f="clientInfo"></div>
+        </div>
+        <!-- Titulo -->
+        <div class="text-center mt-10">
+            <div class="h-px w-40 mx-auto bg-slate-300"></div>
+            <h2 class="text-2xl font-semibold mt-6">Análisis Termográfico</h2>
+            <div class="text-base text-slate-600 mt-2">Inspección termográfica predictiva de instalaciones eléctricas</div>
+            <!-- Fechas de medicion (rango si hay varias) -->
+            <div class="mt-8 inline-block border border-slate-300 rounded-xl px-8 py-4">
+                <div class="text-xs tracking-widest text-slate-500 uppercase">Fechas de medición</div>
+                <div class="text-xl font-semibold mono mt-1" data-f="dateRange"></div>
+            </div>
+        </div>
+        <!-- Datos: termografo + empresa IE -->
+        <div class="mt-auto pt-10">
+            <div class="grid grid-cols-2 gap-8 border-t border-slate-200 pt-6">
+                <div>
+                    <div class="section-title text-slate-500">Termógrafo</div>
+                    <div class="text-sm font-semibold mt-1" data-f="thermographer"></div>
+                    <div class="text-xs text-slate-600" data-f="thermographerCert"></div>
+                </div>
+                <div>
+                    <div class="section-title text-slate-500">Empresa ejecutora</div>
+                    <div class="text-sm font-semibold mt-1" data-f="companyName"></div>
+                    <div class="text-xs text-slate-600" data-f="companyInfo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Plantilla de una página A4 del reporte (una por imagen) -->
+<template id="tplReportPage">
+    <div class="rep-page bg-white text-slate-900 rounded-2xl p-8 rp-gap">
+        <div class="flex items-start justify-between border-b border-slate-200 pb-2">
+            <div>
+                <img data-f="logo" class="hidden max-h-10 mb-1.5 object-contain">
+                <h3 class="text-sm font-bold">Análisis Termográfico — <span data-f="title"></span></h3>
+                <p class="text-[10px] text-slate-500">Inteligencia Energética (IE) — generado <span data-f="now"></span></p>
+            </div>
+            <div class="text-right">
+                <div class="text-[9px] text-slate-500">Equipo inspeccionado</div>
+                <div class="text-[11px] font-semibold mono" data-f="equipment"></div>
+                <div class="text-[9px] text-slate-500 mt-1">Termógrafo</div>
+                <div class="text-[11px] font-semibold mono" data-f="thermographer"></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <h4 class="text-[10px] font-bold mb-1">Termografía IR</h4>
+                <img data-f="irImg" class="rp-img w-full rounded border border-slate-200">
+                <div class="flex items-center gap-2 text-[9px] mono mt-0.5">
+                    <span data-f="scaleMin" class="w-12 text-right text-slate-600"></span>
+                    <div class="flex-1 h-2.5 rounded" data-f="scaleGrad" style="background:linear-gradient(to right,#000000,#2d005a,#780078,#b91450,#eb5a14,#faaf19,#fcde5a,#ffffff)"></div>
+                    <span data-f="scaleMax" class="w-12 text-slate-600"></span>
+                </div>
+            </div>
+            <div><h4 class="text-[10px] font-bold mb-1">Imagen visible</h4><img data-f="dcImg" class="rp-img w-full rounded border border-slate-200"><p data-f="dcName" class="text-[9px] text-slate-500 mono mt-0.5"></p></div>
+        </div>
+        <table class="w-full text-[10px] meta"><tbody data-f="metaTable"></tbody></table>
+        <div class="grid grid-cols-2 gap-3">
+            <div data-f="histWrap">
+                <h4 class="text-[10px] font-bold mb-1">Histograma térmico</h4>
+                <img data-f="histImg" class="rp-chart w-full rounded border border-slate-200">
+            </div>
+            <div data-f="profWrap" class="hidden">
+                <h4 class="text-[10px] font-bold mb-1">Perfil térmico</h4>
+                <img data-f="profImg" class="rp-chart w-full rounded border border-slate-200">
+            </div>
+        </div>
+        <div>
+            <h4 class="text-[10px] font-bold mb-1">Mediciones</h4>
+            <table class="w-full text-[10px] border border-slate-200 rounded">
+                <thead><tr class="bg-slate-100"><th class="text-left p-1">Tipo</th><th class="text-left p-1">Detalle</th><th class="text-right p-1">Temperatura</th></tr></thead>
+                <tbody data-f="measures"></tbody>
+            </table>
+        </div>
+        <div>
+            <h4 class="text-[10px] font-bold mb-1">Condición: <span data-f="condition" class="text-orange-700"></span></h4>
+            <div class="text-[10px] leading-snug whitespace-pre-wrap bg-slate-50 rounded rp-box border border-slate-200" data-f="notes"></div>
+        </div>
+        <div>
+            <h4 class="text-[10px] font-bold mb-1">Recomendaciones</h4>
+            <div class="text-[10px] leading-snug whitespace-pre-wrap bg-slate-50 rounded rp-box border border-slate-200" data-f="recs"></div>
+        </div>
+        <div data-f="aiWrap" class="hidden">
+            <h4 class="text-[10px] font-bold mb-1">Análisis IA — Experto Termógrafo</h4>
+            <div class="text-[10px] leading-snug whitespace-pre-wrap bg-amber-50 rounded rp-box border border-amber-200" data-f="aiText"></div>
+        </div>
+    </div>
+</template>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   Termografía IR — motor de análisis termográfico (Portal IE)
+   ══════════════════════════════════════════════════════════════════ */
+(() => {
+    'use strict';
+
+    const CANVAS_W = 640, CANVAS_H = 480;
+
+    // ── LUT de paletas (256 niveles) ────────────────────────────────
+    // Paletas estándar de termografía. Ironbow es la paleta por defecto.
+    const PALETTE_STOPS = {
+        ironbow: [
+            [0.00, [0, 0, 0]], [0.12, [45, 0, 90]], [0.28, [120, 0, 120]],
+            [0.45, [185, 20, 80]], [0.62, [235, 90, 20]], [0.78, [250, 175, 25]],
+            [0.90, [252, 220, 90]], [1.00, [255, 255, 255]]
+        ],
+        whitehot: [
+            [0.00, [0, 0, 0]], [0.25, [64, 64, 64]], [0.50, [128, 128, 128]],
+            [0.75, [192, 192, 192]], [1.00, [255, 255, 255]]
+        ],
+        blackhot: [
+            [0.00, [255, 255, 255]], [0.25, [192, 192, 192]], [0.50, [128, 128, 128]],
+            [0.75, [64, 64, 64]], [1.00, [0, 0, 0]]
+        ],
+        lava: [
+            [0.00, [0, 0, 0]], [0.15, [40, 0, 80]], [0.32, [120, 20, 140]],
+            [0.50, [200, 60, 60]], [0.68, [245, 130, 20]], [0.85, [252, 210, 60]],
+            [1.00, [255, 255, 255]]
+        ],
+        sky: [
+            [0.00, [0, 0, 40]], [0.20, [0, 60, 160]], [0.42, [0, 160, 220]],
+            [0.62, [80, 220, 180]], [0.80, [220, 240, 120]], [1.00, [255, 255, 255]]
+        ]
+    };
+    const PALETTE_LABELS = {
+        ironbow: 'Ironbow', whitehot: 'B caliente (blanco)', blackhot: 'N caliente (negro)',
+        lava: 'Lava', sky: 'Cielo'
+    };
+    let currentPalette = 'ironbow';
+    const PALETTE_LUTS = {};
+    function buildPaletteLUT(name) {
+        if (PALETTE_LUTS[name]) return PALETTE_LUTS[name];
+        const stops = PALETTE_STOPS[name] || PALETTE_STOPS.ironbow;
+        const lut = new Array(256);
+        for (let i = 0; i < 256; i++) {
+            const t = i / 255;
+            let a = stops[0], b = stops[stops.length - 1];
+            for (let s = 0; s < stops.length - 1; s++) {
+                if (t >= stops[s][0] && t <= stops[s + 1][0]) { a = stops[s]; b = stops[s + 1]; break; }
+            }
+            const f = (t - a[0]) / Math.max(1e-6, b[0] - a[0]);
+            lut[i] = [
+                Math.round(a[1][0] + f * (b[1][0] - a[1][0])),
+                Math.round(a[1][1] + f * (b[1][1] - a[1][1])),
+                Math.round(a[1][2] + f * (b[1][2] - a[1][2]))
+            ];
+        }
+        PALETTE_LUTS[name] = lut;
+        return lut;
+    }
+    // LUT activa (compatibilidad: IRONBOW_LUT se usa en render/thumbs/inversa)
+    function activeLUT() { return buildPaletteLUT(currentPalette); }
+    const IRONBOW_LUT = activeLUT();
+    // Degradado CSS de la paleta activa (para barras de escala)
+    function paletteGradientCSS(name) {
+        const stops = PALETTE_STOPS[name] || PALETTE_STOPS.ironbow;
+        return 'linear-gradient(to right,' + stops.map(s => {
+            const c = s[1];
+            return `rgb(${c[0]},${c[1]},${c[2]}) ${(s[0] * 100).toFixed(0)}%`;
+        }).join(',') + ')';
+    }
+
+    // Inversa LUT con caché por color cuantizado (5 bits/canal)
+    const invCache = new Map();
+    function rgbToNorm(r, g, b) {
+        const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+        let v = invCache.get(key);
+        if (v !== undefined) return v;
+        const lut = activeLUT();
+        let best = 0, bestD = Infinity;
+        for (let i = 0; i < 256; i++) {
+            const c = lut[i];
+            const dr = r - c[0], dg = g - c[1], db = b - c[2];
+            const d = dr * dr + dg * dg + db * db;
+            if (d < bestD) { bestD = d; best = i; }
+        }
+        v = best / 255;
+        invCache.set(key, v);
+        return v;
+    }
+
+    // ── Temperatura física ─────────────────────────────────────────
+    function numVal(id, fallback) {
+        const v = parseFloat(document.getElementById(id).value);
+        return Number.isFinite(v) ? v : fallback;
+    }
+    function getEps() { return Math.max(0.1, Math.min(1, numVal('inpEmissivity', 0.95))); }
+    function getTRefl() { return numVal('inpTRefl', 25.0); }
+    function getScale() {
+        return {
+            min: numVal('scaleMin', 80.0),
+            max: numVal('scaleMax', 166.8)
+        };
+    }
+    function escHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+    // idx (opcional): índice del píxel en el lienzo 640×480. Si la imagen trae datos
+    // radiométricos reales (tempMap), se devuelve la temperatura medida por la cámara.
+    function normToTemp(norm, img, idx) {
+        if (img && img.tempMap && idx != null) return img.tempMap[idx];
+        const sc = img ? img.scale : getScale();
+        const base = sc.min + norm * (sc.max - sc.min);
+        return base + ((0.95 - getEps()) * (base - getTRefl()) * 0.25);
+    }
+
+    // ── Estado ─────────────────────────────────────────────────────
+    const state = {
+        images: [],        // {id,key,irName,dcName,irImage,irThumb,dcDataUrl,thermalMap,crop,spots,delta,rois,profile,equipment,notes,recs,ai,scale,showVisible}
+        currentId: null,
+        tool: 'spot',
+        showVisible: false,
+        draftROI: null,
+        draftLine: null,
+        autoClean: true,  // Filtro Anti-OSD automático (barra inferior + inpainting de HUD)
+        // Fusión IR + visible (herramienta "Fusión")
+        fusion: { mix: 0.5, relief: 0.35, dx: 0, dy: 0 }
+    };
+    let uid = 0;
+    const current = () => state.images.find(im => im.id === state.currentId) || null;
+
+    // ── Canvas ─────────────────────────────────────────────────────
+    const mainCanvas = document.getElementById('mainCanvas');
+    const mctx = mainCanvas.getContext('2d');
+    const baseCanvas = document.createElement('canvas');
+    baseCanvas.width = CANVAS_W; baseCanvas.height = CANVAS_H;
+    // Canvas auxiliares para la herramienta Fusión (visible alineada + relieve Laplace)
+    const fusionDcCanvas = document.createElement('canvas');
+    fusionDcCanvas.width = CANVAS_W; fusionDcCanvas.height = CANVAS_H;
+    const fusionReliefCanvas = document.createElement('canvas');
+    fusionReliefCanvas.width = CANVAS_W; fusionReliefCanvas.height = CANVAS_H;
+
+    // ── Filtros de imagen: definición (nitidez unsharp mask) ────────
+    // (El contraste está fijo en 1; se mantiene el parámetro por compatibilidad.)
+    // La definición está fija en 12 (sin control en la interfaz).
+    const filterState = { contrast: 1, sharpness: 12 };
+    const filterCache = { img: null, contrast: -1, sharpness: -1, palette: '', canvas: null };
+    function invalidateFilterCache() { filterCache.img = null; filterCache.canvas = null; }
+
+    // Aplica contraste (sobre luminancia) y nitidez (unsharp mask 3×3) a un ImageData
+    function applyDisplayFilters(idata, contrast, sharp) {
+        const d = idata.data;
+        const n = d.length;
+        if (contrast !== 1) {
+            for (let i = 0; i < n; i += 4) {
+                d[i]     = Math.max(0, Math.min(255, (d[i]     - 128) * contrast + 128));
+                d[i + 1] = Math.max(0, Math.min(255, (d[i + 1] - 128) * contrast + 128));
+                d[i + 2] = Math.max(0, Math.min(255, (d[i + 2] - 128) * contrast + 128));
+            }
+        }
+        if (sharp > 0) {
+            const w = idata.width, h = idata.height;
+            const src = new Uint8ClampedArray(d);          // copia del estado actual
+            const k = sharp;                               // fuerza del realce
+            for (let y = 1; y < h - 1; y++) {
+                for (let x = 1; x < w - 1; x++) {
+                    const j = (y * w + x) * 4;
+                    for (let ch = 0; ch < 3; ch++) {
+                        const c = j + ch;
+                        const blur = (src[c - 4] + src[c + 4] + src[c - w * 4] + src[c + w * 4] + 4 * src[c]) / 8;
+                        d[c] = Math.max(0, Math.min(255, src[c] + k * (src[c] - blur)));
+                    }
+                }
+            }
+        }
+    }
+
+    // Imagen base con filtros, cacheada por imagen + ajustes + paleta (solo se reprocesa al cambiar)
+    function getFilteredBase(img) {
+        if (filterCache.img === img && filterCache.contrast === filterState.contrast && filterCache.sharpness === filterState.sharpness && filterCache.palette === currentPalette && filterCache.canvas) {
+            return filterCache.canvas;
+        }
+        const cv = document.createElement('canvas');
+        cv.width = CANVAS_W; cv.height = CANVAS_H;
+        const ctx = cv.getContext('2d');
+        const idata = ctx.createImageData(CANVAS_W, CANVAS_H);
+        const d = idata.data;
+        const map = img.thermalMap;
+        const lut = activeLUT();
+        for (let i = 0; i < map.length; i++) {
+            const c = lut[Math.round(map[i] * 255)];
+            const j = i * 4;
+            d[j] = c[0]; d[j + 1] = c[1]; d[j + 2] = c[2]; d[j + 3] = 255;
+        }
+        applyDisplayFilters(idata, filterState.contrast, filterState.sharpness);
+        ctx.putImageData(idata, 0, 0);
+        filterCache.img = img;
+        filterCache.contrast = filterState.contrast;
+        filterCache.sharpness = filterState.sharpness;
+        filterCache.palette = currentPalette;
+        filterCache.canvas = cv;
+        return cv;
+    }
+
+    // ── Herramienta Fusión: IR + visible con relieve Laplace ───────
+    // Dibuja la visible desplazada (dx,dy) en fusionDcCanvas y genera en
+    // fusionReliefCanvas los contornos Laplace de la visible (blanco/negro)
+    // que luego se superponen a la IR fusionada para dar relieve.
+    function buildFusionLayers(img) {
+        const dc = img && img.dcImage;
+        const dctx = fusionDcCanvas.getContext('2d');
+        const rctx = fusionReliefCanvas.getContext('2d');
+        dctx.fillStyle = '#000'; dctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        rctx.fillStyle = '#000'; rctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        if (!dc || !dc.complete || !dc.width) return false;
+        // Visible escalada a "cover" (como en renderBase) + desplazamiento de alineación
+        const r = Math.max(CANVAS_W / dc.width, CANVAS_H / dc.height);
+        const w = dc.width * r, h = dc.height * r;
+        dctx.drawImage(dc, (CANVAS_W - w) / 2 + state.fusion.dx, (CANVAS_H - h) / 2 + state.fusion.dy, w, h);
+        // Laplace 3×3 sobre la luminancia de la visible alineada → contornos
+        const idata = dctx.getImageData(0, 0, CANVAS_W, CANVAS_H);
+        const src = idata.data;
+        const out = rctx.createImageData(CANVAS_W, CANVAS_H);
+        const od = out.data;
+        for (let y = 1; y < CANVAS_H - 1; y++) {
+            for (let x = 1; x < CANVAS_W - 1; x++) {
+                const j = (y * CANVAS_W + x) * 4;
+                let lap = 0;
+                for (let ch = 0; ch < 3; ch++) {
+                    const c = j + ch;
+                    lap += 4 * src[c] - (src[c - 4] + src[c + 4] + src[c - CANVAS_W * 4] + src[c + CANVAS_W * 4]);
+                }
+                lap /= 3;                       // promedio de los 3 canales
+                const v = Math.max(0, Math.min(255, 128 + lap));  // 128 = sin contorno
+                od[j] = od[j + 1] = od[j + 2] = v;
+                od[j + 3] = 255;
+            }
+        }
+        rctx.putImageData(out, 0, 0);
+        return true;
+    }
+    // Compone IR (base) + visible (crossfade) + relieve Laplace en baseCanvas
+    function renderFusion(img) {
+        const bctx = baseCanvas.getContext('2d');
+        const f = state.fusion;
+        bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'source-over';
+        bctx.drawImage(getFilteredBase(img), 0, 0);          // capa IR
+        if (buildFusionLayers(img)) {
+            bctx.globalAlpha = f.mix;                        // crossfade IR ↔ visible
+            bctx.drawImage(fusionDcCanvas, 0, 0);
+            bctx.globalAlpha = 1;
+            if (f.relief > 0) {
+                // Relieve: los contornos Laplace (128 = neutro) se aplican en modo
+                // overlay → realzan el contraste de la IR fusionada con el detalle óptico
+                bctx.globalCompositeOperation = 'overlay';
+                bctx.globalAlpha = f.relief;
+                bctx.drawImage(fusionReliefCanvas, 0, 0);
+                bctx.globalCompositeOperation = 'source-over';
+                bctx.globalAlpha = 1;
+            }
+        }
+    }
+
+    function renderBase() {
+        const img = current();
+        const bctx = baseCanvas.getContext('2d');
+        if (!img) {
+            bctx.fillStyle = '#000'; bctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            return;
+        }
+        if (state.showVisible && img.dcDataUrl) {
+            const dc = img.dcImage;
+            if (dc && dc.complete) {
+                bctx.fillStyle = '#000'; bctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+                const r = Math.min(CANVAS_W / dc.width, CANVAS_H / dc.height);
+                const w = dc.width * r, h = dc.height * r;
+                bctx.drawImage(dc, (CANVAS_W - w) / 2, (CANVAS_H - h) / 2, w, h);
+                return;
+            }
+        }
+        // Herramienta Fusión: IR + visible con relieve Laplace
+        if (state.tool === 'fusion' && img.dcDataUrl) {
+            renderFusion(img);
+            return;
+        }
+        // Base IR con filtros de contraste/definición (cacheados por imagen + ajustes)
+        bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'source-over';
+        bctx.drawImage(getFilteredBase(img), 0, 0);
+    }
+    function renderCanvas() {
+        mctx.fillStyle = '#000';
+        mctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        renderBase();
+        mctx.drawImage(baseCanvas, 0, 0);
+        const img = current();
+        if (!img || state.showVisible) return;
+
+        // ROI (con marcadores de punto más caliente y más frío)
+        const drawBox = (bx, color) => {
+            mctx.strokeStyle = color; mctx.lineWidth = 2;
+            mctx.strokeRect(bx.x, bx.y, bx.w, bx.h);
+            mctx.fillStyle = color; mctx.font = 'bold 11px JetBrains Mono';
+            mctx.fillText('ROI', bx.x + 4, bx.y - 4);
+            const mm = roiMinMax(bx);
+            if (mm) {
+                drawExtremeMarker(mm.max.x, mm.max.y, mm.max.t, true);
+                drawExtremeMarker(mm.min.x, mm.min.y, mm.min.t, false);
+            }
+        };
+        img.rois.forEach(bx => drawBox(bx, '#22d3ee'));
+        if (state.draftROI) drawBox(state.draftROI, '#22d3ee');
+
+        // Perfil
+        const drawLine = (ln, color) => {
+            mctx.strokeStyle = color; mctx.lineWidth = 2;
+            mctx.beginPath(); mctx.moveTo(ln.x1, ln.y1); mctx.lineTo(ln.x2, ln.y2); mctx.stroke();
+            [ [ln.x1, ln.y1], [ln.x2, ln.y2] ].forEach(([x, y]) => {
+                mctx.beginPath(); mctx.arc(x, y, 4, 0, Math.PI * 2); mctx.fillStyle = color; mctx.fill();
+            });
+            const mm = lineMinMax(ln);
+            if (mm) {
+                drawExtremeMarker(mm.max.x, mm.max.y, mm.max.t, true);
+                drawExtremeMarker(mm.min.x, mm.min.y, mm.min.t, false);
+            }
+        };
+        if (img.profile) drawLine(img.profile, '#a78bfa');
+        if (state.draftLine) drawLine(state.draftLine, '#a78bfa');
+
+        // Delta (2 puntos)
+        img.delta.forEach((p, i) => drawMarker(p, 'T' + (i + 1)));
+
+        // Spots
+        img.spots.forEach((p, i) => drawMarker(p, 'P' + (i + 1)));
+    }
+
+    // Color de máximo contraste según el fondo (brillo perceptual del píxel)
+    function contrastingColor(x, y) {
+        const px = Math.max(0, Math.min(CANVAS_W - 1, Math.round(x)));
+        const py = Math.max(0, Math.min(CANVAS_H - 1, Math.round(y)));
+        try {
+            const d = mctx.getImageData(px, py, 1, 1).data;
+            const lum = 0.299 * d[0] + 0.587 * d[1] + 0.114 * d[2];
+            return lum > 140 ? '#111111' : '#ffffff';
+        } catch (e) { return '#ffffff'; }
+    }
+
+    function drawMarker(p, label) {
+        const color = contrastingColor(p.x, p.y);
+        const halo = color === '#ffffff' ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.85)';
+        mctx.beginPath(); mctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        mctx.strokeStyle = color; mctx.lineWidth = 2; mctx.stroke();
+        mctx.beginPath(); mctx.arc(p.x, p.y, 2, 0, Math.PI * 2); mctx.fillStyle = color; mctx.fill();
+        const t = normToTemp(p.norm, current(), p.y * CANVAS_W + p.x);
+        mctx.font = 'bold 11px JetBrains Mono';
+        const txt = label + ' ' + t.toFixed(1) + '°C';
+        const tw = mctx.measureText(txt).width + 10;
+        let lx = p.x + 10, ly = p.y - 22;
+        if (lx + tw > CANVAS_W) lx = p.x - tw - 6;
+        if (ly < 4) ly = p.y + 12;
+        mctx.fillStyle = halo;
+        mctx.fillRect(lx, ly, tw, 17);
+        mctx.fillStyle = color;
+        mctx.fillText(txt, lx + 5, ly + 12);
+    }
+
+    // ── Extremos térmicos (máx/mín) con triángulos ─────────────────
+    // Triángulo rojo con borde blanco, punta hacia arriba = punto más caliente.
+    // Triángulo azul con borde blanco, punta hacia abajo = punto más frío.
+    function drawExtremeMarker(x, y, t, isMax) {
+        const S = 11; // tamaño del triángulo
+        mctx.save();
+        mctx.beginPath();
+        if (isMax) { // punta hacia arriba (▲)
+            mctx.moveTo(x, y - S);
+            mctx.lineTo(x - S, y + S * 0.7);
+            mctx.lineTo(x + S, y + S * 0.7);
+        } else { // punta hacia abajo (▼)
+            mctx.moveTo(x, y + S);
+            mctx.lineTo(x - S, y - S * 0.7);
+            mctx.lineTo(x + S, y - S * 0.7);
+        }
+        mctx.closePath();
+        mctx.fillStyle = isMax ? '#dc2626' : '#2563eb';
+        mctx.fill();
+        mctx.lineWidth = 2;
+        mctx.strokeStyle = '#ffffff';
+        mctx.stroke();
+
+        // Etiqueta de temperatura
+        mctx.font = 'bold 11px JetBrains Mono';
+        const txt = t.toFixed(1) + '°C';
+        const tw = mctx.measureText(txt).width + 10;
+        let lx = x + S + 6, ly = y - 22;
+        if (lx + tw > CANVAS_W) lx = x - tw - S - 6;
+        if (ly < 4) ly = y + S + 6;
+        mctx.fillStyle = 'rgba(0,0,0,0.72)';
+        mctx.fillRect(lx, ly, tw, 17);
+        mctx.fillStyle = isMax ? '#f87171' : '#60a5fa';
+        mctx.fillText(txt, lx + 5, ly + 12);
+        mctx.restore();
+    }
+
+    // Min/max térmico dentro de una zona ROI → {max:{x,y,t}, min:{x,y,t}}
+    function roiMinMax(bx) {
+        const img = current();
+        if (!img) return null;
+        let max = { t: -Infinity }, min = { t: Infinity };
+        const x0 = Math.max(0, Math.round(bx.x)), x1 = Math.min(CANVAS_W - 1, Math.round(bx.x + bx.w));
+        const y0 = Math.max(0, Math.round(bx.y)), y1 = Math.min(CANVAS_H - 1, Math.round(bx.y + bx.h));
+        for (let y = y0; y <= y1; y++)
+            for (let x = x0; x <= x1; x++) {
+                const t = tempAt(img, x, y);
+                if (t > max.t) max = { x, y, t };
+                if (t < min.t) min = { x, y, t };
+            }
+        return (max.t > -Infinity && min.t < Infinity) ? { max, min } : null;
+    }
+
+    // Min/max térmico a lo largo de una línea de perfil → {max:{x,y,t}, min:{x,y,t}}
+    function lineMinMax(ln) {
+        const img = current();
+        if (!img) return null;
+        const dx = ln.x2 - ln.x1, dy = ln.y2 - ln.y1;
+        const steps = Math.max(2, Math.ceil(Math.hypot(dx, dy)));
+        let max = { t: -Infinity }, min = { t: Infinity };
+        for (let i = 0; i <= steps; i++) {
+            const x = ln.x1 + dx * i / steps, y = ln.y1 + dy * i / steps;
+            const t = tempAt(img, x, y);
+            if (t > max.t) max = { x: Math.round(x), y: Math.round(y), t };
+            if (t < min.t) min = { x: Math.round(x), y: Math.round(y), t };
+        }
+        return (max.t > -Infinity && min.t < Infinity) ? { max, min } : null;
+    }
+
+    // ── Lectura de píxel ───────────────────────────────────────────
+    function getCanvasCoords(evt) {
+        const r = mainCanvas.getBoundingClientRect();
+        return {
+            x: Math.round((evt.clientX - r.left) * CANVAS_W / r.width),
+            y: Math.round((evt.clientY - r.top) * CANVAS_H / r.height)
+        };
+    }
+    function normAt(x, y) {
+        const img = current();
+        if (!img) return 0;
+        x = Math.max(0, Math.min(CANVAS_W - 1, x));
+        y = Math.max(0, Math.min(CANVAS_H - 1, y));
+        return img.thermalMap[y * CANVAS_W + x];
+    }
+    // Temperatura real en coords de lienzo (usa tempMap radiométrico si existe)
+    function tempAt(img, x, y) {
+        x = Math.max(0, Math.min(CANVAS_W - 1, Math.round(x)));
+        y = Math.max(0, Math.min(CANVAS_H - 1, Math.round(y)));
+        return normToTemp(img.thermalMap[y * CANVAS_W + x], img, y * CANVAS_W + x);
+    }
+
+    // ── Datos radiométricos de cámara (bloque THOR) ────────────────
+    // Al final del JPEG, tras el fin de imagen (FFD9), la cámara guarda:
+    //   5 floats de cabecera → matriz de float32 LE (256×192) con la temperatura
+    //   real en °C por píxel → parámetros (ε, Trefl…) → "THOR002" + serie → JSON
+    //   con tempRange (escala °C×100), envParams, tempArea.
+    // La matriz NO contiene OSD: la imagen reconstruida desde ella es limpia al 100%.
+    function parseRadiometric(buffer) {
+        try {
+            const b = new Uint8Array(buffer);
+            const n = b.length;
+            if (n < 2048) return null;
+            const find = (pat, from, to) => {
+                outer: for (let i = from; i <= to - pat.length; i++) {
+                    for (let j = 0; j < pat.length; j++) if (b[i + j] !== pat.charCodeAt(j)) continue outer;
+                    return i;
+                }
+                return -1;
+            };
+            const th = find('THOR', n - 2048, n);
+            if (th < 0) return null;
+            // Fin del JPEG (FFD9) buscando hacia atrás desde el bloque
+            let eoi = -1;
+            for (let i = th - 4; i > 0; i--) if (b[i] === 0xFF && b[i + 1] === 0xD9) { eoi = i; break; }
+            if (eoi < 0) return null;
+            const dv = new DataView(buffer);
+            const mStart = eoi + 2;
+            const floats = (th - 50 - mStart) / 4;
+            if (floats < 1000) return null;
+            // Resolución del sensor: se deduce del nº de floats de la matriz (5 de cabecera),
+            // de modo que soporta otros modelos de cámara con distinto tamaño de detector.
+            let W = 0, H = 0;
+            const total = floats - 5;
+            // Buscar el par W×H más "cuadrado" (típico de un detector: 256×192, 384×288…),
+            // empezando por la altura más próxima a la relación 4:3.
+            let bestErr = Infinity;
+            for (let h = 96; h <= 640; h++) {
+                if (total % h === 0) {
+                    const w = total / h;
+                    if (w >= 128 && w <= 1024 && w % 8 === 0 && h % 8 === 0) {
+                        const err = Math.abs(w / h - 4 / 3); // detectores IR suelen ser 4:3
+                        if (err < bestErr) { bestErr = err; W = w; H = h; }
+                    }
+                }
+            }
+            if (!W) return null; // layout no reconocido → fallback visual
+            const temps = new Float32Array(W * H);
+            let mn = Infinity, mx = -Infinity;
+            for (let i = 0; i < W * H; i++) {
+                const v = dv.getFloat32(mStart + 5 * 4 + i * 4, true);
+                temps[i] = v;
+                if (Number.isFinite(v) && v > -60 && v < 2000) {
+                    if (v < mn) mn = v;
+                    if (v > mx) mx = v;
+                }
+            }
+            if (!isFinite(mn) || mx <= mn) return null;
+            // JSON de parámetros tras "THOR002" + serie (va seguido de bytes binarios
+            // de firma → se extrae por llaves balanceadas, no con JSON.parse directo)
+            let meta = null;
+            const js = find('{', th, n);
+            if (js > 0) {
+                let depth = 0, end = -1;
+                for (let i = js; i < n; i++) {
+                    const c = b[i];
+                    if (c === 123) depth++;
+                    else if (c === 125) { depth--; if (depth === 0) { end = i; break; } }
+                }
+                if (end > 0) {
+                    try { meta = JSON.parse(new TextDecoder().decode(b.slice(js, end + 1))); } catch (e) { meta = null; }
+                }
+            }
+            // Modelo y nº de serie: campos ASCII terminados en \0 entre la matriz y el JSON
+            // (p.ej. "THOR002" ... "CB6166200"). Se leen de forma genérica (otros modelos).
+            const readCStr = (start, max) => {
+                let s = '';
+                for (let i = start; i < Math.min(n, start + max); i++) {
+                    const c = b[i];
+                    if (c === 0) { if (s.length) break; else continue; }
+                    if (c < 32 || c > 126) break;
+                    s += String.fromCharCode(c);
+                }
+                return s.trim();
+            };
+            let model = '', serial = '';
+            const jsIdx = js > 0 ? js : n;
+            for (let i = th; i < jsIdx - 1; i++) {
+                if (b[i] === 0) continue;
+                const s = readCStr(i, 32);
+                if (s.length >= 3) {
+                    if (!model) { model = s; i += s.length; }
+                    else if (!serial) { serial = s; i += s.length; }
+                    if (model && serial) break;
+                }
+            }
+            return { temps, W, H, min: mn, max: mx, meta, model, serial };
+        } catch (e) { return null; }
+    }
+    // Muestrea la matriz radiométrica (256×192) en el lienzo 640×480 (bilineal)
+    function buildTempMap(rad) {
+        const map = new Float32Array(CANVAS_W * CANVAS_H);
+        const sx = rad.W / CANVAS_W, sy = rad.H / CANVAS_H;
+        for (let y = 0; y < CANVAS_H; y++) {
+            const fy = Math.min(rad.H - 1.001, (y + 0.5) * sy - 0.5);
+            const y0 = Math.max(0, Math.floor(fy)), y1 = Math.min(rad.H - 1, y0 + 1);
+            const wy = fy - y0;
+            for (let x = 0; x < CANVAS_W; x++) {
+                const fx = Math.min(rad.W - 1.001, (x + 0.5) * sx - 0.5);
+                const x0 = Math.max(0, Math.floor(fx)), x1 = Math.min(rad.W - 1, x0 + 1);
+                const wx = fx - x0;
+                const v00 = rad.temps[y0 * rad.W + x0], v10 = rad.temps[y0 * rad.W + x1];
+                const v01 = rad.temps[y1 * rad.W + x0], v11 = rad.temps[y1 * rad.W + x1];
+                map[y * CANVAS_W + x] = (v00 * (1 - wx) + v10 * wx) * (1 - wy) + (v01 * (1 - wx) + v11 * wx) * wy;
+            }
+        }
+        return map;
+    }
+
+    // Mapeo consistente origen(imagen) <-> destino(canvas 640×480) para processIRImage
+    function getIRSourceRect(image, crop, autoClean) {
+        const clean = autoClean !== false;
+        let sx = 0, sy = 0, sw = image.width, sh = image.height;
+        if (crop && crop.w > 0 && crop.h > 0) {
+            sx = crop.x; sy = crop.y; sw = crop.w; sh = crop.h;
+        } else if (clean) {
+            sh = Math.round(image.height * 0.895);
+        }
+        const r = Math.min(CANVAS_W / sw, CANVAS_H / sh);
+        const dw = sw * r, dh = sh * r;
+        const dx = (CANVAS_W - dw) / 2, dy = (CANVAS_H - dh) / 2;
+        return { sx, sy, sw, sh, dx, dy, dw, dh, r };
+    }
+
+    // ── Procesamiento de imagen IR → thermalMap ────────────────────
+    // crop (opcional): {x,y,w,h} en px de la imagen ORIGINAL — recorte manual del OSD.
+    // autoClean (opcional, por defecto true): Filtro Anti-OSD automático — recorta la barra
+    // negra inferior (10.5%) e inpinta los HUD de la cámara (logo, Max, badge, zoom,
+    // escala de colores derecha y mira) interpolando píxeles térmicos vecinos.
+    function processIRImage(image, crop, autoClean) {
+        const clean = autoClean !== false;
+        const c = document.createElement('canvas');
+        c.width = CANVAS_W; c.height = CANVAS_H;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        const rect = getIRSourceRect(image, crop, clean);
+        ctx.drawImage(image, rect.sx, rect.sy, rect.sw, rect.sh, rect.dx, rect.dy, rect.dw, rect.dh);
+        const d = ctx.getImageData(0, 0, CANVAS_W, CANVAS_H).data;
+        const map = new Float32Array(CANVAS_W * CANVAS_H);
+        for (let i = 0; i < map.length; i++) {
+            const j = i * 4;
+            map[i] = rgbToNorm(d[j], d[j + 1], d[j + 2]);
+        }
+        // Inpainting radiométrico de HUD (solo sin recorte manual: el recorte ya excluye el OSD)
+        if (clean && !(crop && crop.w > 0 && crop.h > 0)) inpaintHUD(map);
+        return map;
+    }
+
+    // Cajas de HUD en coords del lienzo 640×480 (logo+Max, badge °C, zoom, escala derecha, mira)
+    const HUD_BOXES = [
+        { x1: 0,   y1: 0,   x2: 145, y2: 75  }, // Sup-izda: logo y temperatura máxima
+        { x1: 235, y1: 4,   x2: 420, y2: 52  }, // Sup-centro: badge de rango
+        { x1: 580, y1: 4,   x2: 638, y2: 48  }, // Sup-dcha: zoom
+        { x1: 562, y1: 95,  x2: 636, y2: 430 }, // Dcha: barra de escala de colores y valores
+        { x1: 302, y1: 245, x2: 338, y2: 285 }  // Centro: mira
+    ];
+    function inpaintHUD(map) {
+        HUD_BOXES.forEach(box => {
+            const w = box.x2 - box.x1, h = box.y2 - box.y1;
+            for (let y = box.y1; y <= box.y2; y++) {
+                for (let x = box.x1; x <= box.x2; x++) {
+                    if (x < 0 || x >= CANVAS_W || y < 0 || y >= CANVAS_H) continue;
+                    const leftX = Math.max(0, box.x1 - 3);
+                    const rightX = Math.min(CANVAS_W - 1, box.x2 + 3);
+                    const topY = Math.max(0, box.y1 - 3);
+                    const botY = Math.min(CANVAS_H - 1, box.y2 + 3);
+                    const tx = w > 0 ? (x - box.x1) / w : 0.5;
+                    const ty = h > 0 ? (y - box.y1) / h : 0.5;
+                    const vLeft = map[y * CANVAS_W + leftX];
+                    const vRight = map[y * CANVAS_W + rightX];
+                    const vTop = map[topY * CANVAS_W + x];
+                    const vBot = map[botY * CANVAS_W + x];
+                    const interpH = vLeft * (1 - tx) + vRight * tx;
+                    const interpV = vTop * (1 - ty) + vBot * ty;
+                    map[y * CANVAS_W + x] = (interpH + interpV) * 0.5;
+                }
+            }
+        });
+    }
+
+    function makeThumb(image, px) {
+        const c = document.createElement('canvas');
+        const r = Math.min(px / image.width, px / image.height);
+        c.width = Math.round(image.width * r); c.height = Math.round(image.height * r);
+        c.getContext('2d').drawImage(image, 0, 0, c.width, c.height);
+        return c.toDataURL('image/jpeg', 0.8);
+    }
+    function makeThumbFromMap(map, px) {
+        const full = document.createElement('canvas');
+        full.width = CANVAS_W; full.height = CANVAS_H;
+        const fctx = full.getContext('2d');
+        const idata = fctx.createImageData(CANVAS_W, CANVAS_H);
+        const d = idata.data;
+        const lut = activeLUT();
+        for (let i = 0; i < map.length; i++) {
+            const c = lut[Math.round(map[i] * 255)];
+            const j = i * 4;
+            d[j] = c[0]; d[j + 1] = c[1]; d[j + 2] = c[2]; d[j + 3] = 255;
+        }
+        fctx.putImageData(idata, 0, 0);
+        return makeThumb(full, px);
+    }
+
+    // ── Agrupación IR / visible por nombre ─────────────────────────
+    function looksLikeVisible(name) {
+        return /[-_](dc|vis|vl|rgb|opt|photo|foto|cam)\b|visible|optica|optical/i.test(name);
+    }
+    function pairKey(name) {
+        return name.replace(/[-_](ir|dc|vis|vl|rgb|opt|photo|foto|cam|thermal|termica)?\.[a-z0-9]+$/i, '')
+                   .replace(/\.[a-z0-9]+$/i, '').toLowerCase();
+    }
+    function extractDate(name) {
+        const m = name.match(/(20\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})/);
+        return m ? `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}` : '—';
+    }
+
+    function loadImageFile(file) {
+        return new Promise((resolve) => {
+            let arrBuf = null;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => resolve({ file, img, dataUrl: e.target.result, buffer: arrBuf });
+                img.src = e.target.result;
+            };
+            // ArrayBuffer para el parser radiométrico (bloque THOR al final del JPEG)
+            const reader2 = new FileReader();
+            reader2.onload = () => { arrBuf = reader2.result; reader.readAsDataURL(file); };
+            reader2.readAsArrayBuffer(file);
+        });
+    }
+
+    async function handleFiles(fileList) {
+        const loaded = await Promise.all(Array.from(fileList).map(loadImageFile));
+        // Agrupar en parejas por clave
+        const groups = new Map();
+        loaded.forEach(item => {
+            const key = pairKey(item.file.name);
+            if (!groups.has(key)) groups.set(key, {});
+            const g = groups.get(key);
+            if (looksLikeVisible(item.file.name)) g.dc = item; else g.ir = item;
+        });
+        groups.forEach((g, key) => {
+            if (!g.ir && g.dc) { g.ir = g.dc; g.dc = null; } // fallback
+            const ir = g.ir;
+            // Datos radiométricos reales de la cámara (si el archivo los trae)
+            const rad = ir.buffer ? parseRadiometric(ir.buffer) : null;
+            let thermalMap, scale, tmapOut = null;
+            if (rad) {
+                // Imagen reconstruida desde la matriz de temperaturas: sin OSD por diseño
+                const tmap = buildTempMap(rad);
+                tmapOut = tmap;
+                thermalMap = new Float32Array(tmap.length);
+                scale = { min: rad.min, max: rad.max };
+                const span = Math.max(0.001, scale.max - scale.min);
+                for (let i = 0; i < tmap.length; i++) thermalMap[i] = Math.max(0, Math.min(1, (tmap[i] - scale.min) / span));
+            } else {
+                thermalMap = processIRImage(ir.img, null, state.autoClean);
+                scale = getScale();
+            }
+            const ep = rad && rad.meta ? ((rad.meta.roi && rad.meta.roi[0] && rad.meta.roi[0].envParams) || rad.meta.envParams) : null;
+            const entry = {
+                id: ++uid,
+                key,
+                irName: ir.file.name,
+                dcName: g.dc ? g.dc.file.name : '',
+                irThumb: rad ? makeThumbFromMap(thermalMap, 210) : makeThumb(ir.img, 210),
+                dcDataUrl: g.dc ? g.dc.dataUrl : '',
+                dcImage: g.dc ? g.dc.img : null,
+                irImage: ir.img,
+                rad,
+                tempMap: tmapOut,
+                thermalMap,
+                spots: [], delta: [], rois: [], profile: null,
+                equipment: '', assetName: '', notes: '', recs: '', ai: null,
+                condition: 'Atención - Seguimiento Programado',
+                emissivity: ep && ep.emissivity ? Number(ep.emissivity) : getEps(),
+                tRefl: ep && ep.refTemp != null ? Number(ep.refTemp) : getTRefl(),
+                scale,
+                date: extractDate(ir.file.name)
+            };
+            state.images.push(entry);
+            if (!state.currentId) selectImage(entry.id);
+        });
+        renderImageList();
+    }
+
+    function selectImage(id) {
+        // Guardar estado editable del actual antes de cambiar
+        const prev = current();
+        if (prev) {
+            prev.notes = document.getElementById('txtNotes').value;
+            prev.recs = document.getElementById('txtRecs').value;
+            prev.assetName = document.getElementById('inpAsset').value;
+            prev.condition = document.getElementById('selCondition').value;
+            prev.emissivity = getEps();
+            prev.tRefl = getTRefl();
+        }
+        state.currentId = id;
+        state.showVisible = false;
+        state.draftROI = null; state.draftLine = null;
+        const img = current();
+        if (img) {
+            document.getElementById('txtNotes').value = img.notes || '';
+            document.getElementById('txtRecs').value = img.recs || '';
+            document.getElementById('inpAsset').value = img.assetName || '';
+            document.getElementById('selCondition').value = img.condition || 'Atención - Seguimiento Programado';
+            document.getElementById('inpEmissivity').value = Number(img.emissivity ?? 0.95).toFixed(2);
+            document.getElementById('inpTRefl').value = Number(img.tRefl ?? 25.0).toFixed(1);
+            document.getElementById('scaleMin').value = img.scale.min.toFixed(1);
+            document.getElementById('scaleMax').value = img.scale.max.toFixed(1);
+            document.getElementById('aiBlock').classList.toggle('hidden', !img.ai);
+            if (img.ai) {
+                document.getElementById('aiText').textContent = img.ai.text;
+                document.getElementById('aiMeta').textContent = img.ai.meta;
+            }
+        }
+        renderImageList();
+        renderAll();
+    }
+
+    // ── Lista de imágenes (izquierda) ──────────────────────────────
+    function renderImageList() {
+        const wrap = document.getElementById('imageList');
+        document.getElementById('imgCount').textContent = state.images.length;
+        wrap.innerHTML = '';
+        if (state.images.length === 0) {
+            wrap.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-8 leading-relaxed px-2">
+                <i data-lucide="images" class="w-8 h-8 mx-auto mb-2 text-slate-700"></i>
+                Abre imágenes IR + visibles.<br>Se agruparán en parejas automáticamente<br>
+                <span class="text-slate-600 mono text-[10px]">ej. 20260930144524-IR.jpg<br>+ 20260930144524-DC.jpg</span></div>`;
+        }
+        state.images.forEach((im, idx) => {
+            const card = document.createElement('div');
+            card.className = 'img-card relative rounded-lg border border-slate-200 p-1.5' + (im.id === state.currentId ? ' active' : '');
+            card.innerHTML = `
+                <button class="btn-del-img absolute top-0.5 right-0.5 z-10 w-5 h-5 rounded-full bg-white/90 border border-slate-300 text-slate-500 hover:text-white hover:bg-red-600 hover:border-red-400 flex items-center justify-center" title="Eliminar esta imagen de la app">
+                    <i data-lucide="x" class="w-3 h-3"></i>
+                </button>
+                <div class="flex gap-1">
+                    <div class="flex-1 min-w-0">
+                        <img src="${im.irThumb}" class="w-full h-auto rounded border border-slate-200/60">
+                        <p class="text-[8px] text-amber-600 mono text-center mt-0.5">IR</p>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        ${im.dcDataUrl
+                            ? `<img src="${im.dcDataUrl}" class="w-full h-auto rounded border border-slate-200/60">`
+                            : `<div class="w-full aspect-[4/3] rounded border border-dashed border-slate-200 flex items-center justify-center text-slate-700 text-[8px]">sin DC</div>`}
+                        <p class="text-[8px] text-slate-500 mono text-center mt-0.5">Visible</p>
+                    </div>
+                </div>
+                <p class="text-[9px] mono text-slate-700 truncate mt-1 px-0.5" title="${escHtml(im.irName)}">${idx + 1}. ${escHtml(im.irName)}</p>
+                ${im.assetName ? `<p class="text-[8px] text-slate-500 truncate px-0.5">⚙ ${escHtml(im.assetName)}</p>` : ''}`;
+            card.addEventListener('click', () => selectImage(im.id));
+            card.querySelector('.btn-del-img').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!confirm(`¿Eliminar la imagen "${im.irName}" de la app?\nSe perderán sus mediciones, notas y análisis.`)) return;
+                removeImage(im.id);
+            });
+            wrap.appendChild(card);
+        });
+
+        // Botón ⊕ para agregar más archivos
+        const addBtn = document.createElement('button');
+        addBtn.id = 'btnAddFiles';
+        addBtn.className = 'w-full rounded-lg border border-dashed border-slate-200 py-3 text-slate-500 hover:text-amber-600 hover:border-amber-400 flex items-center justify-center gap-1.5 text-xs transition-colors';
+        addBtn.title = 'Agregar más imágenes';
+        addBtn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Agregar archivos';
+        addBtn.addEventListener('click', () => document.getElementById('fileInput').click());
+        wrap.appendChild(addBtn);
+        lucide.createIcons();
+    }
+
+    function removeImage(id) {
+        const idx = state.images.findIndex(im => im.id === id);
+        if (idx < 0) return;
+        state.images.splice(idx, 1);
+        if (state.currentId === id) {
+            state.currentId = null;
+            if (state.images.length) selectImage(state.images[Math.min(idx, state.images.length - 1)].id);
+            else {
+                document.getElementById('txtNotes').value = '';
+                document.getElementById('txtRecs').value = '';
+                document.getElementById('aiBlock').classList.add('hidden');
+                renderAll();
+            }
+        }
+        renderImageList();
+    }
+
+    // ── Paneles derecha: mediciones / stats / gráficos ─────────────
+    function refreshPanels() {
+        const img = current();
+        // Metadatos
+        document.getElementById('metaIrName').textContent = img ? img.irName : '—';
+        document.getElementById('metaDcName').textContent = img ? (img.dcName || '—') : '—';
+        document.getElementById('metaDate').textContent = img ? img.date : '—';
+        const rad = img && img.rad;
+        document.getElementById('metaDevice').textContent = !img ? '—' : (rad && rad.model ? rad.model : '—');
+        document.getElementById('metaSerial').textContent = !img ? '—' : (rad && rad.serial ? rad.serial : '—');
+        document.getElementById('metaRes').textContent = !img ? '—' : (rad ? `${rad.W} × ${rad.H}` : `${CANVAS_W} × ${CANVAS_H}`);
+        const sc = getScale();
+        document.getElementById('metaScale').textContent = img ? `${img.scale.min.toFixed(1)} – ${img.scale.max.toFixed(1)} °C` : '—';
+        document.getElementById('canvasTitle').textContent = img ? img.irName : 'Sin imagen';
+        document.getElementById('canvasEmpty').classList.toggle('hidden', !!img);
+        document.getElementById('badgeRad').classList.toggle('hidden', !(img && img.tempMap));
+
+        // Barra visible
+        const bar = document.getElementById('visiblePairBar');
+        if (img && img.dcDataUrl) {
+            bar.classList.remove('hidden');
+            document.getElementById('visiblePairName').textContent = img.dcName;
+            document.getElementById('btnToggleVisible').textContent = state.showVisible ? 'Ver termografía' : 'Ver visible';
+        } else bar.classList.add('hidden');
+        updateFusionPanel();
+
+        // Spots
+        const st = document.getElementById('spotsTable');
+        if (!img || img.spots.length === 0) {
+            st.innerHTML = '<tr><td colspan="3" class="text-slate-600 text-center py-1.5">Sin puntos</td></tr>';
+        } else {
+            st.innerHTML = img.spots.map((p, i) =>
+                `<tr class="border-b border-slate-200"><td class="py-1 text-amber-600">P${i + 1}</td><td class="text-slate-500">${Math.round(p.x)},${Math.round(p.y)}</td><td class="text-right text-amber-600 font-bold">${normToTemp(p.norm, img, Math.round(p.y) * CANVAS_W + Math.round(p.x)).toFixed(1)}</td></tr>`
+            ).join('');
+        }
+
+        // Delta
+        if (img && img.delta.length === 2) {
+            const t1 = normToTemp(img.delta[0].norm, img, Math.round(img.delta[0].y) * CANVAS_W + Math.round(img.delta[0].x)), t2 = normToTemp(img.delta[1].norm, img, Math.round(img.delta[1].y) * CANVAS_W + Math.round(img.delta[1].x));
+            document.getElementById('deltaT1').textContent = t1.toFixed(1) + '°C';
+            document.getElementById('deltaT2').textContent = t2.toFixed(1) + '°C';
+            document.getElementById('deltaVal').textContent = Math.abs(t1 - t2).toFixed(1) + '°C';
+        } else {
+            document.getElementById('deltaT1').textContent = '—';
+            document.getElementById('deltaT2').textContent = '—';
+            document.getElementById('deltaVal').textContent = '—';
+        }
+
+        // ROI
+        const roiBox = document.getElementById('roiBox');
+        if (img && img.rois.length > 0) {
+            roiBox.classList.remove('hidden');
+            const bx = img.rois[img.rois.length - 1];
+            let min = Infinity, max = -Infinity, sum = 0, n = 0;
+            for (let y = Math.round(bx.y); y < Math.round(bx.y + bx.h); y += 2)
+                for (let x = Math.round(bx.x); x < Math.round(bx.x + bx.w); x += 2) {
+                    const t = tempAt(img, x, y);
+                    min = Math.min(min, t); max = Math.max(max, t); sum += t; n++;
+                }
+            if (n > 0) {
+                document.getElementById('roiMin').textContent = min.toFixed(1) + '°';
+                document.getElementById('roiAvg').textContent = (sum / n).toFixed(1) + '°';
+                document.getElementById('roiMax').textContent = max.toFixed(1) + '°';
+            } else {
+                document.getElementById('roiMin').textContent = '—';
+                document.getElementById('roiAvg').textContent = '—';
+                document.getElementById('roiMax').textContent = '—';
+            }
+        } else roiBox.classList.add('hidden');
+
+        // Perfil
+        const profBox = document.getElementById('profileBox');
+        if (img && img.profile) {
+            profBox.classList.remove('hidden');
+            drawProfileChart(img);
+        } else profBox.classList.add('hidden');
+
+        // Stats + histograma
+        if (img) {
+            const temps = new Float32Array(img.thermalMap.length);
+            let min = Infinity, max = -Infinity, sum = 0;
+            for (let i = 0; i < img.thermalMap.length; i += 2) {
+                const t = normToTemp(img.thermalMap[i], img, i);
+                temps[i] = t;
+                min = Math.min(min, t); max = Math.max(max, t); sum += t;
+            }
+            document.getElementById('statMin').textContent = min.toFixed(1) + '°';
+            document.getElementById('statAvg').textContent = (sum / (img.thermalMap.length / 2)).toFixed(1) + '°';
+            document.getElementById('statMax').textContent = max.toFixed(1) + '°';
+            drawHistogram(img, min, max);
+        }
+    }
+
+    // ── Chart.js: histograma y perfil ──────────────────────────────
+    let histChart = null, profChart = null;
+    function histogramData(img, min, max) {
+        const bins = new Array(32).fill(0);
+        const span = Math.max(0.001, max - min);
+        for (let i = 0; i < img.thermalMap.length; i += 4) {
+            const t = normToTemp(img.thermalMap[i], img, i);
+            bins[Math.min(31, Math.floor((t - min) / span * 32))]++;
+        }
+        const labels = bins.map((_, i) => (min + span * (i + 0.5) / 32).toFixed(0));
+        return { labels, bins };
+    }
+    function histogramCfg(img, min, max) {
+        const { labels, bins } = histogramData(img, min, max);
+        return {
+            type: 'bar',
+            data: { labels, datasets: [{ data: bins, backgroundColor: 'rgba(233,97,21,0.55)', borderRadius: 2 }] },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#64748b', font: { size: 8 }, maxTicksLimit: 8 }, grid: { display: false } },
+                    y: { ticks: { color: '#64748b', font: { size: 8 } }, grid: { color: 'rgba(148,163,184,0.35)' } }
+                }
+            }
+        };
+    }
+    function profileData(img) {
+        const ln = img.profile;
+        const dx = ln.x2 - ln.x1, dy = ln.y2 - ln.y1;
+        const len = Math.max(2, Math.round(Math.hypot(dx, dy)));
+        const vals = [];
+        for (let i = 0; i <= len; i++) {
+            const x = ln.x1 + dx * i / len, y = ln.y1 + dy * i / len;
+            vals.push(tempAt(img, x, y));
+        }
+        return vals;
+    }
+    function profileCfg(img) {
+        const vals = profileData(img);
+        return {
+            type: 'line',
+            data: {
+                labels: vals.map((_, i) => i),
+                datasets: [{ data: vals, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.15)', fill: true, pointRadius: 0, borderWidth: 1.5, tension: 0.25 }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#64748b', font: { size: 8 }, maxTicksLimit: 6 }, grid: { display: false } },
+                    y: { ticks: { color: '#64748b', font: { size: 8 } }, grid: { color: 'rgba(148,163,184,0.35)' } }
+                }
+            }
+        };
+    }
+    function drawHistogram(img, min, max) {
+        const cfg = histogramCfg(img, min, max);
+        if (histChart) { histChart.data = cfg.data; histChart.options = cfg.options; histChart.update(); }
+        else histChart = new Chart(document.getElementById('histogramChart'), cfg);
+    }
+    function drawProfileChart(img) {
+        const cfg = profileCfg(img);
+        if (profChart) { profChart.data = cfg.data; profChart.options = cfg.options; profChart.update(); }
+        else profChart = new Chart(document.getElementById('profileChart'), cfg);
+    }
+
+    function renderAll() { renderCanvas(); refreshPanels(); updateTempScaleBar(); }
+
+    // ── Tools: interacción con canvas ──────────────────────────────
+    const TOOL_HINTS = {
+        spot: 'Click para colocar puntos de medición',
+        delta: 'Coloca 2 puntos para calcular ΔT',
+        roi: 'Arrastra para delimitar una zona',
+        line: 'Arrastra para trazar el perfil térmico',
+        fusion: 'Ajusta crossfade, alineación y relieve en el panel Fusión'
+    };
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.tool = btn.dataset.tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b === btn));
+            document.getElementById('toolHint').textContent = TOOL_HINTS[state.tool];
+            updateFusionPanel();
+            renderAll();
+        });
+    });
+    document.getElementById('toolHint').textContent = TOOL_HINTS.spot;
+
+    // ── Panel Fusión: visibilidad + listeners de los controles ─────
+    function updateFusionPanel() {
+        const img = current();
+        const panel = document.getElementById('fusionPanel');
+        panel.classList.toggle('hidden', !(state.tool === 'fusion' && img && img.dcDataUrl));
+    }
+    function bindFusionSlider(id, valId, fmt, set) {
+        const el = document.getElementById(id);
+        el.addEventListener('input', () => {
+            set(parseFloat(el.value));
+            document.getElementById(valId).textContent = fmt(parseFloat(el.value));
+            renderAll();
+        });
+    }
+    bindFusionSlider('fusionMix', 'fusionMixVal', v => v.toFixed(0) + ' %', v => { state.fusion.mix = v / 100; });
+    bindFusionSlider('fusionRelief', 'fusionReliefVal', v => v.toFixed(0) + ' %', v => { state.fusion.relief = v / 100; });
+    bindFusionSlider('fusionDx', 'fusionDxVal', v => v.toFixed(0), v => { state.fusion.dx = v; });
+    bindFusionSlider('fusionDy', 'fusionDyVal', v => v.toFixed(0), v => { state.fusion.dy = v; });
+    document.getElementById('btnFusionReset').addEventListener('click', () => {
+        state.fusion = { mix: 0.5, relief: 0.35, dx: 0, dy: 0 };
+        document.getElementById('fusionMix').value = 50;
+        document.getElementById('fusionMixVal').textContent = '50 %';
+        document.getElementById('fusionRelief').value = 35;
+        document.getElementById('fusionReliefVal').textContent = '35 %';
+        document.getElementById('fusionDx').value = 0;
+        document.getElementById('fusionDxVal').textContent = '0';
+        document.getElementById('fusionDy').value = 0;
+        document.getElementById('fusionDyVal').textContent = '0';
+        renderAll();
+    });
+
+    let dragging = false, dragStart = null;
+    let dragPoint = null; // { kind: 'spot'|'delta'|'profile'|'roi', idx?, end?, mode? } — elemento arrastrado
+
+    // Busca un elemento arrastrable cerca de las coordenadas del canvas:
+    // puntos (spot/delta), extremos del perfil y ROI (esquinas o el rectángulo entero)
+    function hitTestPoint(img, x, y) {
+        const R = 12;
+        for (let i = img.spots.length - 1; i >= 0; i--) {
+            if (Math.hypot(img.spots[i].x - x, img.spots[i].y - y) <= R) return { kind: 'spot', idx: i };
+        }
+        for (let i = img.delta.length - 1; i >= 0; i--) {
+            if (Math.hypot(img.delta[i].x - x, img.delta[i].y - y) <= R) return { kind: 'delta', idx: i };
+        }
+        if (img.profile) {
+            const p = img.profile;
+            if (Math.hypot(p.x1 - x, p.y1 - y) <= R) return { kind: 'profile', end: 1 };
+            if (Math.hypot(p.x2 - x, p.y2 - y) <= R) return { kind: 'profile', end: 2 };
+            // Cuerpo de la línea: mover el perfil entero
+            const dx = p.x2 - p.x1, dy = p.y2 - p.y1;
+            const len2 = dx * dx + dy * dy;
+            if (len2 > 0) {
+                let t = ((x - p.x1) * dx + (y - p.y1) * dy) / len2;
+                t = Math.max(0, Math.min(1, t));
+                const px = p.x1 + t * dx, py = p.y1 + t * dy;
+                if (Math.hypot(px - x, py - y) <= R) return { kind: 'profile', end: 0 };
+            }
+        }
+        for (let i = img.rois.length - 1; i >= 0; i--) {
+            const r = img.rois[i];
+            const corners = [
+                { x: r.x, y: r.y }, { x: r.x + r.w, y: r.y },
+                { x: r.x + r.w, y: r.y + r.h }, { x: r.x, y: r.y + r.h }
+            ];
+            for (let k = 0; k < 4; k++) {
+                if (Math.hypot(corners[k].x - x, corners[k].y - y) <= R) return { kind: 'roi', idx: i, mode: 'corner', corner: k };
+            }
+            if (x >= r.x - R && x <= r.x + r.w + R && y >= r.y - R && y <= r.y + r.h + R) {
+                return { kind: 'roi', idx: i, mode: 'move' };
+            }
+        }
+        return null;
+    }
+
+    mainCanvas.addEventListener('mousedown', (e) => {
+        const img = current();
+        if (!img || state.showVisible) return;
+        const c = getCanvasCoords(e);
+        // Arrastrar un punto existente (cualquier herramienta)
+        const hit = hitTestPoint(img, c.x, c.y);
+        if (hit) {
+            dragPoint = hit;
+            dragPoint.lastX = c.x; dragPoint.lastY = c.y;
+            if (hit.kind === 'roi' && hit.mode === 'corner') {
+                // Esquina opuesta (fija) según la esquina arrastrada
+                const r = img.rois[hit.idx];
+                const ox = (hit.corner === 0 || hit.corner === 3) ? r.x + r.w : r.x;
+                const oy = (hit.corner === 0 || hit.corner === 1) ? r.y + r.h : r.y;
+                dragPoint.fixedX = ox; dragPoint.fixedY = oy;
+            }
+            mainCanvas.style.cursor = 'grabbing';
+            return;
+        }
+        if (state.tool === 'spot') {
+            img.spots.push({ x: c.x, y: c.y, norm: normAt(c.x, c.y) });
+            renderAll();
+        } else if (state.tool === 'delta') {
+            if (img.delta.length >= 2) img.delta = [];
+            img.delta.push({ x: c.x, y: c.y, norm: normAt(c.x, c.y) });
+            renderAll();
+        } else if (state.tool === 'roi' || state.tool === 'line') {
+            dragging = true; dragStart = c;
+            if (state.tool === 'roi') state.draftROI = { x: c.x, y: c.y, w: 0, h: 0 };
+            else state.draftLine = { x1: c.x, y1: c.y, x2: c.x, y2: c.y };
+        }
+    });
+    mainCanvas.addEventListener('mousemove', (e) => {
+        const img = current();
+        if (!img) return;
+        const c = getCanvasCoords(e);
+        const t = tempAt(img, c.x, c.y);
+        document.getElementById('liveTemp').textContent = t.toFixed(1) + ' °C';
+        document.getElementById('liveCoords').textContent = c.x + ',' + c.y;
+        if (dragPoint) {
+            if (dragPoint.kind === 'spot' || dragPoint.kind === 'delta') {
+                const arr = dragPoint.kind === 'spot' ? img.spots : img.delta;
+                const p = arr[dragPoint.idx];
+                if (p) {
+                    p.x = c.x; p.y = c.y; p.norm = normAt(c.x, c.y);
+                    renderCanvas();
+                }
+            } else if (dragPoint.kind === 'profile') {
+                const p = img.profile;
+                if (p) {
+                    if (dragPoint.end === 1) { p.x1 = c.x; p.y1 = c.y; }
+                    else if (dragPoint.end === 2) { p.x2 = c.x; p.y2 = c.y; }
+                    else { // mover el perfil entero
+                        const dx = c.x - dragPoint.lastX, dy = c.y - dragPoint.lastY;
+                        p.x1 += dx; p.y1 += dy; p.x2 += dx; p.y2 += dy;
+                        dragPoint.lastX = c.x; dragPoint.lastY = c.y;
+                    }
+                    renderCanvas();
+                }
+            } else if (dragPoint.kind === 'roi') {
+                const r = img.rois[dragPoint.idx];
+                if (r) {
+                    if (dragPoint.mode === 'corner') {
+                        // Redimensiona desde la esquina arrastrada (esquina opuesta fija)
+                        const ax = dragPoint.fixedX, ay = dragPoint.fixedY;
+                        r.x = Math.min(ax, c.x); r.y = Math.min(ay, c.y);
+                        r.w = Math.abs(c.x - ax); r.h = Math.abs(c.y - ay);
+                    } else {
+                        const dx = c.x - dragPoint.lastX, dy = c.y - dragPoint.lastY;
+                        r.x += dx; r.y += dy;
+                        dragPoint.lastX = c.x; dragPoint.lastY = c.y;
+                    }
+                    renderCanvas();
+                }
+            }
+            return;
+        }
+        // Cursor "grab" al pasar sobre un punto
+        mainCanvas.style.cursor = hitTestPoint(img, c.x, c.y) ? 'grab' : 'crosshair';
+        if (dragging && dragStart) {
+            if (state.tool === 'roi') {
+                state.draftROI = {
+                    x: Math.min(dragStart.x, c.x), y: Math.min(dragStart.y, c.y),
+                    w: Math.abs(c.x - dragStart.x), h: Math.abs(c.y - dragStart.y)
+                };
+            } else if (state.tool === 'line') {
+                state.draftLine = { x1: dragStart.x, y1: dragStart.y, x2: c.x, y2: c.y };
+            }
+            renderCanvas();
+        }
+    });
+    window.addEventListener('mouseup', () => {
+        const img = current();
+        if (dragPoint) {
+            dragPoint = null;
+            mainCanvas.style.cursor = 'crosshair';
+            if (img) renderAll();
+            return;
+        }
+        if (!img) { dragging = false; return; }
+        if (dragging && state.tool === 'roi' && state.draftROI && state.draftROI.w > 5) {
+            img.rois.push(state.draftROI);
+        } else if (dragging && state.tool === 'line' && state.draftLine) {
+            const ln = state.draftLine;
+            if (Math.hypot(ln.x2 - ln.x1, ln.y2 - ln.y1) > 5) img.profile = ln;
+        }
+        dragging = false; dragStart = null;
+        state.draftROI = null; state.draftLine = null;
+        renderAll();
+    });
+
+    // ── Botones paneles ────────────────────────────────────────────
+    document.getElementById('btnClearSpots').addEventListener('click', () => { const img = current(); if (img) { img.spots = []; renderAll(); } });
+    document.getElementById('btnClearDelta').addEventListener('click', () => { const img = current(); if (img) { img.delta = []; renderAll(); } });
+    document.getElementById('btnClearRoi').addEventListener('click', () => { const img = current(); if (img) { img.rois = []; renderAll(); } });
+    document.getElementById('btnClearProfile').addEventListener('click', () => { const img = current(); if (img) { img.profile = null; renderAll(); } });
+    document.getElementById('btnClearTools').addEventListener('click', () => {
+        const img = current();
+        if (img) { img.spots = []; img.delta = []; img.rois = []; img.profile = null; renderAll(); }
+    });
+
+    document.getElementById('btnToggleVisible').addEventListener('click', () => {
+        state.showVisible = !state.showVisible;
+        renderAll();
+    });
+
+    // Escala
+    document.getElementById('btnAutoScale').addEventListener('click', () => {
+        const img = current();
+        if (!img) return;
+        let tLo, tHi;
+        if (img.tempMap) {
+            const samples = [];
+            for (let i = 0; i < img.tempMap.length; i += 4) samples.push(img.tempMap[i]);
+            samples.sort((a, b) => a - b);
+            const p = (q) => samples[Math.floor(q * (samples.length - 1))];
+            tLo = p(0.02); tHi = p(0.98);
+            const span = Math.max(0.001, tHi - tLo);
+            for (let i = 0; i < img.thermalMap.length; i++)
+                img.thermalMap[i] = Math.max(0, Math.min(1, (img.tempMap[i] - tLo) / span));
+        } else {
+            const samples = [];
+            for (let i = 0; i < img.thermalMap.length; i += 4) samples.push(img.thermalMap[i]);
+            samples.sort((a, b) => a - b);
+            const p = (q) => samples[Math.floor(q * (samples.length - 1))];
+            tLo = normToTemp(p(0.02), img); tHi = normToTemp(p(0.98), img);
+        }
+        img.scale = { min: tLo, max: tHi };
+        document.getElementById('scaleMin').value = tLo.toFixed(1);
+        document.getElementById('scaleMax').value = tHi.toFixed(1);
+        invalidateFilterCache();
+        renderAll();
+    });
+    ['scaleMin', 'scaleMax'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+        const img = current();
+        if (img) {
+            img.scale = getScale();
+            if (img.tempMap) {
+                const span = Math.max(0.001, img.scale.max - img.scale.min);
+                for (let i = 0; i < img.thermalMap.length; i++)
+                    img.thermalMap[i] = Math.max(0, Math.min(1, (img.tempMap[i] - img.scale.min) / span));
+            }
+            invalidateFilterCache();
+            renderAll();
+        }
+    }));
+
+    // ── Paleta de colores ──
+    function applyPalette(name) {
+        currentPalette = PALETTE_STOPS[name] ? name : 'ironbow';
+        invCache.clear();                 // la inversa depende de la LUT activa
+        invalidateFilterCache();          // la imagen base depende de la paleta
+        // Barra de escala (degradado) bajo el lienzo
+        const bar = document.querySelector('#tempScaleBar .rounded-full');
+        if (bar) bar.style.background = paletteGradientCSS(currentPalette);
+        renderAll();
+        regenThumbs();                    // miniaturas con la nueva paleta
+        renderImageList();
+    }
+    // Regenera las miniaturas IR (radiométricas) con la paleta activa
+    function regenThumbs() {
+        state.images.forEach(im => {
+            if (im.tempMap) im.irThumb = makeThumbFromMap(im.thermalMap, 210);
+        });
+    }
+    document.getElementById('selPalette').addEventListener('change', (e) => applyPalette(e.target.value));
+    // Estado inicial de la barra de escala con la paleta por defecto
+    applyPalette('ironbow');
+
+    // ── Barra de escala de temperatura (degradado + min/máx) ──
+    function updateTempScaleBar() {
+        const img = current();
+        const minEl = document.getElementById('tempScaleMin');
+        const maxEl = document.getElementById('tempScaleMax');
+        if (!img || state.showVisible) { minEl.textContent = '—'; maxEl.textContent = '—'; return; }
+        minEl.textContent = img.scale.min.toFixed(1);
+        maxEl.textContent = img.scale.max.toFixed(1);
+    }
+    ['inpEmissivity', 'inpTRefl'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+        const img = current();
+        if (img) { img.emissivity = getEps(); img.tRefl = getTRefl(); }
+        renderAll();
+    }));
+    document.getElementById('selCondition').addEventListener('change', (e) => {
+        const img = current();
+        if (img) img.condition = e.target.value;
+    });
+    document.getElementById('txtRecs').addEventListener('input', (e) => {
+        const img = current();
+        if (img) img.recs = e.target.value;
+    });
+    document.getElementById('inpAsset').addEventListener('input', (e) => {
+        const img = current();
+        if (img) img.assetName = e.target.value;
+    });
+    // ── Setup: logo, empresa IE, termógrafo, empresa cliente (localStorage) ──
+    const THERMOG_KEY = 'thermallab_lite_thermographer_v1';
+    const SETUP_KEY = 'thermallab_lite_setup_v1';
+    function loadSetup() {
+        try {
+            const s = JSON.parse(localStorage.getItem(SETUP_KEY) || '{}') || {};
+            // Migrar el nombre del termógrafo guardado por la versión anterior
+            if (!s.thermographer) {
+                try { s.thermographer = localStorage.getItem(THERMOG_KEY) || ''; } catch (e) { }
+            }
+            return s;
+        } catch (e) { return {}; }
+    }
+    function saveSetup(s) {
+        try {
+            localStorage.setItem(SETUP_KEY, JSON.stringify(s));
+            // Mantener la clave antigua sincronizada (compatibilidad)
+            localStorage.setItem(THERMOG_KEY, s.thermographer || '');
+        } catch (e) { /* almacenamiento lleno */ }
+    }
+    function openSetupModal() {
+        const s = loadSetup();
+        document.getElementById('setupCompany').value = s.company || '';
+        document.getElementById('setupCompanyNit').value = s.companyNit || '';
+        document.getElementById('setupCompanyTel').value = s.companyTel || '';
+        document.getElementById('setupCompanyAddr').value = s.companyAddr || '';
+        document.getElementById('setupCompanyMail').value = s.companyMail || '';
+        document.getElementById('setupThermographer').value = s.thermographer || '';
+        document.getElementById('setupThermographerCert').value = s.thermographerCert || '';
+        document.getElementById('setupClient').value = s.client || '';
+        document.getElementById('setupClientNit').value = s.clientNit || '';
+        document.getElementById('setupClientAddr').value = s.clientAddr || '';
+        refreshSetupLogo();
+        document.getElementById('setupModal').classList.remove('hidden');
+    }
+    function closeSetupModal() { document.getElementById('setupModal').classList.add('hidden'); }
+    function refreshSetupLogo() {
+        const logo = loadLogo();
+        const pv = document.getElementById('setupLogoPreview');
+        if (logo) { pv.src = logo; pv.classList.remove('hidden'); }
+        else { pv.removeAttribute('src'); pv.classList.add('hidden'); }
+        document.getElementById('setupLogoRemove').classList.toggle('hidden', !logo);
+    }
+    document.getElementById('btnSetup').addEventListener('click', openSetupModal);
+    document.getElementById('btnCancelSetup').addEventListener('click', closeSetupModal);
+    document.getElementById('btnSaveSetup').addEventListener('click', () => {
+        saveSetup({
+            company: document.getElementById('setupCompany').value.trim(),
+            companyNit: document.getElementById('setupCompanyNit').value.trim(),
+            companyTel: document.getElementById('setupCompanyTel').value.trim(),
+            companyAddr: document.getElementById('setupCompanyAddr').value.trim(),
+            companyMail: document.getElementById('setupCompanyMail').value.trim(),
+            thermographer: document.getElementById('setupThermographer').value.trim(),
+            thermographerCert: document.getElementById('setupThermographerCert').value.trim(),
+            client: document.getElementById('setupClient').value.trim(),
+            clientNit: document.getElementById('setupClientNit').value.trim(),
+            clientAddr: document.getElementById('setupClientAddr').value.trim()
+        });
+        closeSetupModal();
+        // Regenerar el reporte si está abierto para ver los cambios al instante
+        if (!document.getElementById('reportModal').classList.contains('hidden')) {
+            document.getElementById('btnOpenReport').click();
+        }
+    });
+    document.getElementById('setupLogoInput').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            saveLogo(reader.result);
+            refreshSetupLogo();
+            refreshLogoButtons();
+            if (!document.getElementById('reportModal').classList.contains('hidden')) {
+                document.getElementById('btnOpenReport').click();
+            }
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    });
+    document.getElementById('setupLogoRemove').addEventListener('click', () => {
+        saveLogo('');
+        refreshSetupLogo();
+        refreshLogoButtons();
+        if (!document.getElementById('reportModal').classList.contains('hidden')) {
+            document.getElementById('btnOpenReport').click();
+        }
+    });
+    // Campo lateral "Nombre del termógrafo": sincronizado con el Setup
+    (function syncThermographerField() {
+        const inp = document.getElementById('inpThermographer');
+        inp.value = loadSetup().thermographer || '';
+        inp.addEventListener('input', (e) => {
+            const s = loadSetup();
+            s.thermographer = e.target.value;
+            saveSetup(s);
+        });
+    })();
+
+    // ── Carga de archivos ──────────────────────────────────────────
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length) handleFiles(e.target.files);
+        e.target.value = '';
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // IA EXPERTO TERMÓGRAFO
+    // ══════════════════════════════════════════════════════════════
+    const AI_KEY = 'thermallab_lite_ai_v1';
+    const XIAOMI_BASE = 'https://token-plan-sgp.xiaomimimo.com/v1';
+    // SIN key embebida: la key vive en el proxy del servidor (config IA del portal)
+    // o, como fallback local, en localStorage / config.js (ver config.example.js).
+    function cfgKey(name) {
+        const c = window.IE_CONFIG || {};
+        return (c[name] || '').trim();
+    }
+    const XIAOMI_FALLBACK_MODELS = [
+        { id: 'mimo-v2.6-flash', label: 'Xiaomi MiMo 2.6 Flash' },
+        { id: 'mimo-v2.6-pro', label: 'Xiaomi MiMo 2.6 Pro' }
+    ];
+    const AI_SYSTEM_PROMPT = `Eres Ingeniero Termógrafo Experto Nivel III (ISO 18436-2) que asesora al termógrafo (usuario) de forma SIMPLE, CONCRETA y RESUMIDA. El usuario completa el nombre del equipo medido y sus observaciones; tu trabajo es interpretar ambos y dar recomendaciones prácticas. Responde SIEMPRE en español, en frases cortas y sin rodeos, con este formato exacto:
+
+## EQUIPO
+Interpreta el nombre/siglas del equipo indicado por el usuario y aclara qué es en una línea. Ejemplos: TM = termomagnético (interruptor termomagnético), ITM = interruptor termomagnético, ID = interruptor diferencial, MCCB = interruptor enmoldeado, MOTOR/bornera = conexión de bornes de motor, TRAFO = transformador, CBT = cuadro de baja tensión, contactor, bornera, barra, cuchilla, prensaestopas, etc. Si no reconoces la sigla, dilo y describe el equipo tal como lo indicó el usuario.
+
+## OBSERVACIONES
+Lo que observó el termógrafo, en 2-4 líneas: qué elemento falla (bornera, contacto, fase, borne, caja), patrón de calentamiento (puntual, difuso, por fase, asimétrico), ΔT respecto a referencia (fase vecina o ambiente) y qué significa. Si la imagen o los datos no cumplen con una buena práctica de captura (emisividad, ángulo, carga del equipo, referencia), indícalo en una línea.
+
+## RIESGO
+Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actuación. Máximo 3 líneas.
+
+## RECOMENDACIONES
+3 a 5 acciones simples y concretas, una por línea, con verbo al inicio (apretar, medir, limpiar, revisar, reemplazar...). Ejemplos: apriete de bornera a torque del fabricante, medición de corriente por fase, limpieza de contacto, revisión de ventilación, termografía de seguimiento. Cierra con una línea: "Norma de referencia: ..." citando la norma que sustenta la recomendación (p. ej. NTC 2050 / RETIE / NFPA 70B / NEC 220 / IEEE C57.91 / NEMA-MG1 / IEC 60947 / UNE-EN 62446-1 / ISO 18436-2 / NETA ATS), según corresponda al equipo y a lo observado. Si ninguna aplica claramente, escribe "Norma de referencia: buena práctica de mantenimiento predictivo".
+
+## CONDICIÓN GLOBAL
+(una sola línea, la ÚLTIMA del texto, con exactamente una de estas palabras: NORMAL / ATENCIÓN / ATENCIÓN URGENTE / CRÍTICO)`;
+
+    function loadAiSettings() {
+        try { return JSON.parse(localStorage.getItem(AI_KEY)) || {}; } catch { return {}; }
+    }
+    function saveAiSettings(s) { localStorage.setItem(AI_KEY, JSON.stringify(s)); }
+
+    function getModelEl() { return document.getElementById('aiModel'); }
+    function getModelCustomEl() { return document.getElementById('aiModelCustom'); }
+    function currentModelValue() {
+        const sel = getModelEl();
+        return sel.classList.contains('hidden') ? getModelCustomEl().value.trim() : sel.value;
+    }
+    function fillModelSelect(models, selected) {
+        const sel = getModelEl();
+        sel.innerHTML = '';
+        models.forEach(m => {
+            const o = document.createElement('option');
+            o.value = m.id;
+            o.textContent = m.label || m.id;
+            sel.appendChild(o);
+        });
+        if (selected && models.some(m => m.id === selected)) sel.value = selected;
+    }
+    function useCustomModelInput(on) {
+        getModelEl().classList.toggle('hidden', on);
+        getModelCustomEl().classList.toggle('hidden', !on);
+        document.getElementById('btnRefreshModels').classList.toggle('hidden', on);
+    }
+    async function fetchXiaomiModels(apiKey) {
+        const key = (apiKey || '').trim() || cfgKey('XIAOMI_API_KEY');
+        if (!key) throw new Error('Sin API key: configurá la IA (admin) o cargá una key propia.');
+        const r = await fetch(XIAOMI_BASE + '/models', {
+            headers: { 'Authorization': 'Bearer ' + key }
+        });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error?.message || 'Error listando modelos');
+        return (j.data || []).map(m => ({ id: m.id, label: 'Xiaomi ' + m.id }));
+    }
+    async function refreshModelList(selected) {
+        const p = document.getElementById('aiProvider').value;
+        const key = document.getElementById('aiApiKey').value.trim();
+        if (p === 'xiaomi') {
+            try {
+                const models = await fetchXiaomiModels(key);
+                if (models.length) {
+                    fillModelSelect(models, selected || 'mimo-v2.6-flash');
+                    useCustomModelInput(false);
+                    return;
+                }
+            } catch (e) { console.warn('No se pudo actualizar el listado de modelos:', e.message); }
+            fillModelSelect(XIAOMI_FALLBACK_MODELS, selected || 'mimo-v2.6-flash');
+            useCustomModelInput(false);
+        } else if (p === 'openai') {
+            fillModelSelect([
+                { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
+                { id: 'gpt-4o', label: 'GPT-4o' }
+            ], selected || 'gpt-4o-mini');
+            useCustomModelInput(false);
+        } else if (p === 'gemini') {
+            fillModelSelect([
+                { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+                { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' }
+            ], selected || 'gemini-2.0-flash');
+            useCustomModelInput(false);
+        } else if (p === 'anthropic') {
+            fillModelSelect([
+                { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' }
+            ], selected || 'claude-sonnet-4-20250514');
+            useCustomModelInput(false);
+        } else {
+            useCustomModelInput(true);
+            getModelCustomEl().value = selected || '';
+        }
+    }
+
+    function openAiModal() {
+        const s = loadAiSettings();
+        document.getElementById('aiProvider').value = s.provider || 'xiaomi';
+        document.getElementById('aiApiKey').value = s.apiKey || '';
+        document.getElementById('aiEndpoint').value = s.endpoint || '';
+        toggleEndpoint();
+        refreshModelList(s.model);
+        document.getElementById('aiSettingsModal').classList.remove('hidden');
+    }
+    function closeAiModal() { document.getElementById('aiSettingsModal').classList.add('hidden'); }
+    function toggleEndpoint() {
+        document.getElementById('aiEndpointWrap').classList.toggle('hidden', document.getElementById('aiProvider').value !== 'custom');
+    }
+    document.getElementById('btnAiSettings').addEventListener('click', openAiModal);
+    document.getElementById('btnCancelAiSettings').addEventListener('click', closeAiModal);
+    document.getElementById('btnRefreshModels').addEventListener('click', () => refreshModelList(currentModelValue()));
+    document.getElementById('aiProvider').addEventListener('change', () => {
+        toggleEndpoint();
+        refreshModelList();
+    });
+    document.getElementById('btnSaveAiSettings').addEventListener('click', () => {
+        saveAiSettings({
+            provider: document.getElementById('aiProvider').value,
+            model: currentModelValue(),
+            apiKey: document.getElementById('aiApiKey').value,
+            endpoint: document.getElementById('aiEndpoint').value
+        });
+        closeAiModal();
+    });
+
+    function buildContext() {
+        const img = current();
+        const lines = [];
+        lines.push('EQUIPO / DISPOSITIVO MEDIDO: ' + (img.assetName || '(sin nombre de referencia)'));
+        lines.push('ARCHIVO: ' + img.irName + (img.dcName ? ' / visible: ' + img.dcName : ''));
+        lines.push('FECHA: ' + img.date);
+        lines.push('ESCALA: ' + img.scale.min.toFixed(1) + ' a ' + img.scale.max.toFixed(1) + ' °C | emisividad ' + getEps().toFixed(2) + ' | T refl. ' + getTRefl().toFixed(1) + ' °C');
+        if (img.rad) lines.push('DATOS: radiométricos reales de la cámara (matriz de temperaturas por píxel, sin OSD)');
+        // Stats
+        let min = Infinity, max = -Infinity, sum = 0, n = 0;
+        for (let i = 0; i < img.thermalMap.length; i += 4) {
+            const t = normToTemp(img.thermalMap[i], img, i);
+            min = Math.min(min, t); max = Math.max(max, t); sum += t; n++;
+        }
+        lines.push(`ESCENA: T min ${min.toFixed(1)} °C, T media ${(sum / n).toFixed(1)} °C, T max ${max.toFixed(1)} °C`);
+        if (img.spots.length) {
+            lines.push('PUNTOS: ' + img.spots.map((p, i) => `P${i + 1}=(${Math.round(p.x)},${Math.round(p.y)}) ${normToTemp(p.norm, img, Math.round(p.y) * CANVAS_W + Math.round(p.x)).toFixed(1)}°C`).join(', '));
+        }
+        if (img.delta.length === 2) {
+            const t1 = normToTemp(img.delta[0].norm, img, Math.round(img.delta[0].y) * CANVAS_W + Math.round(img.delta[0].x)), t2 = normToTemp(img.delta[1].norm, img, Math.round(img.delta[1].y) * CANVAS_W + Math.round(img.delta[1].x));
+            lines.push(`DELTA: T1=${t1.toFixed(1)}°C T2=${t2.toFixed(1)}°C ΔT=${Math.abs(t1 - t2).toFixed(1)}°C`);
+        }
+        if (img.rois.length) {
+            const bx = img.rois[img.rois.length - 1];
+            lines.push(`ROI: rect(${Math.round(bx.x)},${Math.round(bx.y)},${Math.round(bx.w)}x${Math.round(bx.h)})`);
+        }
+        if (img.profile) lines.push('PERFIL: línea trazada de (' + Math.round(img.profile.x1) + ',' + Math.round(img.profile.y1) + ') a (' + Math.round(img.profile.x2) + ',' + Math.round(img.profile.y2) + ')');
+        if (img.notes) lines.push('OBSERVACIONES DEL TERMÓGRAFO: ' + img.notes);
+        if (img.recs) lines.push('RECOMENDACIONES DEL TERMÓGRAFO: ' + img.recs);
+        return lines.join('\n');
+    }
+
+    function dataUrlParts(url) {
+        const m = String(url || '').match(/^data:([^;]+);base64,(.+)$/);
+        return m ? { mime: m[1], data: m[2] } : { mime: 'image/png', data: String(url || '').split(',')[1] || '' };
+    }
+    function captureThermalDataUrl() {
+        return captureThermalDataUrlFor(current());
+    }
+    // Captura del termograma de una imagen concreta (con sus marcadores) para el reporte
+    function captureThermalDataUrlFor(img) {
+        if (!img) return '';
+        const wasVisible = state.showVisible;
+        const prevId = state.currentId;
+        const prevTool = state.tool;
+        state.showVisible = false;
+        if (state.tool === 'fusion') state.tool = 'spot';   // el reporte muestra el termograma puro
+        state.currentId = img.id;
+        renderCanvas();
+        const url = mainCanvas.toDataURL('image/png');
+        state.currentId = prevId;
+        state.tool = prevTool;
+        if (wasVisible) state.showVisible = true;
+        renderCanvas();
+        return url;
+    }
+
+    async function callAiExpert(context, thermogramDataUrl, visibleDataUrl) {
+        const s = loadAiSettings();
+        const userText = 'Analiza esta termografía como experto:\n\n' + context;
+
+        // Contenido multimodal en formato OpenAI-compatible (texto + imágenes data-URL)
+        const content = [{ type: 'text', text: userText }, { type: 'image_url', image_url: { url: thermogramDataUrl } }];
+        if (visibleDataUrl) content.push({ type: 'image_url', image_url: { url: visibleDataUrl } });
+
+        // ── RUTA 1 (preferida): proxy del servidor — la key NUNCA llega al navegador ──
+        const sbCfg = {
+            url: localStorage.getItem('supabase_url') || (window.IE_CONFIG && window.IE_CONFIG.SUPABASE_URL) || '',
+            anon: localStorage.getItem('supabase_anon') || (window.IE_CONFIG && window.IE_CONFIG.SUPABASE_ANON) || ''
+        };
+        if (window.IEAuth && IEAuth.sb && sbCfg.url) {
+            try {
+                const { data: sessData } = await IEAuth.sb.auth.getSession();
+                const sessionToken = sessData?.session?.access_token || '';
+                if (sessionToken) {
+                    const r = await fetch(sbCfg.url + '/functions/v1/proxy-ia', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + sessionToken,
+                            'apikey': sbCfg.anon,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            messages: [
+                                { role: 'system', content: AI_SYSTEM_PROMPT },
+                                { role: 'user', content }
+                            ],
+                            max_tokens: 3000
+                            // sin "model": el proxy usa el motor configurado por el admin
+                        })
+                    });
+                    const j = await r.json().catch(() => ({}));
+                    if (r.ok && j.text) {
+                        // Registro de uso IA (best-effort, no bloquea)
+                        try {
+                            if (window.IEAuth && IEAuth.email) {
+                                IEAuth.callFunction('log-ia', {
+                                    op: 'log',
+                                    payload: {
+                                        model: j.model || s.model || 'proxy',
+                                        tool: 'termografia_infrarroja',
+                                        promptTokens: Math.round((userText.length + (thermogramDataUrl || '').length / 1370) / 4),
+                                        responseTokens: Math.round((j.text || '').length / 4)
+                                    }
+                                }).catch(() => {});
+                            }
+                        } catch (e) { /* silencioso */ }
+                        return j.text;
+                    }
+                    if (j.error && j.error !== 'sin-configuracion-ia') throw new Error(j.error);
+                    // sin-configuracion-ia → cae al fallback local
+                }
+            } catch (proxyErr) {
+                if (proxyErr.message === 'no-autorizado') throw proxyErr;
+                console.warn('Proxy IA no disponible, usando fallback local:', proxyErr.message);
+            }
+        }
+
+        // ── RUTA 2 (fallback local): llamada directa con key del usuario ──
+        const apiKey = (s.apiKey || '').trim()
+            || (s.provider === 'gemini' ? cfgKey('GEMINI_API_KEY')
+            : s.provider === 'custom' ? cfgKey('CUSTOM_API_KEY')
+            : cfgKey('XIAOMI_API_KEY'));
+        if (!apiKey) { openAiModal(); throw new Error('Configura tu API Key primero.'); }
+
+        const irPart = dataUrlParts(thermogramDataUrl);
+        const visPart = visibleDataUrl ? dataUrlParts(visibleDataUrl) : null;
+
+        if (s.provider === 'gemini') {
+            const parts = [{ text: userText }, { inline_data: { mime_type: irPart.mime, data: irPart.data } }];
+            if (visPart) parts.push({ inline_data: { mime_type: visPart.mime, data: visPart.data } });
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(s.model || 'gemini-2.0-flash')}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts }], systemInstruction: { parts: [{ text: AI_SYSTEM_PROMPT }] } })
+            });
+            const j = await r.json();
+            if (!r.ok) throw new Error(j.error?.message || 'Error Gemini');
+            return j.candidates[0].content.parts[0].text;
+        }
+
+        if (s.provider === 'anthropic') {
+            const antContent = [{ type: 'image', source: { type: 'base64', media_type: irPart.mime, data: irPart.data } }];
+            if (visPart) antContent.push({ type: 'image', source: { type: 'base64', media_type: visPart.mime, data: visPart.data } });
+            antContent.push({ type: 'text', text: userText });
+            const r = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                body: JSON.stringify({ model: s.model || 'claude-sonnet-4-20250514', max_tokens: 3000, system: AI_SYSTEM_PROMPT, messages: [{ role: 'user', content: antContent }] })
+            });
+            const j = await r.json();
+            if (!r.ok) throw new Error(j.error?.message || 'Error Anthropic');
+            return j.content[0].text;
+        }
+
+        // Xiaomi MiMo / OpenAI / compatible (formato chat/completions con imágenes)
+        const base = s.provider === 'xiaomi' ? XIAOMI_BASE
+            : (s.provider === 'custom' && s.endpoint) ? s.endpoint.replace(/\/$/, '') : 'https://api.openai.com/v1';
+        const r = await fetch(base + '/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            body: JSON.stringify({ model: s.model || 'mimo-v2.6-flash', max_tokens: 3000, messages: [{ role: 'system', content: AI_SYSTEM_PROMPT }, { role: 'user', content }] })
+        });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error?.message || 'Error API');
+        return j.choices[0].message.content;
+    }
+
+    function parseAiResponse(text) {
+        const equipo = (text.match(/##\s*EQUIPO\s*\n([\s\S]*?)(?=##|$)/i) || [])[1] || '';
+        const obs = (text.match(/##\s*OBSERVACIONES\s*\n([\s\S]*?)(?=##|$)/i) || [])[1] || '';
+        const riesgo = (text.match(/##\s*RIESGO\s*\n([\s\S]*?)(?=##|$)/i) || [])[1] || '';
+        const recs = (text.match(/##\s*RECOMENDACIONES\s*\n([\s\S]*?)(?=##|$)/i) || [])[1] || '';
+        const diag = obs || (text.match(/##\s*DIAGN[ÓO]STICO\s*\n([\s\S]*?)(?=##|$)/i) || [])[1] || '';
+        const cond = (text.match(/##\s*CONDICI[ÓO]N GLOBAL\s*\n?([^\n]*)/i) || [])[1] || '';
+        const summary = (equipo.trim()
+            ? 'EQUIPO:\n' + equipo.trim() + '\n\n'
+            : '')
+            + (diag.trim()
+            + (riesgo.trim() ? '\n\nRIESGO:\n' + riesgo.trim() : '')
+            + (recs.trim() ? '\n\nRECOMENDACIONES:\n' + recs.trim() : '')).trim() || text.trim();
+        let condition = 'Atención - Seguimiento Programado';
+        const c = cond.toUpperCase();
+        if (c.includes('CRÍTICO') || c.includes('CRITICO')) condition = 'Crítico - Acción Prioritaria';
+        else if (c.includes('URGENTE')) condition = 'Atención Urgente - Intervención Prioritaria';
+        else if (c.includes('NORMAL')) condition = 'Normal - Operación Estable';
+        return { summary, condition, raw: text };
+    }
+
+    document.getElementById('btnGenerateAi').addEventListener('click', async () => {
+        const img = current();
+        if (!img) return;
+        const btn = document.getElementById('btnGenerateAi');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-pulse">Analizando con IA…</span>';
+        try {
+            img.notes = document.getElementById('txtNotes').value;
+            img.recs = document.getElementById('txtRecs').value;
+            img.assetName = document.getElementById('inpAsset').value;
+            img.condition = document.getElementById('selCondition').value;
+            const thermoUrl = captureThermalDataUrl();
+            const raw = await callAiExpert(buildContext(), thermoUrl, img.dcDataUrl || '');
+            const parsed = parseAiResponse(raw);
+            img.ai = { text: parsed.summary, meta: new Date().toLocaleString('es') };
+            img.condition = parsed.condition;
+            document.getElementById('aiText').textContent = parsed.summary;
+            document.getElementById('aiMeta').textContent = img.ai.meta;
+            document.getElementById('aiBlock').classList.remove('hidden');
+            document.getElementById('selCondition').value = parsed.condition;
+        } catch (err) {
+            alert('Error IA: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Generar análisis con IA (experto termógrafo)';
+            lucide.createIcons();
+        }
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // REPORTE
+    // ══════════════════════════════════════════════════════════════
+    // Renderiza un config de Chart.js en un canvas oculto y devuelve data-URL (para el reporte imprimible)
+    function chartToDataUrl(cfg, w, h) {
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        // Canvas detached: sin responsive (mediría 0×0) y sin animación (el PNG se captura sincrónicamente)
+        cfg.options = cfg.options || {};
+        cfg.options.responsive = false;
+        cfg.options.animation = false;
+        const c = new Chart(cv, cfg);
+        const url = c.toBase64Image('image/png', 1);
+        c.destroy();
+        return url;
+    }
+    // ── Carátula del informe (primera página A4) ───────────────────
+    // Rango de fechas de las mediciones a partir de los nombres de archivo
+    // (formato corto "14-9-26"; si hay varias fechas → "14-9-26 a 16-9-26")
+    function measurementDateRange(images) {
+        const days = [];
+        (images || []).forEach(im => {
+            const m = String(im.date || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (m) days.push({ y: +m[1], mo: +m[2], d: +m[3], key: m[1] + m[2] + m[3] });
+        });
+        if (!days.length) return '—';
+        days.sort((a, b) => a.key.localeCompare(b.key));
+        const fmt = (x) => `${x.d}-${x.mo}-${String(x.y).slice(2)}`;
+        const first = days[0], last = days[days.length - 1];
+        return first.key === last.key ? fmt(first) : `${fmt(first)} a ${fmt(last)}`;
+    }
+    function buildCoverPage(nowStr) {
+        const page = document.getElementById('tplCoverPage').content.firstElementChild.cloneNode(true);
+        const F = (name) => page.querySelector(`[data-f="${name}"]`);
+        const s = loadSetup();
+        const logoDataUrl = loadLogo();
+        if (logoDataUrl) {
+            const lg = F('logo');
+            lg.src = logoDataUrl; lg.classList.remove('hidden');
+        }
+        F('clientName').textContent = s.client || '—';
+        const clientInfo = [s.clientNit, s.clientAddr].filter(Boolean).join(' · ');
+        F('clientInfo').textContent = clientInfo;
+        F('dateRange').textContent = measurementDateRange(state.images);
+        F('thermographer').textContent = s.thermographer || '—';
+        F('thermographerCert').textContent = s.thermographerCert || '';
+        F('companyName').textContent = s.company || '—';
+        const companyInfo = [s.companyNit, s.companyTel, s.companyAddr, s.companyMail].filter(Boolean).join(' · ');
+        F('companyInfo').textContent = companyInfo;
+        return page;
+    }
+    // Construye el contenido de una página A4 del reporte para una imagen
+    function buildReportPage(im, nowStr) {
+        const page = document.getElementById('tplReportPage').content.firstElementChild.cloneNode(true);
+        const F = (name) => page.querySelector(`[data-f="${name}"]`);
+        F('title').textContent = im.irName;
+        F('now').textContent = nowStr;
+        F('equipment').textContent = im.assetName || '—';
+        F('thermographer').textContent = loadSetup().thermographer || document.getElementById('inpThermographer').value.trim() || '—';
+        const logoDataUrl = loadLogo();
+        if (logoDataUrl) {
+            const lg = F('logo');
+            lg.src = logoDataUrl; lg.classList.remove('hidden');
+        }
+        F('irImg').src = captureThermalDataUrlFor(im);
+        // Barra de escala de temperatura (degradado de la paleta activa + mín/máx °C)
+        F('scaleMin').textContent = im.scale.min.toFixed(1) + ' °C';
+        F('scaleMax').textContent = im.scale.max.toFixed(1) + ' °C';
+        const scaleGrad = F('scaleGrad');
+        if (scaleGrad) scaleGrad.style.background = paletteGradientCSS(currentPalette);
+        const dcImg = F('dcImg');
+        if (im.dcDataUrl) {
+            dcImg.src = im.dcDataUrl; dcImg.classList.remove('hidden');
+            F('dcName').textContent = im.dcName || '';
+        } else { dcImg.classList.add('hidden'); F('dcName').textContent = '—'; }
+
+        const rows = [
+            ['Equipo inspeccionado', im.assetName || '—'],
+            ['Dispositivo', (im.rad && im.rad.model) || '—'],
+            ['Nº serie', (im.rad && im.rad.serial) || '—'],
+            ['Archivo IR', im.irName],
+            ['Fecha', im.date],
+            ['Escala', `${im.scale.min.toFixed(1)} – ${im.scale.max.toFixed(1)} °C`],
+            ['Emisividad', Number(im.emissivity ?? getEps()).toFixed(2)],
+            ['T reflejada', Number(im.tRefl ?? getTRefl()).toFixed(1) + ' °C'],
+            ['Resolución', im.rad ? `${im.rad.W} × ${im.rad.H}` : `${CANVAS_W} × ${CANVAS_H}`],
+            ['Paleta', PALETTE_LABELS[currentPalette] || 'Ironbow'],
+            ['Modo datos', im.tempMap ? 'Radiométrico (sin OSD)' : (state.autoClean ? 'Anti-OSD automático' : 'Original')]
+        ];
+        // Metadatos compactos: 2 columnas por fila (4 datos por línea)
+        const metaCells = rows.map(([k, v]) => `<td class="text-slate-500 font-medium pr-2" style="width:16%">${escHtml(k)}</td><td class="mono pr-3" style="width:34%">${escHtml(v)}</td>`);
+        let metaHtml = '';
+        for (let i = 0; i < metaCells.length; i += 2) {
+            const pair = metaCells.slice(i, i + 2);
+            while (pair.length < 4) pair.push('<td></td>');
+            metaHtml += '<tr>' + pair.join('') + '</tr>';
+        }
+        F('metaTable').innerHTML = metaHtml;
+
+        // Gráficos: histograma (siempre) y perfil (si existe)
+        let hMin = Infinity, hMax = -Infinity;
+        for (let i = 0; i < im.thermalMap.length; i += 2) {
+            const t = normToTemp(im.thermalMap[i], im, i);
+            if (t < hMin) hMin = t;
+            if (t > hMax) hMax = t;
+        }
+        F('histImg').src = chartToDataUrl(histogramCfg(im, hMin, hMax), 520, 200);
+        if (im.profile) {
+            F('profWrap').classList.remove('hidden');
+            F('profImg').src = chartToDataUrl(profileCfg(im), 520, 200);
+        }
+
+        const meas = [];
+        im.spots.forEach((p, i) => meas.push(['Punto P' + (i + 1), `(${Math.round(p.x)}, ${Math.round(p.y)})`, normToTemp(p.norm, im, Math.round(p.y) * CANVAS_W + Math.round(p.x)).toFixed(1) + ' °C']));
+        if (im.delta.length === 2) {
+            const t1 = normToTemp(im.delta[0].norm, im, Math.round(im.delta[0].y) * CANVAS_W + Math.round(im.delta[0].x)), t2 = normToTemp(im.delta[1].norm, im, Math.round(im.delta[1].y) * CANVAS_W + Math.round(im.delta[1].x));
+            meas.push(['Delta 2 puntos', `T1 ${t1.toFixed(1)} °C · T2 ${t2.toFixed(1)} °C`, 'ΔT ' + Math.abs(t1 - t2).toFixed(1) + ' °C']);
+        }
+        im.rois.forEach((bx, ri) => {
+            let min = Infinity, max = -Infinity, sum = 0, n = 0;
+            for (let y = Math.round(bx.y); y < Math.round(bx.y + bx.h); y += 2)
+                for (let x = Math.round(bx.x); x < Math.round(bx.x + bx.w); x += 2) {
+                    const t = tempAt(im, x, y);
+                    min = Math.min(min, t); max = Math.max(max, t); sum += t; n++;
+                }
+            if (n > 0) meas.push([im.rois.length > 1 ? `Zona ROI ${ri + 1}` : 'Zona ROI', `min ${min.toFixed(1)} · media ${(sum / n).toFixed(1)}`, `max ${max.toFixed(1)} °C`]);
+        });
+        if (im.profile) {
+            const dx = im.profile.x2 - im.profile.x1, dy = im.profile.y2 - im.profile.y1;
+            const steps = Math.max(2, Math.ceil(Math.hypot(dx, dy)));
+            let min = Infinity, max = -Infinity, sum = 0;
+            for (let i = 0; i <= steps; i++) {
+                const t = tempAt(im, im.profile.x1 + dx * i / steps, im.profile.y1 + dy * i / steps);
+                min = Math.min(min, t); max = Math.max(max, t); sum += t;
+            }
+            meas.push(['Perfil', `min ${min.toFixed(1)} · media ${(sum / (steps + 1)).toFixed(1)}`, `max ${max.toFixed(1)} °C`]);
+        }
+        F('measures').innerHTML = meas.length
+            ? meas.map(m => `<tr class="border-b border-slate-100"><td class="p-1 font-medium">${escHtml(m[0])}</td><td class="p-1 mono text-slate-600">${escHtml(m[1])}</td><td class="p-1 text-right mono font-bold">${escHtml(m[2])}</td></tr>`).join('')
+            : '<tr><td class="p-1 text-slate-500 text-center" colspan="3">Sin mediciones</td></tr>';
+
+        F('condition').textContent = im.condition || '—';
+        F('notes').textContent = im.notes || '(sin observaciones)';
+        F('recs').textContent = im.recs || '(sin recomendaciones)';
+        const aiWrap = F('aiWrap');
+        if (im.ai) {
+            aiWrap.classList.remove('hidden');
+            F('aiText').textContent = im.ai.text;
+        } else aiWrap.classList.add('hidden');
+        return page;
+    }
+
+    document.getElementById('btnOpenReport').addEventListener('click', () => {
+        // Guardar el estado editable de la imagen actual antes de generar
+        const cur = current();
+        if (cur) {
+            cur.notes = document.getElementById('txtNotes').value;
+            cur.recs = document.getElementById('txtRecs').value;
+            cur.assetName = document.getElementById('inpAsset').value;
+            cur.condition = document.getElementById('selCondition').value;
+        }
+        if (!state.images.length) { alert('Carga y selecciona una imagen primero.'); return; }
+        const nowStr = new Date().toLocaleString('es');
+        document.getElementById('repNow').textContent = nowStr;
+        document.getElementById('repCount').textContent = state.images.length === 1 ? '1 imagen' : state.images.length + ' imágenes';
+        const pages = document.getElementById('repPages');
+        pages.innerHTML = '';
+        pages.appendChild(buildCoverPage(nowStr));
+        state.images.forEach(im => pages.appendChild(buildReportPage(im, nowStr)));
+        document.getElementById('reportModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseReport').addEventListener('click', () => document.getElementById('reportModal').classList.add('hidden'));
+
+    // ── Logo de empresa para el reporte (gestionado desde Setup) ───
+    const LOGO_KEY = 'thermallab_lite_logo_v1';
+    function loadLogo() {
+        try { return localStorage.getItem(LOGO_KEY) || ''; } catch { return ''; }
+    }
+    function saveLogo(dataUrl) {
+        try {
+            if (dataUrl) localStorage.setItem(LOGO_KEY, dataUrl);
+            else localStorage.removeItem(LOGO_KEY);
+        } catch { /* almacenamiento lleno */ }
+    }
+    function refreshLogoButtons() {
+        // Sin botones de logo en el header del reporte (viven en Setup); se mantiene por compatibilidad
+    }
+    refreshLogoButtons();
+
+    // ── Arranque ───────────────────────────────────────────────────
+    renderAll();
+    renderImageList();
+    lucide.createIcons();
+})();
+</script>
+<script src="auth.js"></script>
+<script>
+// Configuración IA visible solo para admin (el proxy del servidor resuelve el motor;
+// los demás usuarios simplemente usan "Generar Análisis IA").
+if (window.IEAuth) {
+    IEAuth.onLogin(function (auth) {
+        const btn = document.getElementById('btnAiSettings');
+        if (!btn) return;
+        if (auth.isAdmin) {
+            btn.classList.remove('hidden');
+        } else {
+            btn.classList.add('hidden');
+            const lock = document.createElement('span');
+            lock.className = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-slate-500 border border-slate-200 bg-slate-100';
+            lock.title = 'El motor de IA lo configura el administrador (IE)';
+            lock.textContent = '🔒 Motor IA configurado';
+            btn.parentNode.insertBefore(lock, btn);
+        }
+    });
+}
+</script>
+</body>
+</html>
