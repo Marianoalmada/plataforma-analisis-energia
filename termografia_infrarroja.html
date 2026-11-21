@@ -72,7 +72,7 @@ tailwind.config = {
 
 <!-- ══════════════ TOOLBAR (arriba) ══════════════ -->
 <header class="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-    <div class="max-w-[1800px] mx-auto px-4 py-2.5 flex items-center gap-3 flex-wrap">
+    <div class="max-w-[1800px] mx-auto px-4 md:pr-[310px] py-2.5 flex items-center gap-3 flex-wrap">
         <a href="index.html" class="no-print inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs font-semibold" title="Volver al Portal de Herramientas IE">← Portal IE</a>
         <div class="flex items-center gap-2 mr-2">
             <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#9c1c6b,#e96115,#f8cc1b)">
@@ -145,9 +145,7 @@ tailwind.config = {
             <span class="text-slate-500">T:</span><span id="liveTemp" class="text-amber-600 font-bold">—</span>
             <span class="text-slate-500">x,y:</span><span id="liveCoords" class="text-slate-500">—</span>
         </div>
-        <button id="btnAiSettings" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-white text-xs font-semibold" style="background:linear-gradient(135deg,#9c1c6b,#e96115)" title="Configurar IA experto">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> IA
-        </button>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-slate-500 border border-slate-200 bg-slate-100" title="Motor de IA configurado por el administrador (IE); se usa desde 'Generar Análisis IA'">🔒 Motor IA</span>
         <button id="btnSetup" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass-btn text-xs text-slate-800" title="Configurar logo, empresa, termógrafo y datos del informe">
             <i data-lucide="settings" class="w-3.5 h-3.5"></i> Setup
         </button>
@@ -369,45 +367,6 @@ tailwind.config = {
         </div>
     </aside>
 </main>
-
-<!-- ══════════════ MODAL: configuración IA ══════════════ -->
-<div id="aiSettingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-    <div class="glass-panel rounded-2xl p-5 w-full max-w-md space-y-3">
-        <h3 class="text-sm font-bold">Configuración — IA Experto Termógrafo</h3>
-        <div>
-            <label class="text-[10px] text-slate-500">Proveedor</label>
-            <select id="aiProvider" class="glass-input w-full rounded px-2 py-1.5 text-xs mt-0.5">
-                <option value="xiaomi">Xiaomi MiMo</option>
-                <option value="openai">OpenAI</option>
-                <option value="gemini">Google Gemini</option>
-                <option value="anthropic">Anthropic (Claude)</option>
-                <option value="custom">Endpoint OpenAI-compatible</option>
-            </select>
-        </div>
-        <div>
-            <label class="text-[10px] text-slate-500">Modelo</label>
-            <div class="flex gap-1.5">
-                <select id="aiModel" class="glass-input flex-1 rounded px-2 py-1.5 text-xs mono mt-0.5">
-                    <option value="mimo-v2.6-flash">Xiaomi MiMo 2.6 Flash</option>
-                    <option value="mimo-v2.6-pro">Xiaomi MiMo 2.6 Pro</option>
-                </select>
-                <button id="btnRefreshModels" class="px-2 py-1.5 rounded-lg glass-btn text-[10px] text-slate-700 mt-0.5" title="Actualizar el listado de modelos desde la API">Actualizar</button>
-            </div>
-            <input id="aiModelCustom" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs mono mt-1.5 hidden" placeholder="id del modelo">
-        </div>
-        <div>
-            <label class="text-[10px] text-slate-500">API Key</label>
-            <input id="aiApiKey" type="password" class="glass-input w-full rounded px-2 py-1.5 text-xs mono mt-0.5">
-        </div>
-        <div id="aiEndpointWrap" class="hidden">
-            <label class="text-[10px] text-slate-500">Endpoint</label>
-            <input id="aiEndpoint" type="text" class="glass-input w-full rounded px-2 py-1.5 text-xs mono mt-0.5" placeholder="https://.../v1">
-        </div>        <div class="flex gap-2 pt-1">
-            <button id="btnCancelAiSettings" class="flex-1 px-3 py-2 rounded-lg glass-btn text-xs">Cancelar</button>
-            <button id="btnSaveAiSettings" class="flex-1 px-3 py-2 rounded-lg text-white text-xs font-semibold" style="background:linear-gradient(135deg,#e96115,#f8cc1b)">Guardar</button>
-        </div>
-    </div>
-</div>
 
 <!-- ══════════════ MODAL: Setup (logo, empresas, termógrafo) ══════════════ -->
 <div id="setupModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-auto">
@@ -2016,10 +1975,6 @@ tailwind.config = {
         const c = window.IE_CONFIG || {};
         return (c[name] || '').trim();
     }
-    const XIAOMI_FALLBACK_MODELS = [
-        { id: 'mimo-v2.6-flash', label: 'Xiaomi MiMo 2.6 Flash' },
-        { id: 'mimo-v2.6-pro', label: 'Xiaomi MiMo 2.6 Pro' }
-    ];
     const AI_SYSTEM_PROMPT = `Eres Ingeniero Termógrafo Experto Nivel III (ISO 18436-2) que asesora al termógrafo (usuario) de forma SIMPLE, CONCRETA y RESUMIDA. El usuario completa el nombre del equipo medido y sus observaciones; tu trabajo es interpretar ambos y dar recomendaciones prácticas. Responde SIEMPRE en español, en frases cortas y sin rodeos, con este formato exacto:
 
 ## EQUIPO
@@ -2038,108 +1993,10 @@ Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actua
 (una sola línea, la ÚLTIMA del texto, con exactamente una de estas palabras: NORMAL / ATENCIÓN / ATENCIÓN URGENTE / CRÍTICO)`;
 
     function loadAiSettings() {
+        // Config IA legada en localStorage (si existiera). El motor normal es
+        // el configurado por el administrador, que se usa vía proxy del servidor.
         try { return JSON.parse(localStorage.getItem(AI_KEY)) || {}; } catch { return {}; }
     }
-    function saveAiSettings(s) { localStorage.setItem(AI_KEY, JSON.stringify(s)); }
-
-    function getModelEl() { return document.getElementById('aiModel'); }
-    function getModelCustomEl() { return document.getElementById('aiModelCustom'); }
-    function currentModelValue() {
-        const sel = getModelEl();
-        return sel.classList.contains('hidden') ? getModelCustomEl().value.trim() : sel.value;
-    }
-    function fillModelSelect(models, selected) {
-        const sel = getModelEl();
-        sel.innerHTML = '';
-        models.forEach(m => {
-            const o = document.createElement('option');
-            o.value = m.id;
-            o.textContent = m.label || m.id;
-            sel.appendChild(o);
-        });
-        if (selected && models.some(m => m.id === selected)) sel.value = selected;
-    }
-    function useCustomModelInput(on) {
-        getModelEl().classList.toggle('hidden', on);
-        getModelCustomEl().classList.toggle('hidden', !on);
-        document.getElementById('btnRefreshModels').classList.toggle('hidden', on);
-    }
-    async function fetchXiaomiModels(apiKey) {
-        const key = (apiKey || '').trim() || cfgKey('XIAOMI_API_KEY');
-        if (!key) throw new Error('Sin API key: configurá la IA (admin) o cargá una key propia.');
-        const r = await fetch(XIAOMI_BASE + '/models', {
-            headers: { 'Authorization': 'Bearer ' + key }
-        });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error?.message || 'Error listando modelos');
-        return (j.data || []).map(m => ({ id: m.id, label: 'Xiaomi ' + m.id }));
-    }
-    async function refreshModelList(selected) {
-        const p = document.getElementById('aiProvider').value;
-        const key = document.getElementById('aiApiKey').value.trim();
-        if (p === 'xiaomi') {
-            try {
-                const models = await fetchXiaomiModels(key);
-                if (models.length) {
-                    fillModelSelect(models, selected || 'mimo-v2.6-flash');
-                    useCustomModelInput(false);
-                    return;
-                }
-            } catch (e) { console.warn('No se pudo actualizar el listado de modelos:', e.message); }
-            fillModelSelect(XIAOMI_FALLBACK_MODELS, selected || 'mimo-v2.6-flash');
-            useCustomModelInput(false);
-        } else if (p === 'openai') {
-            fillModelSelect([
-                { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
-                { id: 'gpt-4o', label: 'GPT-4o' }
-            ], selected || 'gpt-4o-mini');
-            useCustomModelInput(false);
-        } else if (p === 'gemini') {
-            fillModelSelect([
-                { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-                { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' }
-            ], selected || 'gemini-2.0-flash');
-            useCustomModelInput(false);
-        } else if (p === 'anthropic') {
-            fillModelSelect([
-                { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' }
-            ], selected || 'claude-sonnet-4-20250514');
-            useCustomModelInput(false);
-        } else {
-            useCustomModelInput(true);
-            getModelCustomEl().value = selected || '';
-        }
-    }
-
-    function openAiModal() {
-        const s = loadAiSettings();
-        document.getElementById('aiProvider').value = s.provider || 'xiaomi';
-        document.getElementById('aiApiKey').value = s.apiKey || '';
-        document.getElementById('aiEndpoint').value = s.endpoint || '';
-        toggleEndpoint();
-        refreshModelList(s.model);
-        document.getElementById('aiSettingsModal').classList.remove('hidden');
-    }
-    function closeAiModal() { document.getElementById('aiSettingsModal').classList.add('hidden'); }
-    function toggleEndpoint() {
-        document.getElementById('aiEndpointWrap').classList.toggle('hidden', document.getElementById('aiProvider').value !== 'custom');
-    }
-    document.getElementById('btnAiSettings').addEventListener('click', openAiModal);
-    document.getElementById('btnCancelAiSettings').addEventListener('click', closeAiModal);
-    document.getElementById('btnRefreshModels').addEventListener('click', () => refreshModelList(currentModelValue()));
-    document.getElementById('aiProvider').addEventListener('change', () => {
-        toggleEndpoint();
-        refreshModelList();
-    });
-    document.getElementById('btnSaveAiSettings').addEventListener('click', () => {
-        saveAiSettings({
-            provider: document.getElementById('aiProvider').value,
-            model: currentModelValue(),
-            apiKey: document.getElementById('aiApiKey').value,
-            endpoint: document.getElementById('aiEndpoint').value
-        });
-        closeAiModal();
-    });
 
     function buildContext() {
         const img = current();
@@ -2259,17 +2116,19 @@ Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actua
             }
         }
 
-        // ── RUTA 2 (fallback local): llamada directa con key del usuario ──
+        // ── RUTA 2 (fallback local): llamada directa con key del administrador (config.js) ──
+        const provider = s.provider
+            || (cfgKey('GEMINI_API_KEY') ? 'gemini' : cfgKey('XIAOMI_API_KEY') ? 'xiaomi' : cfgKey('CUSTOM_API_KEY') ? 'custom' : '');
         const apiKey = (s.apiKey || '').trim()
-            || (s.provider === 'gemini' ? cfgKey('GEMINI_API_KEY')
-            : s.provider === 'custom' ? cfgKey('CUSTOM_API_KEY')
+            || (provider === 'gemini' ? cfgKey('GEMINI_API_KEY')
+            : provider === 'custom' ? cfgKey('CUSTOM_API_KEY')
             : cfgKey('XIAOMI_API_KEY'));
-        if (!apiKey) { openAiModal(); throw new Error('Configura tu API Key primero.'); }
+        if (!apiKey) throw new Error('Motor IA no disponible: lo configura el administrador (IE) desde el portal.');
 
         const irPart = dataUrlParts(thermogramDataUrl);
         const visPart = visibleDataUrl ? dataUrlParts(visibleDataUrl) : null;
 
-        if (s.provider === 'gemini') {
+        if (provider === 'gemini') {
             const parts = [{ text: userText }, { inline_data: { mime_type: irPart.mime, data: irPart.data } }];
             if (visPart) parts.push({ inline_data: { mime_type: visPart.mime, data: visPart.data } });
             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(s.model || 'gemini-2.0-flash')}:generateContent?key=${encodeURIComponent(apiKey)}`, {
@@ -2281,7 +2140,7 @@ Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actua
             return j.candidates[0].content.parts[0].text;
         }
 
-        if (s.provider === 'anthropic') {
+        if (provider === 'anthropic') {
             const antContent = [{ type: 'image', source: { type: 'base64', media_type: irPart.mime, data: irPart.data } }];
             if (visPart) antContent.push({ type: 'image', source: { type: 'base64', media_type: visPart.mime, data: visPart.data } });
             antContent.push({ type: 'text', text: userText });
@@ -2296,8 +2155,8 @@ Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actua
         }
 
         // Xiaomi MiMo / OpenAI / compatible (formato chat/completions con imágenes)
-        const base = s.provider === 'xiaomi' ? XIAOMI_BASE
-            : (s.provider === 'custom' && s.endpoint) ? s.endpoint.replace(/\/$/, '') : 'https://api.openai.com/v1';
+        const base = provider === 'xiaomi' ? XIAOMI_BASE
+            : (provider === 'custom' && s.endpoint) ? s.endpoint.replace(/\/$/, '') : 'https://api.openai.com/v1';
         const r = await fetch(base + '/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
@@ -2554,25 +2413,5 @@ Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actua
 })();
 </script>
 <script src="auth.js"></script>
-<script>
-// Configuración IA visible solo para admin (el proxy del servidor resuelve el motor;
-// los demás usuarios simplemente usan "Generar Análisis IA").
-if (window.IEAuth) {
-    IEAuth.onLogin(function (auth) {
-        const btn = document.getElementById('btnAiSettings');
-        if (!btn) return;
-        if (auth.isAdmin) {
-            btn.classList.remove('hidden');
-        } else {
-            btn.classList.add('hidden');
-            const lock = document.createElement('span');
-            lock.className = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-slate-500 border border-slate-200 bg-slate-100';
-            lock.title = 'El motor de IA lo configura el administrador (IE)';
-            lock.textContent = '🔒 Motor IA configurado';
-            btn.parentNode.insertBefore(lock, btn);
-        }
-    });
-}
-</script>
 </body>
 </html>
