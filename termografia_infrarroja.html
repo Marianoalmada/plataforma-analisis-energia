@@ -247,10 +247,6 @@ tailwind.config = {
                 <label class="text-[10px] text-slate-500">Equipo inspeccionado (aparece en el encabezado del reporte)</label>
                 <input id="inpAsset" type="text" placeholder="ej. TRAFO-01 Sala de Fuerza" class="glass-input w-full rounded px-2 py-1.5 text-xs mt-0.5">
             </div>
-            <div>
-                <label class="text-[10px] text-slate-500">Nombre del termógrafo</label>
-                <input id="inpThermographer" type="text" placeholder="Configúralo en Setup" class="glass-input w-full rounded px-2 py-1.5 text-xs mt-0.5">
-            </div>
             <table class="meta w-full text-[11px] mono">
                 <tr><td class="text-slate-500 w-[92px]">Archivo IR</td><td id="metaIrName" class="text-slate-800 truncate">—</td></tr>
                 <tr><td class="text-slate-500">Visible</td><td id="metaDcName" class="text-slate-800 truncate">—</td></tr>
@@ -1218,6 +1214,84 @@ tailwind.config = {
         return m ? `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}` : '—';
     }
 
+    // Fecha de captura desde los metadatos EXIF del JPEG (DateTimeOriginal,
+    // luego DateTimeDigitized / DateTime). Devuelve "AAAA-MM-DD HH:MM:SS" o ''.
+    function extractExifDate(buffer) {
+        if (!buffer || buffer.byteLength < 16) return '';
+        try {
+            const b = new Uint8Array(buffer);
+            if (b[0] !== 0xFF || b[1] !== 0xD8) return '';
+            const dv = new DataView(buffer);
+            let i = 2;
+            while (i + 4 < b.length) {
+                if (b[i] !== 0xFF) break;
+                const marker = b[i + 1];
+                if (marker === 0xD8 || (marker >= 0xD0 && marker <= 0xD7) || marker === 0x01) { i += 2; continue; }
+                if (marker === 0xDA || marker === 0xD9) break; // fin de metadatos
+                const len = (b[i + 2] << 8) | b[i + 3];
+                // APP1 = segmento EXIF ("Exif\0\0" + TIFF)
+                if (marker === 0xE1 && len > 8 && b[i + 4] === 0x45 && b[i + 5] === 0x78 && b[i + 6] === 0x69 && b[i + 7] === 0x66) {
+                    const tiff = i + 10;
+                    const le = b[tiff] === 0x49;
+                    const u16 = (o) => dv.getUint16(o, le);
+                    const u32 = (o) => dv.getUint32(o, le);
+                    const readAsciiTag = (ifdOff, tag) => {
+                        const cnt = u16(ifdOff);
+                        for (let e = 0; e < cnt; e++) {
+                            const o = ifdOff + 2 + e * 12;
+                            if (u16(o) === tag && u16(o + 2) === 2) {
+                                const n = u32(o + 4);
+                                const off = n <= 4 ? o + 8 : tiff + u32(o + 8);
+                                let s = '';
+                                for (let k = 0; k < Math.min(n, 20); k++) {
+                                    const c = b[off + k];
+                                    if (!c) break;
+                                    s += String.fromCharCode(c);
+                                }
+                                return s;
+                            }
+                        }
+                        return '';
+                    };
+                    const ifd0 = tiff + u32(tiff + 4);
+                    let exifIFD = 0;
+                    const cnt0 = u16(ifd0);
+                    for (let e = 0; e < cnt0; e++) {
+                        const o = ifd0 + 2 + e * 12;
+                        if (u16(o) === 0x8769) { exifIFD = tiff + u32(o + 8); break; }
+                    }
+                    let dt = exifIFD ? (readAsciiTag(exifIFD, 0x9003) || readAsciiTag(exifIFD, 0x9004)) : '';
+                    if (!dt) dt = readAsciiTag(ifd0, 0x0132);
+                    const m = dt.match(/(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+                    if (m) return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}`;
+                }
+                i += 2 + len;
+            }
+        } catch (e) { /* sin EXIF legible */ }
+        return '';
+    }
+
+    // Fecha de captura desde los metadatos radiométricos de la cámara (JSON).
+    // Busca campos con clave tipo date/time/fecha y valor "AAAA:MM:DD HH:MM:SS".
+    function metaDateFromRad(rad) {
+        if (!rad || !rad.meta) return '';
+        const re = /^(\d{4})[-:](\d{2})[-:](\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/;
+        let found = '';
+        const walk = (v, key) => {
+            if (found || v == null) return;
+            if (typeof v === 'string') {
+                const m = v.trim().match(re);
+                if (m && /date|time|fecha/i.test(String(key || ''))) {
+                    found = `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6] || '00'}`;
+                }
+            } else if (typeof v === 'object') {
+                for (const k of Object.keys(v)) walk(v[k], k);
+            }
+        };
+        walk(rad.meta, '');
+        return found;
+    }
+
     function loadImageFile(file) {
         return new Promise((resolve) => {
             let arrBuf = null;
@@ -1281,7 +1355,8 @@ tailwind.config = {
                 emissivity: ep && ep.emissivity ? Number(ep.emissivity) : getEps(),
                 tRefl: ep && ep.refTemp != null ? Number(ep.refTemp) : getTRefl(),
                 scale,
-                date: extractDate(ir.file.name)
+                // Fecha de captura real: metadatos EXIF → JSON de cámara → nombre de archivo
+                date: extractExifDate(ir.buffer) || metaDateFromRad(rad) || extractDate(ir.file.name)
             };
             state.images.push(entry);
             if (!state.currentId) selectImage(entry.id);
@@ -1947,17 +2022,6 @@ tailwind.config = {
             document.getElementById('btnOpenReport').click();
         }
     });
-    // Campo lateral "Nombre del termógrafo": sincronizado con el Setup
-    (function syncThermographerField() {
-        const inp = document.getElementById('inpThermographer');
-        inp.value = loadSetup().thermographer || '';
-        inp.addEventListener('input', (e) => {
-            const s = loadSetup();
-            s.thermographer = e.target.value;
-            saveSetup(s);
-        });
-    })();
-
     // ── Carga de archivos ──────────────────────────────────────────
     document.getElementById('fileInput').addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length) handleFiles(e.target.files);
@@ -2234,8 +2298,8 @@ Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actua
         return url;
     }
     // ── Carátula del informe (primera página A4) ───────────────────
-    // Rango de fechas de las mediciones a partir de los nombres de archivo
-    // (formato corto "14-9-26"; si hay varias fechas → "14-9-26 a 16-9-26")
+    // Rango de fechas de las mediciones a partir de los metadatos de las
+    // termografías (día primero y día último; formato corto "14-9-26 a 16-9-26")
     function measurementDateRange(images) {
         const days = [];
         (images || []).forEach(im => {
@@ -2275,7 +2339,7 @@ Nivel (BAJO / MEDIO / ALTO / CRÍTICO) + consecuencia principal + plazo de actua
         F('title').textContent = im.irName;
         F('now').textContent = nowStr;
         F('equipment').textContent = im.assetName || '—';
-        F('thermographer').textContent = loadSetup().thermographer || document.getElementById('inpThermographer').value.trim() || '—';
+        F('thermographer').textContent = loadSetup().thermographer || '—';
         const logoDataUrl = loadLogo();
         if (logoDataUrl) {
             const lg = F('logo');
