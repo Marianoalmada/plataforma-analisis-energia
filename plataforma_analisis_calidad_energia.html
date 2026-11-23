@@ -216,6 +216,10 @@
                 <label for="file-upload-main" class="custom-file-button">Seleccionar Archivos</label>
                 <input id="file-upload-main" type="file" accept=".csv" class="file-input" multiple aria-describedby="file-count-display">
                 <span id="file-count-display" class="text-gray-500" aria-live="polite">No hay archivos cargados.</span>
+                <button id="btn-clear-files" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition-colors">Limpiar</button>
+            </div>
+            <div id="file-drop-zone" class="border-2 border-dashed border-gray-300 rounded-xl py-2.5 px-4 text-center text-sm text-gray-500 transition-colors">
+                O arrastrá y soltá archivos CSV aquí — se suman a los ya cargados
             </div>
 
             <div id="date-filter-section" class="date-filter-container hidden flex-wrap justify-center items-center gap-4 pt-4 border-t border-gray-200">
@@ -2268,6 +2272,8 @@
 
         const fileInputMain = document.getElementById('file-upload-main');
         const fileCountDisplay = document.getElementById('file-count-display');
+        const btnClearFiles = document.getElementById('btn-clear-files');
+        const fileDropZone = document.getElementById('file-drop-zone');
         const loadingDiv = document.getElementById('loading-charts');
         const chartsGrid = document.getElementById('charts-grid');
         const dateFilterSection = document.getElementById('date-filter-section');
@@ -2299,6 +2305,30 @@
         const chartsFilterButtons = document.getElementById('charts-filter-buttons');
         
         fileInputMain.addEventListener('change', handleFileSelect);
+        // Limpiar el conjunto de archivos cargados (empezar una medición nueva)
+        btnClearFiles.addEventListener('click', () => {
+            loadedFiles = [];
+            combinedDropdownsPopulated = false;
+            fileCountDisplay.textContent = t('files.none');
+            btnClearFiles.classList.add('hidden');
+            document.querySelectorAll('#charts-grid .chart-wrapper').forEach(el => el.remove());
+            document.getElementById('phasor-diagram-wrapper').classList.add('hidden');
+            clearNotifications();
+            setupDateFilters(loadedFiles);
+            applyDateFilter();
+        });
+        // Drag & drop de archivos CSV (acumula igual que el selector)
+        ['dragenter', 'dragover'].forEach(ev => fileDropZone.addEventListener(ev, (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('border-blue-400', 'bg-blue-50');
+        }));
+        ['dragleave', 'drop'].forEach(ev => fileDropZone.addEventListener(ev, (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('border-blue-400', 'bg-blue-50');
+        }));
+        fileDropZone.addEventListener('drop', (e) => {
+            if (e.dataTransfer && e.dataTransfer.files.length) processIncomingFiles(e.dataTransfer.files);
+        });
         filterButton.addEventListener('click', applyDateFilter);
         outlierFilterToggle.addEventListener('change', applyDateFilter);
         tabButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
@@ -3167,8 +3197,16 @@ ${dataContext}`;
 
 
         async function handleFileSelect(event) {
-            const files = event.target.files;
-            if (!files.length) return;
+            await processIncomingFiles(event.target.files);
+            event.target.value = '';
+        }
+
+        // Procesa la tanda de archivos entrantes (selector o drag & drop).
+        // ACUMULA con los ya cargados: cargar "de a uno" varias veces arma el
+        // conjunto completo (antes cada selección reemplazaba al anterior).
+        // Un archivo con el mismo nombre reemplaza a la versión previa.
+        async function processIncomingFiles(files) {
+            if (!files || !files.length) return;
             loadingDiv.style.display = 'block';
             document.querySelectorAll('#charts-grid .chart-wrapper').forEach(el => el.remove());
             document.getElementById('phasor-diagram-wrapper').classList.add('hidden');
@@ -3194,8 +3232,10 @@ ${dataContext}`;
             );
 
             const newFileObjects = (await Promise.all(filePromises)).filter(Boolean);
-            loadedFiles = newFileObjects;
+            const kept = loadedFiles.filter(f => !newFileObjects.some(n => n.name === f.name));
+            loadedFiles = [...kept, ...newFileObjects];
             fileCountDisplay.textContent = t('files.loaded', {n: loadedFiles.length});
+            btnClearFiles.classList.toggle('hidden', loadedFiles.length === 0);
 
             // FASE 2 (Bug): resetear el flag para que los dropdowns combinados se repueblen
             // con las nuevas columnas la próxima vez que se visite el tab "Contrastar Variables".
@@ -3222,7 +3262,6 @@ ${dataContext}`;
             }
 
             loadingDiv.style.display = 'none';
-            event.target.value = '';
         }
 
         function processAndCreateFileObject(fileName, csvContent) {
